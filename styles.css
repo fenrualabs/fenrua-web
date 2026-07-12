@@ -218,7 +218,8 @@ main {
 }
 
 .header-chain-card[data-status="confirmed"],
-.header-chain-card[data-status="advanced"] {
+.header-chain-card[data-status="advanced"],
+.header-chain-card[data-status="partial"] {
   border-color: rgba(101, 242, 154, 0.55);
 }
 
@@ -236,7 +237,8 @@ main {
 }
 
 .header-chain-card[data-status="confirmed"] .chain-card-top strong,
-.header-chain-card[data-status="advanced"] .chain-card-top strong {
+.header-chain-card[data-status="advanced"] .chain-card-top strong,
+.header-chain-card[data-status="partial"] .chain-card-top strong {
   color: var(--green);
 }
 
@@ -254,7 +256,8 @@ main {
 }
 
 .header-chain-card[data-status="confirmed"] .live-dot,
-.header-chain-card[data-status="advanced"] .live-dot {
+.header-chain-card[data-status="advanced"] .live-dot,
+.header-chain-card[data-status="partial"] .live-dot {
   background: var(--green);
 }
 
@@ -603,7 +606,8 @@ h1 {
 }
 
 .chain-card[data-status="confirmed"],
-.chain-card[data-status="advanced"] {
+.chain-card[data-status="advanced"],
+.chain-card[data-status="partial"] {
   border-color: rgba(101, 242, 154, 0.58);
 }
 
@@ -660,12 +664,14 @@ h1 {
 }
 
 .chain-card[data-status="confirmed"] .chain-card-top strong,
-.chain-card[data-status="advanced"] .chain-card-top strong {
+.chain-card[data-status="advanced"] .chain-card-top strong,
+.chain-card[data-status="partial"] .chain-card-top strong {
   color: var(--green);
 }
 
 .chain-card[data-status="confirmed"] .live-dot,
-.chain-card[data-status="advanced"] .live-dot {
+.chain-card[data-status="advanced"] .live-dot,
+.chain-card[data-status="partial"] .live-dot {
   background: var(--green);
 }
 

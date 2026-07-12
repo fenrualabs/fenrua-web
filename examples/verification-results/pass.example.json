@@ -1,0 +1,11 @@
+{
+  "schema": "fenrua.verification-result.v1",
+  "result": "PASS",
+  "inputFixture": "examples/entity-manifest.example.json",
+  "trigger": "All required identity, integrity, policy, evidence, and revocation checks are supplied and valid.",
+  "evidenceSupplied": ["manifest", "authorityPolicy", "evidenceBundle", "signatures", "hashes"],
+  "evidenceAbsent": [],
+  "safetyConsequence": "Execution may continue within the declared scope.",
+  "continueExecution": true,
+  "humanReviewRequired": false
+}

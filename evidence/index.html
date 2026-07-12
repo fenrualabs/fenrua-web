@@ -58,47 +58,97 @@
       <section class="section-shell">
         <div class="registry " role="region" tabindex="0">
           <table>
-            <thead><tr><th scope="col">Artifact</th><th scope="col">Claim</th><th scope="col">Hash</th><th scope="col">Source</th><th scope="col">Verified</th><th scope="col">Limitation</th></tr></thead>
+            <thead><tr><th scope="col">Artifact</th><th scope="col">Claim</th><th scope="col">Hash</th><th scope="col">Source</th><th scope="col">Revisions</th><th scope="col">Producer</th><th scope="col">Command</th><th scope="col">Verified</th><th scope="col">Supersession</th><th scope="col">Limitation</th></tr></thead>
             <tbody>
 <tr id="repository-sync-snapshot">
-      <td>Repository Sync Snapshot<br><small>kernel snapshot</small></td>
+      <td><code>repository-sync-snapshot</code><br>Repository Sync Snapshot<br><small>kernel snapshot</small></td>
       <td>Public kernel telemetry is pinned to an immutable source commit.</td>
       <td><code>390f7aeef778ce93db12e16028bc3a788b643c2d</code><button type="button" data-copy="390f7aeef778ce93db12e16028bc3a788b643c2d">Copy hash</button></td>
-      <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/390f7aeef778ce93db12e16028bc3a788b643c2d">kernel-status.js</a></td>
-      <td>2026-07-12<br><small>Read-only live</small></td>
-      <td>Snapshot evidence does not prove future revisions.</td>
+      <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/390f7aeef778ce93db12e16028bc3a788b643c2d">kernel-status.js</a><br><small>public Git repository</small></td>
+      <td><code>390f7aeef778ce93db12e16028bc3a788b643c2d</code><br><small>Evidence: <code>85ecc97c026b01b576d735501795951dd293b3ca</code></small></td>
+      <td>sync-kernel-status.mjs<br><small>git, Node.js</small></td>
+      <td><code>node scripts/test-kernel-telemetry.mjs</code></td>
+      <td>2026-07-12<br><small>Read-only live · active</small></td>
+      <td>none / none</td>
+      <td>Snapshot evidence does not prove future revisions.<button type="button" data-copy="Fenrua Evidence:
+Artifact: repository-sync-snapshot
+Hash: 390f7aeef778ce93db12e16028bc3a788b643c2d
+Source revision: 390f7aeef778ce93db12e16028bc3a788b643c2d
+Evidence revision: 85ecc97c026b01b576d735501795951dd293b3ca
+Verified: 2026-07-12
+Scope: Snapshot evidence does not prove future revisions.">Copy citation</button></td>
     </tr>
 <tr id="frozen-evidence-revision">
-      <td>Frozen Evidence Revision<br><small>evidence commit</small></td>
+      <td><code>frozen-evidence-revision</code><br>Frozen Evidence Revision<br><small>evidence commit</small></td>
       <td>Genesis report source revision is separated from the sync snapshot.</td>
       <td><code>85ecc97c026b01b576d735501795951dd293b3ca</code><button type="button" data-copy="85ecc97c026b01b576d735501795951dd293b3ca">Copy hash</button></td>
-      <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c026b01b576d735501795951dd293b3ca">kernel-status.js</a></td>
-      <td>2026-07-12<br><small>Evidence surface</small></td>
-      <td>Scope is the public frozen report, not production runtime attestation.</td>
+      <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c026b01b576d735501795951dd293b3ca">kernel-status.js</a><br><small>public Git repository</small></td>
+      <td><code>390f7aeef778ce93db12e16028bc3a788b643c2d</code><br><small>Evidence: <code>85ecc97c026b01b576d735501795951dd293b3ca</code></small></td>
+      <td>sync-kernel-status.mjs<br><small>git, Node.js</small></td>
+      <td><code>node scripts/test-kernel-telemetry.mjs</code></td>
+      <td>2026-07-12<br><small>Evidence surface · active</small></td>
+      <td>none / none</td>
+      <td>Scope is the public frozen report, not production runtime attestation.<button type="button" data-copy="Fenrua Evidence:
+Artifact: frozen-evidence-revision
+Hash: 85ecc97c026b01b576d735501795951dd293b3ca
+Source revision: 390f7aeef778ce93db12e16028bc3a788b643c2d
+Evidence revision: 85ecc97c026b01b576d735501795951dd293b3ca
+Verified: 2026-07-12
+Scope: Scope is the public frozen report, not production runtime attestation.">Copy citation</button></td>
     </tr>
 <tr id="genesis-manifest-record">
-      <td>Genesis Manifest Record<br><small>manifest</small></td>
+      <td><code>genesis-manifest-record</code><br>Genesis Manifest Record<br><small>manifest</small></td>
       <td>Genesis manifest integrity is publicly linked.</td>
       <td><code>bd9ec111888ec32e87a5b60776f0118973848e5c096bbed8f25246e7fd3008cd</code><button type="button" data-copy="bd9ec111888ec32e87a5b60776f0118973848e5c096bbed8f25246e7fd3008cd">Copy hash</button></td>
-      <td><a href="https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/genesis/reports/manifest.json">kernel-status.js</a></td>
-      <td>2026-07-12<br><small>Evidence surface</small></td>
-      <td>Manifest scope is limited to listed genesis records.</td>
+      <td><a href="https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/genesis/reports/manifest.json">kernel-status.js</a><br><small>public Git repository</small></td>
+      <td><code>390f7aeef778ce93db12e16028bc3a788b643c2d</code><br><small>Evidence: <code>85ecc97c026b01b576d735501795951dd293b3ca</code></small></td>
+      <td>fenrua-kernel genesis report<br><small>Node.js, native P/N521 tests</small></td>
+      <td><code>node scripts/test-kernel-telemetry.mjs</code></td>
+      <td>2026-07-12<br><small>Evidence surface · active</small></td>
+      <td>none / none</td>
+      <td>Manifest scope is limited to listed genesis records.<button type="button" data-copy="Fenrua Evidence:
+Artifact: genesis-manifest-record
+Hash: bd9ec111888ec32e87a5b60776f0118973848e5c096bbed8f25246e7fd3008cd
+Source revision: 390f7aeef778ce93db12e16028bc3a788b643c2d
+Evidence revision: 85ecc97c026b01b576d735501795951dd293b3ca
+Verified: 2026-07-12
+Scope: Manifest scope is limited to listed genesis records.">Copy citation</button></td>
     </tr>
 <tr id="differential-validation">
-      <td>Differential Validation<br><small>validation report</small></td>
+      <td><code>differential-validation</code><br>Differential Validation<br><small>validation report</small></td>
       <td>Native and sanitizer differential campaigns passed for the published evidence revision.</td>
       <td><code>e74a0ad32730f5129f3f691eb3c9caab31a98596212594d218056e50a1a26c93</code><button type="button" data-copy="e74a0ad32730f5129f3f691eb3c9caab31a98596212594d218056e50a1a26c93">Copy hash</button></td>
-      <td><a href="https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/audit/final-build-validation.json">kernel-status.js</a></td>
-      <td>2026-07-12<br><small>Evidence surface</small></td>
-      <td>Differential testing is not production certification.</td>
+      <td><a href="https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/audit/final-build-validation.json">kernel-status.js</a><br><small>fenrua-kernel public audit artifact</small></td>
+      <td><code>390f7aeef778ce93db12e16028bc3a788b643c2d</code><br><small>Evidence: <code>85ecc97c026b01b576d735501795951dd293b3ca</code></small></td>
+      <td>fenrua-kernel audit suite<br><small>CMake, native tests, sanitizer differential tests</small></td>
+      <td><code>node scripts/test-kernel-telemetry.mjs</code></td>
+      <td>2026-07-12<br><small>Evidence surface · active</small></td>
+      <td>none / none</td>
+      <td>Differential testing is not production certification.<button type="button" data-copy="Fenrua Evidence:
+Artifact: differential-validation
+Hash: e74a0ad32730f5129f3f691eb3c9caab31a98596212594d218056e50a1a26c93
+Source revision: 390f7aeef778ce93db12e16028bc3a788b643c2d
+Evidence revision: 85ecc97c026b01b576d735501795951dd293b3ca
+Verified: 2026-07-12
+Scope: Differential testing is not production certification.">Copy citation</button></td>
     </tr>
 <tr id="toolchain-evidence-lock">
-      <td>Toolchain Evidence Lock<br><small>toolchain registry</small></td>
+      <td><code>toolchain-evidence-lock</code><br>Toolchain Evidence Lock<br><small>toolchain registry</small></td>
       <td>Detected tool versions are preserved to match the inspected evidence environment.</td>
       <td><code>98ff822190553ef631df43b00fa8ec5003ab757124b522b51c7d5ae8ad7d21e9</code><button type="button" data-copy="98ff822190553ef631df43b00fa8ec5003ab757124b522b51c7d5ae8ad7d21e9">Copy hash</button></td>
-      <td><a href="/data/toolchain-registry.json">data/toolchain-registry.json</a></td>
-      <td>2026-07-13<br><small>Read-only live</small></td>
-      <td>Version capture is not security proof.</td>
+      <td><a href="/data/toolchain-registry.json">data/toolchain-registry.json</a><br><small>fenrua-web public registry</small></td>
+      <td><code>845187ca3dea57723b31ec5306fed1c275fcdcb7</code><br><small>Evidence: <code>toolchain-lock-2026-07-12</code></small></td>
+      <td>data/toolchain-registry.json<br><small>Node.js, Semgrep 1.169.0, SnarkJS snarkjs@0.7.6</small></td>
+      <td><code>node scripts/test-toolchain-registry.mjs</code></td>
+      <td>2026-07-13<br><small>Read-only live · active</small></td>
+      <td>none / none</td>
+      <td>Version capture is not security proof.<button type="button" data-copy="Fenrua Evidence:
+Artifact: toolchain-evidence-lock
+Hash: 98ff822190553ef631df43b00fa8ec5003ab757124b522b51c7d5ae8ad7d21e9
+Source revision: 845187ca3dea57723b31ec5306fed1c275fcdcb7
+Evidence revision: toolchain-lock-2026-07-12
+Verified: 2026-07-13
+Scope: Version capture is not security proof.">Copy citation</button></td>
     </tr>
             </tbody>
           </table>

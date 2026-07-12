@@ -65,6 +65,11 @@ function unavailableChain(chain) {
     blockNumber: null,
     blockAgeSeconds: null,
     status: "unavailable",
+    confirmation: {
+      primarySource: "unavailable",
+      independentSource: "unavailable",
+      confidence: "unavailable",
+    },
     checkedAt: new Date().toISOString(),
   };
 }
@@ -120,6 +125,30 @@ async function probeChain(chain) {
             : blockAgeSeconds <= maxFreshHeadAgeSeconds
               ? "live"
               : "delayed";
+    const confirmation =
+      status === "live"
+        ? {
+            primarySource: "confirmed",
+            independentSource: "unavailable",
+            confidence: "partial",
+          }
+        : status === "delayed"
+          ? {
+              primarySource: "stale",
+              independentSource: "unavailable",
+              confidence: "stale",
+            }
+          : status === "wrong-chain"
+            ? {
+                primarySource: "mismatch",
+                independentSource: "unavailable",
+                confidence: "failure",
+              }
+            : {
+                primarySource: "unavailable",
+                independentSource: "unavailable",
+                confidence: "unavailable",
+              };
 
     return {
       id: chain.id,
@@ -131,6 +160,7 @@ async function probeChain(chain) {
       blockNumber,
       blockAgeSeconds,
       status,
+      confirmation,
       checkedAt: new Date().toISOString(),
     };
   } catch {

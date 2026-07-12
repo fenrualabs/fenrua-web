@@ -10,17 +10,21 @@ let activeCategory = "";
 let currentPage = 1;
 
 function rowMatchesFilter(row) {
+  const tags = row.dataset.tags || "";
   if (activeCategory && row.dataset.category !== activeCategory) return false;
   if (activeFilter === "all") return true;
-  if (activeFilter === "native") return row.dataset.mode.includes("native");
-  if (activeFilter === "container") return row.dataset.mode.includes("container");
-  if (activeFilter === "project-local") return row.dataset.mode.includes("project-local");
-  if (activeFilter === "installed") return row.dataset.installed === "true";
-  if (activeFilter === "executed") return row.dataset.executed === "true";
-  if (activeFilter === "evidence") return row.dataset.evidence === "true";
-  if (activeFilter === "exploratory") return row.dataset.status.includes("EXPLORATORY");
-  if (activeFilter === "current") return !row.dataset.status.includes("SUPERSEDED") && !row.dataset.status.includes("DEPRECATED");
-  if (activeFilter === "version-review") return row.dataset.status.includes("VERSION_REVIEW_REQUIRED");
+  if (activeFilter === "detected") return tags.includes("DETECTED");
+  if (activeFilter === "version-verified") return tags.includes("VERSION_VERIFIED");
+  if (activeFilter === "smoke-tested") return tags.includes("SMOKE_TESTED");
+  if (activeFilter === "campaign-executed") return tags.includes("EVIDENCE_PRODUCING");
+  if (activeFilter === "evidence") return tags.includes("EVIDENCE_PRODUCING");
+  if (activeFilter === "canonical-pipeline") return tags.includes("CANONICAL_PIPELINE");
+  if (activeFilter === "container") return tags.includes("CONTAINER_ONLY");
+  if (activeFilter === "project-local") return tags.includes("PROJECT_LOCAL");
+  if (activeFilter === "exploratory") return tags.includes("EXPLORATORY");
+  if (activeFilter === "superseded") return tags.includes("SUPERSEDED");
+  if (activeFilter === "version-review") return tags.includes("VERSION_REVIEW_REQUIRED");
+  if (activeFilter === "unavailable") return tags.includes("UNAVAILABLE");
   return true;
 }
 

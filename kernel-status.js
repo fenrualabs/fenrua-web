@@ -290,6 +290,8 @@ const chainFieldMap = {
     chainId: '[data-chain-field="978-chain-id"]',
     block: '[data-chain-field="978-block"]',
     checked: '[data-chain-field="978-checked"]',
+    source: '[data-chain-field="978-source"]',
+    confidence: '[data-chain-field="978-confidence"]',
     progress: '[data-chain-field="978-progress"]',
     progressRail: '[data-chain-card="978"] .chain-progress-rail i',
     card: '[data-chain-card="978"]',
@@ -300,6 +302,8 @@ const chainFieldMap = {
     chainId: '[data-chain-field="521-chain-id"]',
     block: '[data-chain-field="521-block"]',
     checked: '[data-chain-field="521-checked"]',
+    source: '[data-chain-field="521-source"]',
+    confidence: '[data-chain-field="521-confidence"]',
     progress: '[data-chain-field="521-progress"]',
     progressRail: '[data-chain-card="521"] .chain-progress-rail i',
     card: '[data-chain-card="521"]',
@@ -321,11 +325,11 @@ const chainProbe = {
 };
 
 function formatNumber(value) {
-  return Number.isSafeInteger(value) ? new Intl.NumberFormat("en-US").format(value) : "Reading";
+  return Number.isSafeInteger(value) ? new Intl.NumberFormat("en-US").format(value) : "Observation unavailable";
 }
 
 function formatCheckedAt(value) {
-  if (!value) return "pending";
+  if (!value) return "not observed";
 
   try {
     return new Intl.DateTimeFormat("en-US", {
@@ -334,7 +338,7 @@ function formatCheckedAt(value) {
       second: "2-digit",
     }).format(new Date(value));
   } catch {
-    return "pending";
+    return "not observed";
   }
 }
 
@@ -358,27 +362,29 @@ function normalizeRefreshMs(value) {
 
 function cardStatus(chain) {
   if (chain.status === "wrong-chain") {
-    return { label: "Chain ID mismatch", state: "wrong-chain" };
+    return { label: "Failure", state: "wrong-chain" };
   }
 
   if (chain.status === "unavailable") {
     return {
-      label: "Updates unavailable",
+      label: "Unavailable",
       state: "unavailable",
     };
   }
 
   if (chain.status === "delayed") {
-    return { label: "Block feed delayed", state: "delayed" };
+    return { label: "Stale", state: "delayed" };
   }
 
-  return { label: "Chain live", state: "confirmed" };
+  return { label: "Partial", state: "partial" };
 }
 
 function progressLabel(state) {
-  if (state === "confirmed" || state === "waiting") return "active";
-  if (state === "delayed") return "delayed";
-  if (state === "wrong-chain") return "mismatch";
+  if (state === "confirmed") return "success";
+  if (state === "partial") return "partial";
+  if (state === "waiting") return "loading";
+  if (state === "delayed") return "stale";
+  if (state === "wrong-chain") return "failure";
   return "offline";
 }
 
@@ -406,6 +412,21 @@ function formatChainIdentity(chain) {
   return `Expected ${chain.expectedChainId}`;
 }
 
+function formatSource(value) {
+  if (value === "confirmed") return "Primary source: confirmed";
+  if (value === "stale") return "Primary source: stale";
+  if (value === "mismatch") return "Primary source: mismatch";
+  return "Primary source: unavailable";
+}
+
+function formatConfidence(value) {
+  if (value === "partial") return "Confidence: partial";
+  if (value === "stale") return "Confidence: stale";
+  if (value === "failure") return "Confidence: failure";
+  if (value === "success") return "Confidence: independently confirmed";
+  return "Confidence: unavailable";
+}
+
 function formatCountdown() {
   if (!chainProbe.nextAt) return "starting";
   const seconds = Math.max(0, Math.ceil((chainProbe.nextAt - Date.now()) / 1000));
@@ -427,14 +448,16 @@ function updateChainMeta(payload, cardStates) {
   chainProbe.refreshMs = refreshMs;
   chainProbe.nextAt = Date.now() + refreshMs;
 
-  const healthy = cardStates.filter((state) => state === "confirmed" || state === "waiting");
+  const healthy = cardStates.filter((state) => state === "confirmed" || state === "partial" || state === "waiting");
   const feedStatus = healthy.length
-    ? "live"
+    ? cardStates.every((state) => state === "confirmed")
+      ? "success"
+      : "partial"
     : cardStates.every((state) => state === "wrong-chain")
-      ? "chain mismatch"
+      ? "failure"
       : cardStates.every((state) => state === "unavailable")
         ? "unavailable"
-        : "delayed";
+        : "stale";
   setText('[data-chain-meta="feed-status"]', feedStatus);
   setText('[data-chain-meta="announcer"]', `Chain feed is ${feedStatus}.`);
   setText('[data-chain-meta="generated"]', formatCheckedAt(payload.generatedAt));
@@ -458,14 +481,15 @@ function updateChainCard(chain, payload) {
   };
   const hasCurrentBlock = Number.isSafeInteger(chain.blockNumber);
   const status = cardStatus(displayChain);
+  const confirmation = displayChain.confirmation ?? {};
 
   setText(fields.status, status.label);
   setText(fields.progress, progressLabel(status.state));
   setText(fields.chainId, formatChainIdentity(chain));
-  if (hasCurrentBlock) {
-    setText(fields.block, formatNumber(chain.blockNumber));
-    setText(fields.checked, formatCheckedAt(chain.checkedAt));
-  }
+  setText(fields.block, formatNumber(chain.blockNumber));
+  setText(fields.checked, hasCurrentBlock ? formatCheckedAt(chain.checkedAt) : "not observed");
+  setText(fields.source, formatSource(confirmation.primarySource));
+  setText(fields.confidence, formatConfidence(confirmation.confidence));
 
   document.querySelectorAll(fields.card).forEach((card) => {
     card.dataset.status = status.state;
@@ -490,7 +514,12 @@ function showFeedFailure() {
   updateChainCountdown();
 
   Object.values(chainFieldMap).forEach((fields) => {
-    setText(fields.status, "Updates delayed");
+    setText(fields.status, "Failure");
+    setText(fields.block, "Observation unavailable");
+    setText(fields.checked, "not observed");
+    setText(fields.source, "Primary source: unavailable");
+    setText(fields.confidence, "Confidence: unavailable");
+    setText(fields.progress, "retrying");
     document.querySelectorAll(fields.card).forEach((card) => {
       card.dataset.status = "unavailable";
     });

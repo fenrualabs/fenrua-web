@@ -79,6 +79,14 @@ try {
   assert.equal(healthy.headers.get("vercel-cdn-cache-control"), "no-store");
   assert.equal(healthy.body.chains.length, 2);
   assert.ok(healthy.body.chains.every((chain) => chain.status === "live"));
+  assert.ok(
+    healthy.body.chains.every(
+      (chain) =>
+        chain.confirmation?.primarySource === "confirmed" &&
+        chain.confirmation?.independentSource === "unavailable" &&
+        chain.confirmation?.confidence === "partial"
+    )
+  );
   assertSanitized(healthy.body);
 
   const uncachedRead = await callHandler({ headers: { "cache-control": "no-cache" } });
@@ -100,6 +108,7 @@ try {
   const unavailable = await callHandler();
   assert.equal(unavailable.statusCode, 503);
   assert.ok(unavailable.body.chains.every((chain) => chain.status === "unavailable"));
+  assert.ok(unavailable.body.chains.every((chain) => chain.confirmation?.confidence === "unavailable"));
   assertSanitized(unavailable.body);
 
   globalThis.fetch = async (endpoint, options) => {
@@ -111,6 +120,7 @@ try {
   const mismatch = await callHandler();
   assert.equal(mismatch.statusCode, 200);
   assert.ok(mismatch.body.chains.every((chain) => chain.status === "wrong-chain"));
+  assert.ok(mismatch.body.chains.every((chain) => chain.confirmation?.confidence === "failure"));
 
   console.log(
     JSON.stringify({

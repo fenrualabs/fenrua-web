@@ -95,9 +95,25 @@
       </section>
       <section class="section-shell split-section">
         <div><p class="eyebrow">COMMANDS</p><h2>Local baseline</h2></div>
-        <pre><code>node --version  # v24 required
+        <pre><code>git clone https://github.com/fenrualabs/fenrua-web.git
+cd fenrua-web
+node --version  # v24 required
+npm install
 npm run validate
-node scripts/test-toolchain-registry.mjs</code></pre>
+node scripts/test-toolchain-registry.mjs
+node scripts/test-verify-examples.mjs</code></pre>
+      </section>
+      <section class="section-shell split-section">
+        <div>
+          <p class="eyebrow">REPRODUCTION PROOF</p>
+          <h2>Expected result</h2>
+          <p>A clean checkout should complete validation with static route, chain API sanitization, kernel telemetry, toolchain registry, and verify-corpus checks passing. The failing fixture is intentionally represented as <code>FAIL_CLOSED</code>.</p>
+        </div>
+        <div class="doc-grid">
+          <a href="/docs/FENRUA_DEVELOPER_REPRODUCTION_REPORT.md">Developer reproduction report</a>
+          <a href="/examples/verification-results/pass.example.json">Passing fixture</a>
+          <a href="/examples/verification-results/fail-closed.example.json">Failing fixture</a>
+        </div>
       </section>
     </main>
     <footer class="site-footer">

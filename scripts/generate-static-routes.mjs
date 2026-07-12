@@ -36,6 +36,15 @@ const evidenceRecords = [
     sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/commit/390f7aeef778ce93db12e16028bc3a788b643c2d",
     created: "2026-07-12",
     verified: "2026-07-12",
+    environment: "public Git repository",
+    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
+    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    producer: "sync-kernel-status.mjs",
+    toolchainSubset: "git, Node.js",
+    command: "node scripts/test-kernel-telemetry.mjs",
+    supersedes: "none",
+    supersededBy: "none",
+    revocationState: "active",
     limitation: "Snapshot evidence does not prove future revisions.",
   },
   {
@@ -50,6 +59,15 @@ const evidenceRecords = [
     sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c026b01b576d735501795951dd293b3ca",
     created: "2026-07-12",
     verified: "2026-07-12",
+    environment: "public Git repository",
+    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
+    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    producer: "sync-kernel-status.mjs",
+    toolchainSubset: "git, Node.js",
+    command: "node scripts/test-kernel-telemetry.mjs",
+    supersedes: "none",
+    supersededBy: "none",
+    revocationState: "active",
     limitation: "Scope is the public frozen report, not production runtime attestation.",
   },
   {
@@ -64,6 +82,15 @@ const evidenceRecords = [
     sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/genesis/reports/manifest.json",
     created: "2026-07-12",
     verified: "2026-07-12",
+    environment: "public Git repository",
+    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
+    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    producer: "fenrua-kernel genesis report",
+    toolchainSubset: "Node.js, native P/N521 tests",
+    command: "node scripts/test-kernel-telemetry.mjs",
+    supersedes: "none",
+    supersededBy: "none",
+    revocationState: "active",
     limitation: "Manifest scope is limited to listed genesis records.",
   },
   {
@@ -78,6 +105,15 @@ const evidenceRecords = [
     sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/audit/final-build-validation.json",
     created: "2026-07-12",
     verified: "2026-07-12",
+    environment: "fenrua-kernel public audit artifact",
+    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
+    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    producer: "fenrua-kernel audit suite",
+    toolchainSubset: "CMake, native tests, sanitizer differential tests",
+    command: "node scripts/test-kernel-telemetry.mjs",
+    supersedes: "none",
+    supersededBy: "none",
+    revocationState: "active",
     limitation: "Differential testing is not production certification.",
   },
   {
@@ -92,6 +128,15 @@ const evidenceRecords = [
     sourceUrl: "/data/toolchain-registry.json",
     created: generatedDate,
     verified: generatedDate,
+    environment: "fenrua-web public registry",
+    sourceCommit: "845187ca3dea57723b31ec5306fed1c275fcdcb7",
+    evidenceCommit: "toolchain-lock-2026-07-12",
+    producer: "data/toolchain-registry.json",
+    toolchainSubset: "Node.js, Semgrep 1.169.0, SnarkJS snarkjs@0.7.6",
+    command: "node scripts/test-toolchain-registry.mjs",
+    supersedes: "none",
+    supersededBy: "none",
+    revocationState: "active",
     limitation: "Version capture is not security proof.",
   },
 ];
@@ -163,6 +208,34 @@ const statusCards = [
   ["maintenance", "Maintenance", "Source is undergoing maintenance.", "Retry after the published maintenance window."],
 ];
 
+const verificationResults = [
+  ["PASS", "All supplied checks passed.", "pass.example.json"],
+  ["PASS_WITH_LIMITATIONS", "Checks passed but runtime or completeness limitations remain.", "pass-with-limitations.example.json"],
+  ["INCOMPLETE", "Required manifest, policy, or evidence fields are missing.", "incomplete.example.json"],
+  ["STALE", "Evidence is older than the accepted freshness policy.", "stale.example.json"],
+  ["POLICY_VIOLATION", "Requested action violates policy.", "policy-violation.example.json"],
+  ["INTEGRITY_MISMATCH", "Hash, build, source, or runtime value does not match.", "integrity-mismatch.example.json"],
+  ["SIGNATURE_INVALID", "Signature could not be verified.", "signature-invalid.example.json"],
+  ["RUNTIME_UNVERIFIED", "Runtime attestation was not supplied or accepted.", "runtime-unverified.example.json"],
+  ["REVOKED", "Artifact, entity, or policy is revoked.", "revoked.example.json"],
+  ["FAIL_CLOSED", "Verifier reached an unsafe or unsupported state.", "fail-closed.example.json"],
+  ["UNSUPPORTED_SCHEMA", "Schema version is not supported.", "unsupported-schema.example.json"],
+  ["ERROR", "Verifier failed unexpectedly.", "error.example.json"],
+];
+
+const legacyRoutes = [
+  "nexus",
+  "fenswap",
+  "fenpresale",
+  "wallet",
+  "support",
+  "legal",
+  "privacy",
+  "terms",
+  "accessibility",
+  "security",
+];
+
 function esc(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -175,40 +248,124 @@ function attr(value) {
   return esc(value).replaceAll("'", "&#39;");
 }
 
+function statusBadge(value) {
+  return `<span class="status-badge status-${attr(value.toLowerCase().replaceAll(" ", "-"))}">${esc(value)}</span>`;
+}
+
+function toolchainDisplayTags(tool) {
+  const tags = [];
+  const commands = tool.commands ?? [];
+  const commandText = commands.join(" ");
+
+  if (!tool.installed || tool.status === "UNAVAILABLE" || tool.installationMode === "unavailable") {
+    tags.push("UNAVAILABLE");
+  } else {
+    tags.push("DETECTED");
+  }
+
+  if (tool.executed && /version|--version|-V|versions|list|show|image inspect|help/i.test(commandText)) {
+    tags.push("VERSION_VERIFIED");
+  }
+
+  if (tool.executed && /--help|doctor|validate|node --check|npm run validate|test|scan|audit|compile|prove|verify/i.test(commandText)) {
+    tags.push("SMOKE_TESTED");
+  }
+
+  if (tool.evidenceProduced) tags.push("EVIDENCE_PRODUCING");
+  if ((tool.pipeline ?? []).some((pipeline) => !["version-inventory", "inventory", "website"].includes(pipeline))) {
+    tags.push("CANONICAL_PIPELINE");
+  }
+  if (tool.status === "INSTALLED_EXPLORATORY" || tool.status === "NOT_IN_CANONICAL_PIPELINE") tags.push("EXPLORATORY");
+  if (tool.status === "SUPERSEDED" || tool.status === "DEPRECATED") tags.push("SUPERSEDED");
+  if (tool.status === "VERSION_REVIEW_REQUIRED") tags.push("VERSION_REVIEW_REQUIRED");
+  if (tool.installationMode === "container") tags.push("CONTAINER_ONLY");
+  if (tool.installationMode.includes("project-local")) tags.push("PROJECT_LOCAL");
+
+  return [...new Set(tags)];
+}
+
+function countTools(predicate) {
+  return registry.tools.filter(predicate).length;
+}
+
+function toolchainStats() {
+  const tagCounts = new Map();
+  for (const tool of registry.tools) {
+    for (const tag of toolchainDisplayTags(tool)) {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  const semgrep = registry.tools.find((tool) => tool.tool === "Semgrep");
+  return [
+    ["Generated", registry.generatedAt],
+    ["Registry SHA-256", registryHash],
+    ["Records", registry.tools.length],
+    ["Semgrep", semgrep?.detectedVersion ?? "not present"],
+    ["Installed", countTools((tool) => tool.installed)],
+    ["Version verified", tagCounts.get("VERSION_VERIFIED") ?? 0],
+    ["Smoke tested", tagCounts.get("SMOKE_TESTED") ?? 0],
+    ["Campaign executed", tagCounts.get("EVIDENCE_PRODUCING") ?? 0],
+    ["Evidence producing", tagCounts.get("EVIDENCE_PRODUCING") ?? 0],
+    ["Canonical pipeline", tagCounts.get("CANONICAL_PIPELINE") ?? 0],
+    ["Container-only", countTools((tool) => tool.installationMode === "container")],
+    ["Project-local", tagCounts.get("PROJECT_LOCAL") ?? 0],
+    ["Superseded", tagCounts.get("SUPERSEDED") ?? 0],
+    ["Version review required", tagCounts.get("VERSION_REVIEW_REQUIRED") ?? 0],
+    ["Unavailable", tagCounts.get("UNAVAILABLE") ?? 0],
+  ];
+}
+
+function evidenceCitation(record) {
+  return `Fenrua Evidence:
+Artifact: ${record.id}
+Hash: ${record.hash}
+Source revision: ${record.sourceCommit ?? "n/a"}
+Evidence revision: ${record.evidenceCommit ?? "n/a"}
+Verified: ${record.verified}
+Scope: ${record.limitation}`;
+}
+
 function chainRail(className, label = "Live block updates") {
   return `<div class="${attr(className)}" aria-label="${attr(label)}">
         <article class="header-chain-card" data-chain-card="978">
           <div class="chain-card-top">
             <span>FENc978</span>
-            <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Reading</span></strong>
+            <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Loading</span></strong>
           </div>
           <div class="header-chain-block">
             <span>Latest block</span>
-            <strong data-chain-field="978-block">Reading</strong>
-            <small data-chain-field="978-checked">pending</small>
+            <strong data-chain-field="978-block">Loading</strong>
+            <small data-chain-field="978-checked">loading</small>
+            <small data-chain-field="978-source">Primary source: loading</small>
+            <small>Independent source: unavailable</small>
+            <small data-chain-field="978-confidence">Confidence: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
         </article>
         <article class="header-chain-card" data-chain-card="521">
           <div class="chain-card-top">
             <span>FENn521</span>
-            <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Reading</span></strong>
+            <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Loading</span></strong>
           </div>
           <div class="header-chain-block">
             <span>Latest block</span>
-            <strong data-chain-field="521-block">Reading</strong>
-            <small data-chain-field="521-checked">pending</small>
+            <strong data-chain-field="521-block">Loading</strong>
+            <small data-chain-field="521-checked">loading</small>
+            <small data-chain-field="521-source">Primary source: loading</small>
+            <small>Independent source: unavailable</small>
+            <small data-chain-field="521-confidence">Confidence: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
         </article>
-        <span class="sr-only" data-chain-meta="feed-status">starting</span>
-        <span class="sr-only" data-chain-meta="generated">pending</span>
-        <span class="sr-only" data-chain-meta="countdown">arming probe</span>
+        <span class="sr-only" data-chain-meta="feed-status">loading</span>
+        <span class="sr-only" data-chain-meta="generated">loading</span>
+        <span class="sr-only" data-chain-meta="countdown">loading</span>
         <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
       </div>`;
 }
 
-function layout({ title, description, current, body, scripts = "", canonicalPath, headerLive = false }) {
+function layout({ title, description, current, body, scripts = "", canonicalPath, headerLive = false, robots = "index,follow" }) {
   const canonical = canonicalPath ?? (current === "Overview" ? "/" : `/${current.toLowerCase()}/`);
   const navHtml = nav
     .map(([label, href]) => `<a href="${href}"${current === label ? ' aria-current="page"' : ""}>${label}</a>`)
@@ -222,7 +379,7 @@ function layout({ title, description, current, body, scripts = "", canonicalPath
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="${attr(description)}" />
-    <meta name="robots" content="index,follow" />
+    <meta name="robots" content="${attr(robots)}" />
     <meta name="theme-color" content="#0d0d0d" />
     <link rel="canonical" href="https://fenrua.ai${canonical}" />
     <script type="application/ld+json">
@@ -326,27 +483,30 @@ function chainProgressSection() {
           <p>Live block observations are public status signals only. They do not prove contract safety, bytecode identity, reserve state, or deployment correctness.</p>
         </div>
         <div class="status-band" aria-label="Live chain feed status">
-          <span>Feed <strong data-chain-meta="feed-status">starting</strong></span>
-          <span>Generated <strong data-chain-meta="generated">pending</strong></span>
-          <span>Refresh <strong data-chain-meta="countdown">arming probe</strong></span>
+          <span>Feed <strong data-chain-meta="feed-status">loading</strong></span>
+          <span>Generated <strong data-chain-meta="generated">loading</strong></span>
+          <span>Refresh <strong data-chain-meta="countdown">loading</strong></span>
           <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
         <div class="chain-grid">
           <article class="chain-card" data-chain-card="978">
             <div class="chain-card-top">
               <span>FENc978</span>
-              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Reading</span></strong>
+              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Loading</span></strong>
             </div>
             <h3>Chain 978</h3>
             <dl>
               <div><dt>Chain identity</dt><dd data-chain-field="978-chain-id">978 - pending</dd></div>
-              <div><dt>Latest block</dt><dd data-chain-field="978-block">Reading</dd></div>
-              <div><dt>Last check</dt><dd data-chain-field="978-checked">pending</dd></div>
+              <div><dt>Latest observed block</dt><dd data-chain-field="978-block">Loading</dd></div>
+              <div><dt>Primary source</dt><dd data-chain-field="978-source">loading</dd></div>
+              <div><dt>Independent source</dt><dd>unavailable</dd></div>
+              <div><dt>Confidence</dt><dd data-chain-field="978-confidence">loading</dd></div>
+              <div><dt>Observed</dt><dd data-chain-field="978-checked">loading</dd></div>
             </dl>
             <div class="chain-progress-meter" aria-label="Chain 978 next verification progress">
               <div class="chain-progress-meter-top">
                 <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
-                <strong data-chain-field="978-progress">connecting</strong>
+                <strong data-chain-field="978-progress">loading</strong>
               </div>
               <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
             </div>
@@ -354,18 +514,21 @@ function chainProgressSection() {
           <article class="chain-card" data-chain-card="521">
             <div class="chain-card-top">
               <span>FENn521</span>
-              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Reading</span></strong>
+              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Loading</span></strong>
             </div>
             <h3>Chain N521</h3>
             <dl>
               <div><dt>Chain identity</dt><dd data-chain-field="521-chain-id">521 - pending</dd></div>
-              <div><dt>Latest block</dt><dd data-chain-field="521-block">Reading</dd></div>
-              <div><dt>Last check</dt><dd data-chain-field="521-checked">pending</dd></div>
+              <div><dt>Latest observed block</dt><dd data-chain-field="521-block">Loading</dd></div>
+              <div><dt>Primary source</dt><dd data-chain-field="521-source">loading</dd></div>
+              <div><dt>Independent source</dt><dd>unavailable</dd></div>
+              <div><dt>Confidence</dt><dd data-chain-field="521-confidence">loading</dd></div>
+              <div><dt>Observed</dt><dd data-chain-field="521-checked">loading</dd></div>
             </dl>
             <div class="chain-progress-meter" aria-label="Chain N521 next verification progress">
               <div class="chain-progress-meter-top">
                 <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
-                <strong data-chain-field="521-progress">connecting</strong>
+                <strong data-chain-field="521-progress">loading</strong>
               </div>
               <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
             </div>
@@ -516,19 +679,66 @@ function researchIndex() {
 }
 
 function researchPage(item) {
+  const recordId = `fenrua-research:${item.slug}`;
+  const defaults = {
+    date: item.slug === "toolchain-evidence-lock" ? generatedDate : "2026-07-12",
+    sourceRevision: "390f7aeef778ce93db12e16028bc3a788b643c2d",
+    evidenceRevision: item.slug === "toolchain-evidence-lock" ? registryHash : "85ecc97c026b01b576d735501795951dd293b3ca",
+    severity: item.slug === "pn521-cross-limb-borrow" ? "High regression severity; evidence surface only" : "Public-trust boundary",
+    problem: item.threat,
+    assumptions: "Public page exposes only sanitized, source-linked evidence. Private endpoints, secrets, and raw witness material remain out of scope.",
+    trigger: item.regression,
+    rootCause: item.slug === "pn521-cross-limb-borrow"
+      ? "Cross-limb borrow handling required permanent regression coverage."
+      : "Public claims can drift when evidence, tooling, or telemetry are not adjacent to limitations.",
+    referenceImplementation: item.implementation,
+    toolsUsed: item.tooling,
+    toolVersions: item.slug === "toolchain-evidence-lock"
+      ? "See /data/toolchain-registry.json; Semgrep 1.169.0; SnarkJS snarkjs@0.7.6."
+      : "Node.js v24.18.0 plus pinned fenrua-kernel evidence links.",
+    results: item.evidence,
+    independentConfirmation: item.slug === "read-only-chain-observation"
+      ? "No independent chain-source confirmation is claimed; browser payload states primary observation only."
+      : "Independent review is represented only where linked public evidence exists.",
+    evidenceHash: item.slug === "toolchain-evidence-lock" ? registryHash : "See linked evidence artifact.",
+    fixRevision: item.slug === "pn521-cross-limb-borrow" ? "390f7aeef778ce93db12e16028bc3a788b643c2d" : "Current website route generation.",
+    regressionFixture: item.slug === "pn521-cross-limb-borrow" ? "regression_001_p521_sub_overflow.bin" : item.regression,
+    kernelImpact: `${item.primitive} primitive boundary clarified.`,
+    utilityImpact: "Public interface remains maturity-labelled and limitation-adjacent.",
+    reproduction: item.commands.join("\n"),
+  };
   const fields = [
+    ["Record ID", recordId],
+    ["Title", item.title],
+    ["Category", item.category],
+    ["Date", defaults.date],
+    ["Source revision", defaults.sourceRevision],
+    ["Evidence revision", defaults.evidenceRevision],
+    ["Primitive affected", item.primitive],
+    ["Maturity", item.maturity],
+    ["Severity", defaults.severity],
+    ["Problem statement", defaults.problem],
     ["Claim", item.claim],
     ["Non-claim", item.nonClaim],
+    ["Assumptions", defaults.assumptions],
     ["Threat", item.threat],
     ["Invariant", item.invariant],
-    ["Implementation", item.implementation],
-    ["Tooling", item.tooling],
+    ["Trigger", defaults.trigger],
+    ["Root cause", defaults.rootCause],
+    ["Reference implementation", defaults.referenceImplementation],
+    ["Tools used", defaults.toolsUsed],
+    ["Tool versions", defaults.toolVersions],
     ["Commands", item.commands.join("; ")],
-    ["Evidence", item.evidence],
-    ["Regression", item.regression],
+    ["Results", defaults.results],
+    ["Independent confirmation", defaults.independentConfirmation],
+    ["Evidence hash", defaults.evidenceHash],
+    ["Fix revision", defaults.fixRevision],
+    ["Regression fixture", defaults.regressionFixture],
+    ["Kernel impact", defaults.kernelImpact],
+    ["Utility impact", defaults.utilityImpact],
+    ["Remaining limitations", item.limitations],
     ["Supersession", item.supersession],
-    ["Maturity", item.maturity],
-    ["Limitations", item.limitations],
+    ["Reproduction instructions", defaults.reproduction],
   ].map(([k, v]) => `<tr><th scope="row">${esc(k)}</th><td>${esc(v)}</td></tr>`);
   return layout({
     title: `${item.title} | Fenrua Research`,
@@ -543,20 +753,12 @@ function researchPage(item) {
 }
 
 function verify() {
-  const errorRows = [
-    ["PASS", "All supplied checks passed."],
-    ["PASS_WITH_LIMITATIONS", "Checks passed but runtime or completeness limitations remain."],
-    ["INCOMPLETE", "Required manifest, policy, or evidence fields are missing."],
-    ["STALE", "Evidence is older than the accepted freshness policy."],
-    ["POLICY_VIOLATION", "Requested action violates policy."],
-    ["INTEGRITY_MISMATCH", "Hash, build, source, or runtime value does not match."],
-    ["SIGNATURE_INVALID", "Signature could not be verified."],
-    ["RUNTIME_UNVERIFIED", "Runtime attestation was not supplied or accepted."],
-    ["REVOKED", "Artifact, entity, or policy is revoked."],
-    ["FAIL_CLOSED", "Verifier reached an unsafe or unsupported state."],
-    ["UNSUPPORTED_SCHEMA", "Schema version is not supported."],
-    ["ERROR", "Verifier failed unexpectedly."],
-  ].map((r) => `<tr><td><code>${esc(r[0])}</code></td><td>${esc(r[1])}</td></tr>`);
+  const corpusRows = verificationResults.map(([code, meaning, file]) => `<tr>
+      <td><code>${esc(code)}</code></td>
+      <td>${esc(meaning)}</td>
+      <td><a href="/examples/verification-results/${attr(file)}">${esc(file)}</a></td>
+      <td>${code === "PASS" ? "Execution may continue within scope." : "Execution must pause, degrade, fail closed, or require review as declared in the fixture."}</td>
+    </tr>`);
   return layout({
     title: "Fenrua Verify",
     description: "Fenrua public verifier foundation with examples, deterministic output, schemas, and local CLI flow.",
@@ -583,10 +785,13 @@ examples/verification-result.example.json</code></pre>
           <a href="/examples/authority-policy.example.json">Authority policy example</a>
           <a href="/examples/evidence-bundle.example.json">Evidence bundle example</a>
           <a href="/examples/verification-result.example.json">Verification result example</a>
+          <a href="/examples/verification-results/pass.example.json">PASS fixture</a>
+          <a href="/examples/verification-results/fail-closed.example.json">FAIL_CLOSED fixture</a>
           <a href="/docs/FENRUA_ENTITY_MANIFEST_SPEC.md">Entity manifest schema</a>
           <a href="/docs/FENRUA_AUTHORITY_POLICY_SPEC.md">Authority policy schema</a>
           <a href="/docs/FENRUA_EVIDENCE_BUNDLE_SPEC.md">Evidence bundle schema</a>
           <a href="/docs/FENRUA_VERIFICATION_RESULT_SPEC.md">Verification result schema</a>
+          <a href="/docs/FENRUA_VERIFY_RESULT_CORPUS.md">Result corpus report</a>
         </div>
       </section>
       <section class="section-shell split-section">
@@ -604,7 +809,7 @@ examples/verification-result.example.json</code></pre>
 }</code></pre>
       </section>
       <section class="section-shell">
-        ${table(["Code", "Meaning"], errorRows)}
+        ${table(["Code", "Meaning", "Fixture", "Safety consequence"], corpusRows)}
       </section>`,
   });
 }
@@ -627,9 +832,25 @@ function developers() {
       </section>
       <section class="section-shell split-section">
         <div><p class="eyebrow">COMMANDS</p><h2>Local baseline</h2></div>
-        <pre><code>node --version  # v24 required
+        <pre><code>git clone https://github.com/fenrualabs/fenrua-web.git
+cd fenrua-web
+node --version  # v24 required
+npm install
 npm run validate
-node scripts/test-toolchain-registry.mjs</code></pre>
+node scripts/test-toolchain-registry.mjs
+node scripts/test-verify-examples.mjs</code></pre>
+      </section>
+      <section class="section-shell split-section">
+        <div>
+          <p class="eyebrow">REPRODUCTION PROOF</p>
+          <h2>Expected result</h2>
+          <p>A clean checkout should complete validation with static route, chain API sanitization, kernel telemetry, toolchain registry, and verify-corpus checks passing. The failing fixture is intentionally represented as <code>FAIL_CLOSED</code>.</p>
+        </div>
+        <div class="doc-grid">
+          <a href="/docs/FENRUA_DEVELOPER_REPRODUCTION_REPORT.md">Developer reproduction report</a>
+          <a href="/examples/verification-results/pass.example.json">Passing fixture</a>
+          <a href="/examples/verification-results/fail-closed.example.json">Failing fixture</a>
+        </div>
       </section>`,
   });
 }
@@ -637,12 +858,16 @@ node scripts/test-toolchain-registry.mjs</code></pre>
 function evidence() {
   const rows = evidenceRecords.map(
     (record) => `<tr id="${attr(record.id)}">
-      <td>${esc(record.artifact)}<br><small>${esc(record.type)}</small></td>
+      <td><code>${esc(record.id)}</code><br>${esc(record.artifact)}<br><small>${esc(record.type)}</small></td>
       <td>${esc(record.claim)}</td>
       <td><code>${esc(record.hash)}</code><button type="button" data-copy="${attr(record.hash)}">Copy hash</button></td>
-      <td><a href="${attr(record.sourceUrl)}">${esc(record.source)}</a></td>
-      <td>${esc(record.verified)}<br><small>${esc(record.maturity)}</small></td>
-      <td>${esc(record.limitation)}</td>
+      <td><a href="${attr(record.sourceUrl)}">${esc(record.source)}</a><br><small>${esc(record.environment)}</small></td>
+      <td><code>${esc(record.sourceCommit)}</code><br><small>Evidence: <code>${esc(record.evidenceCommit)}</code></small></td>
+      <td>${esc(record.producer)}<br><small>${esc(record.toolchainSubset)}</small></td>
+      <td><code>${esc(record.command)}</code></td>
+      <td>${esc(record.verified)}<br><small>${esc(record.maturity)} · ${esc(record.revocationState)}</small></td>
+      <td>${esc(record.supersedes)} / ${esc(record.supersededBy)}</td>
+      <td>${esc(record.limitation)}<button type="button" data-copy="${attr(evidenceCitation(record))}">Copy citation</button></td>
     </tr>`
   );
   return layout({
@@ -652,21 +877,29 @@ function evidence() {
     scripts: '<script src="/toolchain/toolchain.js" defer></script>',
     body: `${routeHero("PUBLIC EVIDENCE", "Evidence Registry", "Every significant claim is tied to source, timestamp, maturity, limitation, provenance, and copyable hash.")}
       <section class="section-shell">
-        ${table(["Artifact", "Claim", "Hash", "Source", "Verified", "Limitation"], rows)}
+        ${table(["Artifact", "Claim", "Hash", "Source", "Revisions", "Producer", "Command", "Verified", "Supersession", "Limitation"], rows)}
       </section>`,
   });
 }
 
 function status() {
   const rows = [
-    ["Website", "success", "Reference implementation", "index.html", generatedDate, "Static site validation passed."],
-    ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedDate, "129 records; no post-evidence updates."],
-    ["Public verifier", "partial", "Prototype foundation", "/verify/", generatedDate, "Local examples and deterministic output only."],
-    ["Policy engine", "paused", "Specification", "kernel spec", generatedDate, "No production engine claimed."],
-    ["Runtime gate", "maintenance", "Planned", "kernel spec", generatedDate, "Requires future adapter evidence."],
-    ["Contract evidence", "paused", "Pending refreshed bundle", "contract boundary doc", generatedDate, "No stale contract claims finalized."],
+    ["Homepage", "success", "Routing surface", "index.html", generatedDate, "static route validation", "npm run validate", "Live chain observations remain read-only public telemetry.", "Browser viewport matrix"],
+    ["Architecture", "success", "Specification", "/architecture/", generatedDate, "static route validation", "npm run validate", "Architecture is descriptive, not a deployed control plane.", "Independent architecture review"],
+    ["Kernel", "success", "Specification/reference mix", "/kernel/", generatedDate, "static route validation", "npm run validate", "Primitive maturity varies by row.", "Per-primitive evidence expansion"],
+    ["Utilities", "success", "Catalogue", "/utilities/", generatedDate, "static route validation", "npm run validate", "No fake live utility service is claimed.", "SDK or CLI evidence"],
+    ["Research registry", "success", "Evidence surface", "/research/", generatedDate, "static route validation", "npm run validate", "Dedicated pages expose current reproduction limits.", "Independent reproduction"],
+    ["Verify examples", "partial", "Prototype foundation", "/verify/", generatedDate, "fixture corpus validation", "node scripts/test-verify-examples.mjs", "No hosted verifier or upload model exists.", "Real verifier implementation"],
+    ["Developer quick start", "success", "Reproducibility guide", "/developers/", generatedDate, "clean checkout report", "npm run validate", "Node 24 required.", "Tagged release reproduction"],
+    ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedDate, "registry validation", "node scripts/test-toolchain-registry.mjs", "Version capture is not security proof.", "New frozen evidence bundle"],
+    ["Evidence registry", "success", "Evidence surface", "/evidence/", generatedDate, "static route validation", "npm run validate", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
+    ["Chain 978 observation", "partial", "Read-only live", "/api/chain-progress", "live", "10 second refresh, 60 second freshness", "node scripts/test-chain-progress.mjs", "Primary source only; independent source unavailable.", "Independent source integration"],
+    ["Chain N521 observation", "partial", "Read-only live", "/api/chain-progress", "live", "10 second refresh, 60 second freshness", "node scripts/test-chain-progress.mjs", "Primary source only; independent source unavailable.", "Independent source integration"],
+    ["Contract evidence", "pending evidence", "Pending refreshed bundle", "docs/FENRUA_CONTRACT_EVIDENCE_REFRESH_BOUNDARY.md", generatedDate, "manual evidence gate", "none", "No current contract, bytecode, reserve, or deployment claim.", "Frozen contract evidence bundle"],
+    ["Public repository", "success", "Source surface", "https://github.com/fenrualabs/fenrua-web", generatedDate, "git provenance", "git rev-parse HEAD", "Repository state changes after each deployment.", "Tagged release"],
+    ["Schema set", "success", "Specification", "/docs/", generatedDate, "example corpus validation", "node scripts/test-verify-examples.mjs", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
   ].map(
-    (r) => `<tr><td>${esc(r[0])}</td><td><span class="status-badge status-${attr(r[1])}">${esc(r[1])}</span></td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td></tr>`
+    (r) => `<tr><td>${esc(r[0])}</td><td>${statusBadge(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td><code>${esc(r[6])}</code></td><td>${esc(r[7])}</td><td>${esc(r[8])}</td></tr>`
   );
   return layout({
     title: "Fenrua Status",
@@ -688,7 +921,7 @@ function status() {
         </div>
       </section>
       <section class="section-shell">
-        ${table(["Component", "State", "Maturity", "Source", "Timestamp", "Explanation"], rows)}
+        ${table(["Component", "Operational state", "Maturity", "Source", "Timestamp", "Freshness policy", "Last successful check", "Current limitation", "Next evidence gate"], rows)}
       </section>`,
   });
 }
@@ -696,6 +929,7 @@ function status() {
 function toolchain() {
   const tools = registry.tools;
   const rows = tools.map((tool, index) => {
+    const tags = toolchainDisplayTags(tool);
     const search = [
       tool.tool,
       tool.detectedVersion,
@@ -703,22 +937,29 @@ function toolchain() {
       tool.function,
       tool.installationMode,
       tool.status,
+      ...tags,
       tool.limitations,
       ...(tool.pipeline ?? []),
       ...(tool.commands ?? []),
     ].join(" ");
-    return `<tr data-tool-row data-page="${Math.floor(index / 25) + 1}" data-search="${attr(search.toLowerCase())}" data-status="${attr(tool.status)}" data-mode="${attr(tool.installationMode)}" data-category="${attr(tool.category)}" data-installed="${tool.installed}" data-executed="${tool.executed}" data-evidence="${tool.evidenceProduced}">
+    return `<tr data-tool-row data-page="${Math.floor(index / 25) + 1}" data-search="${attr(search.toLowerCase())}" data-status="${attr(tool.status)}" data-tags="${attr(tags.join(" "))}" data-mode="${attr(tool.installationMode)}" data-category="${attr(tool.category)}" data-installed="${tool.installed}" data-evidence="${tool.evidenceProduced}">
       <td>${esc(tool.tool)}<br><small>${esc(tool.function)}</small></td>
       <td><code>${esc(tool.detectedVersion)}</code><button type="button" data-copy="${attr(tool.detectedVersion)}">Copy version</button></td>
       <td>${esc(tool.category)}</td>
       <td>${esc(tool.installationMode)}</td>
-      <td><span class="status-badge">${esc(tool.status)}</span></td>
+      <td>${tags.map((tag) => `<span class="status-badge">${esc(tag)}</span>`).join("<br>")}</td>
       <td>${tool.evidenceProduced ? "yes" : "no"}<br><small>${esc(tool.evidencePath)}</small></td>
       <td>${(tool.commands ?? []).map((command) => `<code>${esc(command)}</code>`).join("<br>")}</td>
       <td>${esc(tool.limitations)}</td>
     </tr>`;
   });
   const categories = [...new Set(tools.map((tool) => tool.category))].sort();
+  const statCards = toolchainStats()
+    .map(([label, value]) => `<article>
+          <span>${esc(label)}</span>
+          <strong>${label === "Registry SHA-256" ? `<code>${esc(value)}</code>` : esc(value)}</strong>
+        </article>`)
+    .join("\n        ");
   return layout({
     title: "Fenrua Toolchain Registry",
     description: "Server-rendered Fenrua toolchain registry with exact detected versions, filters, pagination, downloads, timestamp, and integrity hash.",
@@ -726,12 +967,14 @@ function toolchain() {
     scripts: '<script src="/toolchain/toolchain.js" defer></script>',
     body: `${routeHero("SERVER-RENDERED REGISTRY", "Toolchain", "The registry is useful before JavaScript runs. JavaScript only adds filtering, pagination, and copy controls.", `<div class="cta-row"><a class="button button-primary" href="/data/toolchain-registry.json">Download JSON</a><a class="button button-secondary" href="/docs/FENRUA_TOOLCHAIN_LOCK.md">Download Markdown lock</a></div>`)}
       <section class="section-shell">
-        <div class="toolchain-meta">
-          <p><strong>Generated:</strong> <time datetime="${attr(registry.generatedAt)}">${esc(registry.generatedAt)}</time></p>
-          <p><strong>Registry SHA-256:</strong> <code>${esc(registryHash)}</code><button type="button" data-copy="${attr(registryHash)}">Copy hash</button></p>
-          <p><strong>Tools:</strong> ${tools.length}</p>
-          <p><strong>Evidence-lock:</strong> no post-evidence updates implied.</p>
+        <div class="toolchain-meta toolchain-summary">
+          ${statCards}
+          <article>
+            <span>Evidence-lock</span>
+            <strong>no post-evidence updates</strong>
+          </article>
         </div>
+        <p class="table-note"><button type="button" data-copy="${attr(registryHash)}">Copy registry hash</button> The displayed taxonomy is derived from frozen registry fields. A version or list command is <strong>VERSION_VERIFIED</strong>, not campaign execution.</p>
       </section>
       <section class="section-shell">
         <div class="registry-tools toolchain-tools">
@@ -739,15 +982,18 @@ function toolchain() {
           <input id="tool-search" type="search" autocomplete="off" placeholder="Search tool, command, category, status, or limitation..." />
           <div class="filter-groups" aria-label="Toolchain filters">
             <button type="button" data-filter="all" aria-pressed="true">All</button>
-            <button type="button" data-filter="native">Native</button>
-            <button type="button" data-filter="container">Container</button>
-            <button type="button" data-filter="project-local">Project-local</button>
-            <button type="button" data-filter="installed">Installed</button>
-            <button type="button" data-filter="executed">Executed</button>
+            <button type="button" data-filter="detected">Detected</button>
+            <button type="button" data-filter="version-verified">Version verified</button>
+            <button type="button" data-filter="smoke-tested">Smoke tested</button>
+            <button type="button" data-filter="campaign-executed">Campaign executed</button>
             <button type="button" data-filter="evidence">Evidence-producing</button>
+            <button type="button" data-filter="canonical-pipeline">Canonical pipeline</button>
+            <button type="button" data-filter="container">Container-only</button>
+            <button type="button" data-filter="project-local">Project-local</button>
             <button type="button" data-filter="exploratory">Exploratory</button>
-            <button type="button" data-filter="current">Current</button>
+            <button type="button" data-filter="superseded">Superseded</button>
             <button type="button" data-filter="version-review">Version review required</button>
+            <button type="button" data-filter="unavailable">Unavailable</button>
             ${categories.map((category) => `<button type="button" data-category-filter="${attr(category)}">${esc(category.replace(" and ", " & "))}</button>`).join("\n            ")}
           </div>
           <div class="pagination-controls" aria-label="Toolchain pagination">
@@ -756,8 +1002,33 @@ function toolchain() {
             <button type="button" data-page-action="next">Next</button>
           </div>
         </div>
-        ${table(["Tool", "Detected Version", "Category", "Mode", "Status", "Evidence", "Command", "Limitations"], rows, "toolchain-table")}
+        ${table(["Tool", "Detected Version", "Category", "Mode", "Delivery Tags", "Evidence", "Command", "Limitations"], rows, "toolchain-table")}
         <p class="empty-state" id="toolchain-empty" hidden>No tools match the active filter.</p>
+      </section>`,
+  });
+}
+
+function legacyPage(route) {
+  return layout({
+    title: `Legacy Fenrua ${route} Route`,
+    description: "Superseded Fenrua public route archive notice.",
+    current: "Overview",
+    canonicalPath: `/${route}/`,
+    robots: "noindex,nofollow",
+    body: `${routeHero("LEGACY / SUPERSEDED", "Legacy route", "This route belongs to a superseded Fenrua public estate and has no current applicability. The canonical current site is the Layer 0 AI Security Utility Infrastructure interface.")}
+      <section class="section-shell split-section">
+        <div>
+          <p class="eyebrow">ROUTE CLASSIFICATION</p>
+          <h2>${esc(route)}</h2>
+          <p>This archive notice avoids silently presenting old Nexus, FENswap, presale, wallet, legal, support, accessibility, or security language as current.</p>
+        </div>
+        <div class="constraint-list">
+          <p><strong>Classification:</strong> Legacy archive.</p>
+          <p><strong>Superseded by:</strong> <a href="/">Current Fenrua Layer 0 overview</a>.</p>
+          <p><strong>Current applicability:</strong> None.</p>
+          <p><strong>Indexing:</strong> noindex, nofollow.</p>
+          <p><strong>Legal boundary:</strong> This page does not create or replace final legal terms.</p>
+        </div>
       </section>`,
   });
 }
@@ -773,6 +1044,7 @@ writeRoute("developers", developers());
 writeRoute("evidence", evidence());
 writeRoute("status", status());
 writeRoute("toolchain", toolchain());
+for (const route of legacyRoutes) writeRoute(route, legacyPage(route));
 
 const sitemapRoutes = ["", "architecture", "kernel", "utilities", "research", ...researchItems.map((item) => `research/${item.slug}`), "verify", "developers", "toolchain", "evidence", "status"];
 writeFileSync(
