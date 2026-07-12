@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 const originalFetch = globalThis.fetch;
 const original978 = process.env.FENCHAIN_RPC_URL;
 const original521 = process.env.FENCHAIN_N521_RPC_URL;
 
 const handler = (await import("../api/chain-progress.js")).default;
+const chainPage = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const chainClient = readFileSync(new URL("../kernel-status.js", import.meta.url), "utf8");
 
 function responseRecorder() {
   const headers = new Map();
@@ -26,9 +29,9 @@ function responseRecorder() {
   };
 }
 
-async function callHandler({ method = "GET", url = "/api/chain-progress" } = {}) {
+async function callHandler({ method = "GET", url = "/api/chain-progress", headers = {} } = {}) {
   const response = responseRecorder();
-  await handler({ method, url }, response);
+  await handler({ method, url, headers }, response);
   return response;
 }
 
@@ -55,6 +58,9 @@ function assertSanitized(snapshot) {
 }
 
 try {
+  assert.doesNotMatch(chainPage, /Blocks since check|data-chain-field="(?:978|521)-delta"/);
+  assert.doesNotMatch(chainClient, /"0 blocks"|lastChainBlocks|lastChainCheckedAt/);
+
   process.env.FENCHAIN_RPC_URL = "https://chain-978.example.test";
   process.env.FENCHAIN_N521_RPC_URL = "https://chain-521.example.test";
 
@@ -68,12 +74,16 @@ try {
 
   const healthy = await callHandler();
   assert.equal(healthy.statusCode, 200);
-  assert.match(healthy.headers.get("cache-control"), /s-maxage=10/);
-  assert.match(healthy.headers.get("cache-control"), /stale-while-revalidate=20/);
-  assert.match(healthy.headers.get("cache-control"), /stale-if-error=60/);
+  assert.equal(healthy.headers.get("cache-control"), "no-store, max-age=0, must-revalidate");
+  assert.equal(healthy.headers.get("cdn-cache-control"), "no-store");
+  assert.equal(healthy.headers.get("vercel-cdn-cache-control"), "no-store");
   assert.equal(healthy.body.chains.length, 2);
   assert.ok(healthy.body.chains.every((chain) => chain.status === "live"));
   assertSanitized(healthy.body);
+
+  const uncachedRead = await callHandler({ headers: { "cache-control": "no-cache" } });
+  assert.equal(uncachedRead.statusCode, 200);
+  assertSanitized(uncachedRead.body);
 
   let queryFetches = 0;
   globalThis.fetch = async () => {

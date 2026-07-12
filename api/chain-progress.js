@@ -1,7 +1,7 @@
 const refreshMs = 10_000;
 const maxFreshHeadAgeSeconds = 60;
-const responseCacheControl =
-  "public, max-age=0, s-maxage=10, stale-while-revalidate=20, stale-if-error=60";
+const responseCacheControl = "no-store, max-age=0, must-revalidate";
+const responseCdnCacheControl = "no-store";
 
 const chainTargets = [
   {
@@ -76,7 +76,11 @@ async function callProbeEndpoint(endpoint, method, params = []) {
   try {
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+        "cache-control": "no-store",
+      },
       body: JSON.stringify({ jsonrpc: "2.0", id: method, method, params }),
       signal: controller.signal,
       cache: "no-store",
@@ -152,6 +156,8 @@ function buildSnapshot() {
 
 function sendSnapshot(response, statusCode, snapshot) {
   response.setHeader("Cache-Control", responseCacheControl);
+  response.setHeader("CDN-Cache-Control", responseCdnCacheControl);
+  response.setHeader("Vercel-CDN-Cache-Control", responseCdnCacheControl);
   response.status(statusCode).json(snapshot);
 }
 
@@ -165,19 +171,6 @@ export default async function handler(request, response) {
   const requestUrl = new URL(request.url || "/api/chain-progress", "https://fenrua.ai");
   if (requestUrl.search) {
     response.status(400).json({ error: "Query parameters are not supported" });
-    return;
-  }
-
-  const headers = request.headers || {};
-  const cacheControl = String(headers["cache-control"] || "").toLowerCase();
-  const pragma = String(headers.pragma || "").toLowerCase();
-  if (
-    headers.authorization ||
-    headers.range ||
-    pragma.includes("no-cache") ||
-    /(?:no-cache|no-store|max-age\s*=\s*0)/.test(cacheControl)
-  ) {
-    response.status(400).json({ error: "Cache-bypass request headers are not supported" });
     return;
   }
 
