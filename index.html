@@ -4,28 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta
-      name="description"
-      content="Fenrua Labs public evidence portal for P-521 primitives, Chain 978, N521 research, audit status, and genesis-linked infrastructure evidence."
-    />
+    <meta name="description" content="Fenrua is the public evidence surface for the open security kernel beneath autonomous AI systems." />
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0d0d0d" />
     <link rel="canonical" href="https://fenrua.ai/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://fenrua.ai/" />
-    <meta property="og:title" content="Fenrua Labs: Protocol Infrastructure" />
-    <meta
-      property="og:description"
-      content="Research-grade P-521 primitives, Chain 978 continuity evidence, and audit-linked protocol infrastructure for technical scrutiny."
-    />
-    <meta property="og:image" content="assets/sigil.svg" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Fenrua Labs: Protocol Infrastructure" />
-    <meta
-      name="twitter:description"
-      content="Limb-based P-521 primitives for verifiable AI agency. Research-grade, audit-sealed, and immutable."
-    />
-    <title>Fenrua Labs | P-521 Primitives &amp; Chain 978</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -34,537 +16,108 @@
         "name": "Fenrua Labs",
         "alternateName": "Fenrua",
         "url": "https://fenrua.ai/",
-        "description": "Public technical evidence portal for P-521 primitives, Chain 978, N521 research, and audit-linked protocol infrastructure.",
+        "description": "Fenrua is building open Layer 0 AI security infrastructure with public evidence, maturity-labelled primitives, and reproducible verification records.",
         "sameAs": ["https://github.com/fenrualabs"]
       }
     </script>
-    <link rel="icon" href="assets/sigil.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="kernel-status.js" defer></script>
+    <title>Fenrua | Layer 0 AI Security Infrastructure</title>
+    <link rel="icon" href="/assets/sigil.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
-
     <header class="site-header" aria-label="Site header">
-      <a class="brand" href="/" aria-label="Fenrua Labs home">
-        <img src="assets/sigil.svg" width="40" height="40" alt="" />
+      <a class="brand" href="/" aria-label="Fenrua home">
+        <img src="/assets/sigil.svg" width="40" height="40" alt="" />
         <span>
-          <strong>Fenrua Labs</strong>
-          <small>Static Evidence Portal</small>
+          <strong>Fenrua</strong>
+          <small>Layer 0 AI security infrastructure</small>
         </span>
       </a>
-
       <nav class="site-nav" aria-label="Primary navigation">
-        <a href="#repositories">Repositories</a>
-        <a href="#chain-progress">Chain Progress</a>
-        <a href="#kernel">Kernel State</a>
-        <a href="#day-zero">Day Zero</a>
-        <a href="#primitives">Primitives</a>
-        <a href="#evidence">Evidence</a>
-        <a href="#work-with-fenrua">Work With Fenrua</a>
-        <a href="#distribution">Distribution</a>
+        <a href="/" aria-current="page">Overview</a>
+        <a href="/architecture/">Architecture</a>
+        <a href="/kernel/">Kernel</a>
+        <a href="/utilities/">Utilities</a>
+        <a href="/research/">Research</a>
+        <a href="/verify/">Verify</a>
+        <a href="/developers/">Developers</a>
+        <a href="/toolchain/">Toolchain</a>
+        <a href="/evidence/">Evidence</a>
+        <a href="/status/">Status</a>
       </nav>
     </header>
-
     <main id="content">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">PUBLIC WITNESS / ZERO TRACKERS / SOURCE FIRST</p>
-          <h1 id="hero-title">Fenrua Labs: Protocol Infrastructure</h1>
-          <p class="hero-subtitle">
-            Limb-based P-521 primitives for verifiable AI agency. Research-grade,
-            audit-sealed, and immutable.
-          </p>
-
-          <div class="cta-row" aria-label="Primary actions">
-            <a class="button button-primary" data-link="repository" href="https://github.com/fenrualabs/fenrua-kernel">
-              Browse Repository
-            </a>
-            <a class="button button-secondary" data-link="audit" href="docs/SECURITY_AUDIT_LOG.md">
-              Security Audit Log
-            </a>
-            <a class="button button-secondary" data-link="genesis" href="docs/GENESIS_MANIFEST.md">
-              Evidence Genesis
-            </a>
-          </div>
-        </div>
-
-        <aside class="hero-console" aria-label="Kernel witness console">
-          <div class="console-top">
-            <span>fenrua-kernel</span>
-            <span data-kernel-field="buildStatus">PASS</span>
-          </div>
-          <pre aria-label="Kernel verification transcript"><code>$ fenrua verify --day-zero
-version: <span data-kernel-field="versionTag">v.390f7ae</span>
-audit: <span data-kernel-field="auditResolution">7/7 Findings Resolved</span>
-genesis: <span data-kernel-field="genesisIntegrity">14/14 Genesis Files Verified</span>
-ci: <span data-kernel-field="ciOutput">Hardening: PASS</span>
-regression: <span data-kernel-field="regressionCoverage">Active</span>
-policy: research-grade; no production certification
-privacy: no analytics, no beacons, no third-party scripts</code></pre>
-        </aside>
+      <section class="route-hero" aria-labelledby="page-title">
+        <p class="eyebrow">LAYER 0 AI SECURITY UTILITY INFRASTRUCTURE</p>
+        <h1 id="page-title">The security kernel beneath autonomous AI.</h1>
+        <p>Fenrua provides identity, authority, integrity, policy, evidence, verification, containment, and recovery primitives for AI agents, models, tools, runtimes, applications, chains, and infrastructure.</p>
+        <div class="cta-row"><a class="button button-primary" href="/architecture/">Explore architecture</a><a class="button button-secondary" href="/verify/">Verify locally</a><a class="button button-secondary" href="/toolchain/">Inspect toolchain</a></div>
       </section>
-
-      <section class="status-band" aria-label="Assurance summary">
+      <section class="section-shell" aria-labelledby="home-answers">
+        <div class="section-heading">
+          <p class="eyebrow">FIVE-MINUTE ORIENTATION</p>
+          <h2 id="home-answers">What reviewers need first</h2>
+          <p>The homepage is intentionally a routing surface. Deep technical detail lives on dedicated pages so evidence, maturity, and limitations stay inspectable.</p>
+        </div>
+        <div class="route-grid"><article>
+          <span>WHAT</span>
+          <h3>Fenrua is a security substrate</h3>
+          <p>It is not a chatbot, marketplace, generic chain, wallet surface, or certification authority.</p>
+          <a href="/architecture/">Architecture</a>
+        </article>
+        <article>
+          <span>WHY LAYER 0</span>
+          <h3>It sits beneath AI execution</h3>
+          <p>Independent systems need identity, authority, integrity, policy, evidence, verification, containment, and recovery before autonomous execution can be trusted.</p>
+          <a href="/kernel/">Kernel primitives</a>
+        </article>
+        <article>
+          <span>TODAY</span>
+          <h3>Reference surfaces are public</h3>
+          <p>The website, evidence registry, toolchain lock, telemetry checks, and schema foundations are available with maturity labels.</p>
+          <a href="/status/">Status</a>
+        </article>
+        <article>
+          <span>EVIDENCE</span>
+          <h3>Claims are source-linked</h3>
+          <p>Every significant public claim points to a source, timestamp, maturity label, and limitation.</p>
+          <a href="/evidence/">Evidence registry</a>
+        </article>
+        <article>
+          <span>NEXT</span>
+          <h3>Developers start locally</h3>
+          <p>The verifier page and developer quick-start show the local workflow without pretending a live verifier exists.</p>
+          <a href="/developers/">Quick start</a>
+        </article></div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="home-boundary">
         <div>
-          <strong><a data-link="version" href="https://github.com/fenrualabs/fenrua-kernel/commit/390f7ae" data-kernel-field="versionTag">v.390f7ae</a></strong>
-          <span>Version Tag</span>
-        </div>
-        <div>
-          <strong data-kernel-field="auditResolution">7/7 Findings Resolved</strong>
-          <span>Audit Resolution</span>
-        </div>
-        <div>
-          <strong data-kernel-field="genesisIntegrity">14/14 Genesis Files Verified</strong>
-          <span>Genesis Integrity</span>
-        </div>
-        <div>
-          <strong><a data-link="ci" href="https://github.com/fenrualabs/fenrua-kernel/actions" data-kernel-field="ciOutput">Hardening: PASS</a></strong>
-          <span>CI Output</span>
-        </div>
-      </section>
-
-      <section id="chain-progress" class="section-shell chain-progress" aria-labelledby="chain-progress-title">
-        <div class="section-heading">
-          <p class="eyebrow">LIVE BLOCK FEED</p>
-          <h2 id="chain-progress-title">Chain 978 + Chain N521</h2>
-          <p>
-            Read-only, independently confirmed block observations for the two Fenrua evidence lanes.
-            Chain 978 carries FEN protocol support; Chain N521 carries N / P-521 research. Private
-            node addresses and operator controls are not part of this public feed.
-          </p>
-        </div>
-
-        <div class="probe-strip">
-          <span>Feed <strong data-chain-meta="feed-status">starting</strong></span>
-          <span>Generated <strong data-chain-meta="generated">pending</strong></span>
-          <span>Refresh <strong data-chain-meta="countdown">arming probe</strong></span>
-          <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
-        </div>
-
-        <div class="chain-grid">
-          <article class="chain-card" data-chain-card="978">
-            <div class="chain-card-top">
-              <span>FENc978</span>
-              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Reading</span></strong>
-            </div>
-            <h3>Chain 978</h3>
-            <dl>
-              <div>
-                <dt>Chain identity</dt>
-                <dd data-chain-field="978-chain-id">978 · verified</dd>
-              </div>
-              <div>
-                <dt>Latest Block</dt>
-                <dd data-chain-field="978-block">Reading</dd>
-              </div>
-              <div>
-                <dt>Last check</dt>
-                <dd data-chain-field="978-checked">pending</dd>
-              </div>
-            </dl>
-            <div class="chain-progress-meter" aria-label="Chain 978 next verification progress">
-              <div class="chain-progress-meter-top">
-                <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
-                <strong data-chain-field="978-progress">connecting</strong>
-              </div>
-              <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
-            </div>
-          </article>
-
-          <article class="chain-card" data-chain-card="521">
-            <div class="chain-card-top">
-              <span>FENn521</span>
-              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Reading</span></strong>
-            </div>
-            <h3>Chain N521</h3>
-            <dl>
-              <div>
-                <dt>Chain identity</dt>
-                <dd data-chain-field="521-chain-id">521 · verified</dd>
-              </div>
-              <div>
-                <dt>Latest Block</dt>
-                <dd data-chain-field="521-block">Reading</dd>
-              </div>
-              <div>
-                <dt>Last check</dt>
-                <dd data-chain-field="521-checked">pending</dd>
-              </div>
-            </dl>
-            <div class="chain-progress-meter" aria-label="Chain N521 next verification progress">
-              <div class="chain-progress-meter-top">
-                <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
-                <strong data-chain-field="521-progress">connecting</strong>
-              </div>
-              <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section id="repositories" class="section-shell" aria-labelledby="repositories-title">
-        <div class="section-heading">
-          <p class="eyebrow">HIGH-ASSURANCE PROTOCOL REPOSITORY</p>
-          <h2 id="repositories-title">Core Repository Roles</h2>
-          <p>
-            Fenrua public identity is consolidated around implementation evidence.
-            The kernel remains the bedrock artifact; this website remains the
-            reproducible interface over that artifact.
-          </p>
-        </div>
-
-        <div class="repo-grid">
-          <article>
-            <span>BEDROCK</span>
-            <h3>fenrua-kernel</h3>
-            <p>
-              Maintains cryptographically locked research artifacts, the genesis
-              README, the immutable audit log, and the hard separation between
-              bedrock-source and evidence-commit release surfaces.
-            </p>
-            <a data-link="repository" href="https://github.com/fenrualabs/fenrua-kernel">Open kernel repository</a>
-          </article>
-          <article>
-            <span>INTERFACE</span>
-            <h3>fenrua-web</h3>
-            <p>
-              Publishes protocol specifications, evidence dashboards, release
-              constraints, and commit-linked registry records for technical review.
-            </p>
-            <a href="#evidence">Inspect evidence registry</a>
-          </article>
-        </div>
-      </section>
-
-      <section id="kernel" class="section-shell" aria-labelledby="kernel-title">
-        <div class="section-heading">
-          <p class="eyebrow">VERIFIED KERNEL SNAPSHOT</p>
-          <h2 id="kernel-title">State Dashboard</h2>
-          <p>
-            This technical status surface is generated from a verified public
-            kernel snapshot. The sync revision and frozen evidence revision are
-            intentionally shown as separate records.
-          </p>
-        </div>
-
-        <div class="dashboard-grid">
-          <article class="metric">
-            <span>Sync Snapshot</span>
-            <strong><a data-link="version" href="https://github.com/fenrualabs/fenrua-kernel/commit/390f7ae" data-kernel-field="versionTag">v.390f7ae</a></strong>
-          </article>
-          <article class="metric">
-            <span>Frozen Evidence</span>
-            <strong><a data-link="evidence-revision" href="https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c" data-kernel-field="evidenceRevisionTag">evidence 85ecc97c</a></strong>
-          </article>
-          <article class="metric metric-pass">
-            <span>Audit Resolution</span>
-            <strong data-kernel-field="auditResolution">7/7 Findings Resolved</strong>
-          </article>
-          <article class="metric">
-            <span>Genesis Integrity</span>
-            <strong data-kernel-field="genesisIntegrity">14/14 Genesis Files Verified</strong>
-          </article>
-          <article class="metric">
-            <span>CI Output</span>
-            <strong><a data-link="ci" href="https://github.com/fenrualabs/fenrua-kernel/actions" data-kernel-field="ciOutput">Hardening: PASS</a></strong>
-          </article>
-          <article class="metric metric-wide">
-            <span>Regression Coverage</span>
-            <strong><a data-link="regression" href="docs/REGRESSION_HISTORY.md" data-kernel-field="regressionCoverage">Active</a></strong>
-            <small><code>regression_001_p521_sub_overflow.bin</code></small>
-          </article>
-          <article class="metric metric-wide">
-            <span>Differential Campaign</span>
-            <strong data-kernel-field="differentialSummary">500,000 field pairs · 200,000 encodings · 100,000 digests</strong>
-          </article>
-          <article class="metric metric-wide">
-            <span>Telemetry Source</span>
-            <strong data-kernel-field="statusSource">kernel-status.js</strong>
-            <small data-kernel-field="lastSynced">Preparing verified snapshot</small>
-          </article>
-          <article class="metric metric-wide">
-            <span>Integrity Boundary</span>
-            <strong>Not certified. Not formally verified.</strong>
-          </article>
-        </div>
-      </section>
-
-      <section id="regression-telemetry" class="section-shell" aria-labelledby="regression-telemetry-title">
-        <div class="section-heading">
-          <p class="eyebrow">PERMANENT DIFFERENTIAL REGRESSIONS</p>
-          <h2 id="regression-telemetry-title">Regression Evidence Snapshot</h2>
-          <p>
-            Build-time telemetry records the regression result, fixture integrity,
-            and commit-pinned evidence. The public dashboard never renders raw
-            fixture bytes, operands, witnesses, or proving artifacts.
-          </p>
-        </div>
-
-        <div class="registry" role="region" aria-label="Permanent regression evidence" tabindex="0">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Permanent Regression</th>
-                <th scope="col">Scope</th>
-                <th scope="col">Result</th>
-                <th scope="col">Fixture Integrity</th>
-                <th scope="col">Evidence</th>
-              </tr>
-            </thead>
-            <tbody id="regression-registry">
-              <tr>
-                <td>regression-order-sub-cross-limb-borrow</td>
-                <td>N521_ORDER · subtract-mod-n</td>
-                <td>Preparing verified result</td>
-                <td><code>regression_001_p521_sub_overflow.bin</code></td>
-                <td>Preparing pinned evidence links</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="day-zero" class="section-shell" aria-labelledby="day-zero-title">
-        <div class="section-heading">
-          <p class="eyebrow">VERIFICATION PIPELINE</p>
-          <h2 id="day-zero-title">The Day Zero Evidence Standard</h2>
-          <p>
-            Proof is the audit-sealed log, not a mission statement. Every release
-            is defined by its evidence commit and must preserve the artifacts that
-            let reviewers reproduce the assurance boundary.
-          </p>
-        </div>
-
-        <div class="artifact-grid">
-          <article>
-            <span>ARTIFACT 01</span>
-            <h3>Genesis Receipts</h3>
-            <p>
-              SHA-256 mapped proofs for every critical arithmetic circuit, tied
-              back to the bedrock source commit.
-            </p>
-          </article>
-          <article>
-            <span>ARTIFACT 02</span>
-            <h3>Regression History</h3>
-            <p>
-              Counterexamples remain explicit, including records such as
-              <code>regression_001_p521_sub_overflow.bin</code>.
-            </p>
-          </article>
-          <article>
-            <span>ARTIFACT 03</span>
-            <h3>Audit Log</h3>
-            <p>
-              <code>SECURITY_AUDIT_LOG.md</code> tracks every assurance finding
-              from discovery to resolution.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section id="primitives" class="section-shell" aria-labelledby="primitives-title">
-        <div class="section-heading">
-          <p class="eyebrow">PROTOCOL PRIMITIVE SPECIFICATIONS</p>
-          <h2 id="primitives-title">How the Primitive Is Framed</h2>
-          <p>
-            Long-form positioning is intentionally avoided here. The public
-            surface states the primitive shape, the security policy, and the
-            evidence boundary.
-          </p>
-        </div>
-
-        <div class="spec-grid">
-          <article class="spec-panel">
-            <h3>P-521 Arithmetic</h3>
-            <table class="spec-table">
-              <tbody>
-                <tr>
-                  <th scope="row">Representation</th>
-                  <td>Limb-based field operations.</td>
-                </tr>
-                <tr>
-                  <th scope="row">Avoided Overhead</th>
-                  <td>ASN.1/DER decoding is not the primitive interface.</td>
-                </tr>
-                <tr>
-                  <th scope="row">Testing Boundary</th>
-                  <td>Differential campaign plus permanent regression cases.</td>
-                </tr>
-              </tbody>
-            </table>
-          </article>
-
-          <article class="spec-panel">
-            <h3>Security Policy</h3>
-            <pre><code>status: research-grade
-production_certification: false
-formal_verification_claim: false
-audit_history: public_immutable
-release_identity: evidence_commit</code></pre>
-          </article>
-
-          <article class="spec-panel spec-panel-wide">
-            <h3>132-byte Primitive Structure</h3>
-            <pre><code>p521_signature_primitive {
-  r: 66 bytes // unsigned P-521 scalar limb payload
-  s: 66 bytes // unsigned P-521 scalar limb payload
-}
-
-total: 132 bytes
-encoding_goal: deterministic, inspectable, verifier-friendly</code></pre>
-          </article>
-        </div>
-      </section>
-
-      <section id="evidence" class="section-shell" aria-labelledby="evidence-title">
-        <div class="section-heading">
-          <p class="eyebrow">GENESIS REGISTRY</p>
-          <h2 id="evidence-title">Evidence Portal</h2>
-          <p>
-            This table is searchable and copyable. Each record points to a
-            source, commit, log, or report surface. Release names are secondary;
-            evidence commits are authoritative.
-          </p>
-        </div>
-
-        <div class="registry-tools">
-          <label for="registry-search">Filter registry</label>
-          <input id="registry-search" type="search" autocomplete="off" placeholder="Search artifact, hash, or source..." />
-        </div>
-
-        <div class="registry" role="region" aria-label="Evidence commit registry" tabindex="0">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Artifact</th>
-                <th scope="col">Hash Reference</th>
-                <th scope="col">Source/Commit</th>
-                <th scope="col">Copy</th>
-              </tr>
-            </thead>
-            <tbody id="evidence-registry">
-              <tr>
-                <td>Bedrock Source</td>
-                <td><code>85ecc97c...</code></td>
-                <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c">Link to Source</a></td>
-                <td><button type="button" data-copy="85ecc97c">Copy</button></td>
-              </tr>
-              <tr>
-                <td>Evidence Commit</td>
-                <td><code>dc36d1f2...</code></td>
-                <td><a href="https://github.com/fenrualabs/fenrua-kernel/commit/dc36d1f2">Link to Evidence</a></td>
-                <td><button type="button" data-copy="dc36d1f2">Copy</button></td>
-              </tr>
-              <tr>
-                <td>Genesis Manifest</td>
-                <td><code>bd9ec111...</code></td>
-                <td><a href="docs/GENESIS_MANIFEST.md">Link to Log</a></td>
-                <td><button type="button" data-copy="bd9ec111">Copy</button></td>
-              </tr>
-              <tr>
-                <td>Audit Report</td>
-                <td><code>9d9eeffc...</code></td>
-                <td><a href="docs/audit-report.json">Link to JSON</a></td>
-                <td><button type="button" data-copy="9d9eeffc">Copy</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section-shell split-section" aria-labelledby="assurance-title">
-        <div>
-          <p class="eyebrow">OPERATING CONSTRAINTS</p>
-          <h2 id="assurance-title">Security-First Publication</h2>
+          <p class="eyebrow">NON-CLAIM</p>
+          <h2 id="home-boundary">Evidence-lock integrity</h2>
+          <p>Tool and dependency versions are preserved to match the inspected evidence environment. No post-evidence updates are implied.</p>
         </div>
         <div class="constraint-list">
-          <p><strong>Zero trackers.</strong> No analytics, pixels, remote embeds, or third-party scripts.</p>
-          <p><strong>Static by default.</strong> The page can be served from GitHub Pages, object storage, or any plain web host.</p>
-          <p><strong>Evidence over claims.</strong> Social posts can point to this registry instead of becoming the source of truth.</p>
-          <p><strong>Repo-sync ready.</strong> A future workflow can rewrite <code>kernel-status.js</code> from GitHub commit data.</p>
-          <p><strong>Claim discipline.</strong> Never claim certified or formally verified status until the math is complete and external audits are signed.</p>
+          <p><strong>Semgrep:</strong> detected <code>1.169.0</code>.</p>
+          <p><strong>SnarkJS:</strong> detected <code>0.7.6</code>; <code>1.13.8</code> is <code>underscore</code>.</p>
+          <p><strong>Contract boundary:</strong> refreshed contract evidence is pending; no stale deployment claim is finalized.</p>
         </div>
-      </section>
-
-      <section id="manifesto" class="manifesto" aria-labelledby="manifesto-title">
-        <p class="eyebrow">TECHNICAL MANIFESTO</p>
-        <h2 id="manifesto-title">Protocol Philosophy</h2>
-        <div class="philosophy-grid">
-          <article>
-            <h3>Transparency</h3>
-            <p>We believe trust in autonomous agents cannot be bought; it must be cryptographically proven.</p>
-          </article>
-          <article>
-            <h3>Scrutiny</h3>
-            <p>Our security logs are public because implementation errors should be caught by the community, not hidden by the developer.</p>
-          </article>
-          <article>
-            <h3>Evolution</h3>
-            <p>This protocol remains in research status. Every commit brings us closer to a verifiable production primitive.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="work-with-fenrua" class="section-shell work-section" aria-labelledby="work-title">
-        <div>
-          <p class="eyebrow">COLLABORATION SURFACE</p>
-          <h2 id="work-title">Work With Fenrua</h2>
-          <p>
-            For protocol collaborators, auditors, infrastructure partners, and
-            research-aligned builders. Include the scope, relevant repository or
-            evidence link, and the review outcome you are seeking.
-          </p>
-        </div>
-        <a class="button button-primary" href="mailto:partnerships@fenrua.ai?subject=Work%20with%20Fenrua">
-          partnerships@fenrua.ai
-        </a>
       </section>
     </main>
-
-    <footer id="distribution" class="site-footer">
+    <footer class="site-footer">
       <div>
         <strong>Fenrua Labs</strong>
-        <span>Built on reproducible, audit-sealed engineering.</span>
+        <span>Evidence-first, source-first, maturity-labelled infrastructure.</span>
       </div>
-      <div class="footer-social" aria-label="Social distribution layer">
-        <p>GitHub is the primary distribution point.</p>
+      <div class="footer-social">
+        <p>Public claims are bounded by public evidence.</p>
         <div class="footer-links">
-          <a data-link="repository" href="https://github.com/fenrualabs/fenrua-kernel">
-            <svg class="media-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 19.5v-3.2c-2.7.6-3.4-1.1-3.4-1.1-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 0 1.6 1.1 1.6 1.1.9 1.6 2.4 1.1 2.9.9.1-.7.4-1.1.7-1.4-2.1-.2-4.4-1.1-4.4-4.8 0-1.1.4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .9-.3 2.7 1 .8-.2 1.7-.3 2.6-.3.9 0 1.8.1 2.6.3 1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6.7.7 1 1.6 1 2.6 0 3.7-2.2 4.5-4.4 4.8.4.3.8 1 .8 2v3.8"/>
-            </svg>
-            <span>GitHub</span>
-          </a>
-          <a href="https://x.com/fenrualabs">
-            <svg class="media-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 4l14 16M19 4 5 20"/>
-            </svg>
-            <span>X</span>
-          </a>
-          <a href="https://www.linkedin.com/in/fenrua-labs-80b679388">
-            <svg class="media-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5.5 9.5v9M5.5 6.2v.1M10 18.5v-9M10 13.2c0-2.4 1.5-3.9 3.8-3.9 2.2 0 3.7 1.5 3.7 4.2v5"/>
-            </svg>
-            <span>LinkedIn</span>
-          </a>
-          <a href="https://m.youtube.com/@FenruaLabs">
-            <svg class="media-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.5 8.3c.2-1.1 1.1-1.9 2.2-2.1 1.8-.3 3.5-.4 5.3-.4s3.5.1 5.3.4c1.1.2 2 1 2.2 2.1.3 1.2.4 2.4.4 3.7s-.1 2.5-.4 3.7c-.2 1.1-1.1 1.9-2.2 2.1-1.8.3-3.5.4-5.3.4s-3.5-.1-5.3-.4c-1.1-.2-2-1-2.2-2.1-.3-1.2-.4-2.4-.4-3.7s.1-2.5.4-3.7Z"/>
-              <path d="m10.4 9.2 4.1 2.8-4.1 2.8Z"/>
-            </svg>
-            <span>YouTube</span>
-          </a>
-          <a href="mailto:partnerships@fenrua.ai?subject=Work%20with%20Fenrua">
-            <svg class="media-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.5 6.5h15v11h-15z"/>
-              <path d="m5 7 7 5.5L19 7"/>
-            </svg>
-            <span>Work With Fenrua</span>
-          </a>
+          <a href="/evidence/">Evidence</a>
+          <a href="/toolchain/">Toolchain</a>
+          <a href="/docs/FENRUA_LAYER0_WEBSITE_IMPLEMENTATION_REPORT.md">Implementation report</a>
+          <a href="https://github.com/fenrualabs/fenrua-kernel">Kernel repository</a>
         </div>
-        <span>Broadcast Channel: Follow for protocol evolution and Genesis updates.</span>
       </div>
     </footer>
   </body>
