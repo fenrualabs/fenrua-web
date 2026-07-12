@@ -306,6 +306,22 @@ main {
   height: 0.22rem;
 }
 
+.header-chain-card[data-status="waiting"] .chain-progress-rail i {
+  background: var(--blue);
+  box-shadow: 0 0 18px rgba(120, 199, 255, 0.3);
+}
+
+.header-chain-card[data-status="delayed"] .chain-progress-rail i,
+.header-chain-card[data-status="wrong-chain"] .chain-progress-rail i {
+  background: var(--amber);
+  box-shadow: none;
+}
+
+.header-chain-card[data-status="unavailable"] .chain-progress-rail i {
+  background: var(--red);
+  box-shadow: none;
+}
+
 .desktop-chain-progress {
   display: none;
 }
@@ -807,6 +823,11 @@ h1 {
   box-shadow: none;
 }
 
+.chain-card[data-status="waiting"] .chain-progress-rail i {
+  background: var(--blue);
+  box-shadow: 0 0 18px rgba(120, 199, 255, 0.3);
+}
+
 .chain-card[data-status="unavailable"] .chain-progress-rail i {
   background: var(--red);
   box-shadow: none;
@@ -819,6 +840,23 @@ h1 {
 
 .chain-card[data-status="unavailable"] .chain-progress-meter-top strong {
   color: var(--red);
+}
+
+.chain-card[data-activity="advanced"] .chain-progress-rail i,
+.header-chain-card[data-activity="advanced"] .chain-progress-rail i {
+  animation: signed-observation-advance 900ms ease-out;
+}
+
+@keyframes signed-observation-advance {
+  0% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.7);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 @keyframes live-pulse {

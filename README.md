@@ -17,13 +17,15 @@ contract evidence refresh boundary.
 
 Collaboration contact: `partnerships@fenrua.ai`.
 
-Chain 978 is published through a **Public Observation Gateway over Encrypted
-Private-Mesh Transport**. `/api/chain-progress` reads one fixed, signed,
-schema-validated observation through a server-only Vercel credential, verifies
-its Ed25519 signature, and never probes or forwards JSON-RPC.
-`/api/chain-observation-key` exposes the matching public verification key and
-canonicalization metadata. Chain N521 telemetry is intentionally private and is
-shown as unavailable rather than simulated.
+Each chain is published only through a **Public Observation Gateway over
+Encrypted Private-Mesh Transport**. `/api/chain-progress` reads fixed,
+per-chain signed schema-validated observations through server-only Vercel
+credentials, verifies their Ed25519 signatures, and never probes or forwards
+JSON-RPC. `/api/chain-observation-key` and
+`/api/chain-n521-observation-key` expose the matching public verification
+metadata. Until Chain N521 has its own independently signed gateway and key,
+the UI truthfully shows that evidence is awaiting rather than simulating a live
+head.
 
 See [Public Observation Gateway](docs/PUBLIC_OBSERVATION_GATEWAY.md) and copy
 the server-only variable names from `.env.example`; never commit their values.
@@ -79,8 +81,9 @@ npm run generate:static
 - `evidence/index.html` - evidence registry
 - `status/index.html` - status-state system
 - `examples/*.json` - verifier example artifacts
-- `api/chain-progress.js` - bounded signed Chain 978 observation adapter
-- `api/chain-observation-key.js` - public Ed25519 verification metadata endpoint
+- `api/chain-progress.js` - bounded signed Chain 978 and Chain N521 observation adapter
+- `api/chain-observation-key.js` - Chain 978 public Ed25519 verification metadata endpoint
+- `api/chain-n521-observation-key.js` - Chain N521 public Ed25519 verification metadata endpoint
 - `assets/sigil.svg` - local Fenrua mark
 - `docs/SECURITY_AUDIT_LOG.md` - audit log
 - `docs/GENESIS_MANIFEST.md` - Genesis Manifest Record

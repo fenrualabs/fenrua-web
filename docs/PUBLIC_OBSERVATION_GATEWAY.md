@@ -2,8 +2,8 @@
 
 ## Purpose
 
-The public site exposes a narrow evidence product for Chain 978. It is not a
-public RPC service and it has no route into the private mesh.
+The public site exposes narrow evidence products for Chain 978 and Chain N521.
+They are not public RPC services and have no route into the private mesh.
 
 ```
 validator + private observers
@@ -21,8 +21,8 @@ administrative interface.
 
 ## Public record
 
-`/api/chain-progress` may include a Chain 978 entry in `observations` with only
-these fields:
+`/api/chain-progress` may include one independently verified entry per chain in
+`observations`, with only these fields:
 
 ```json
 {
@@ -42,8 +42,9 @@ these fields:
 `staleness_seconds` is serving-time metadata and is not part of the signed
 payload. The detached Ed25519 signature covers the version, chain, block,
 observation time, signed sequence, quorum, status, and key ID using the
-canonicalization stated by `/api/chain-observation-key`. That metadata endpoint exposes only the
-public key, key ID, algorithm, version, and canonicalization rule.
+canonicalization stated by the fixed per-chain metadata endpoint. Those
+endpoints expose only the public key, key ID, algorithm, version, and
+canonicalization rule.
 
 `public_key_b64` is canonical Ed25519 SPKI DER encoded as unpadded base64url.
 The server configuration may supply the equivalent raw 32-byte public key or
@@ -58,10 +59,12 @@ forwarding, or operator/customer metadata is returned.
 - Two agreeing sources and a fresh signed record produce `confirmed` / `Live`.
 - Quorum loss produces `partial`; the UI does not show an unconfirmed block as
   a live head.
-- A confirmed record older than 45 seconds is shown as `Stale`.
+- A confirmed record older than 90 seconds is shown as `Stale`. The ceiling
+  allows for a 15-second watcher/poll cadence plus bounded cache and timer
+  jitter; it is not a claim of immediate finality.
 - No current observation produces `unavailable`, never a false success.
-- Chain N521 remains `unavailable` / `Private telemetry not published` until it
-  has its own independently bounded observation publisher.
+- A chain with no configured independent publisher is `Awaiting signed
+  observation`; no block, sequence, or live state is fabricated.
 
 ## Controls
 
@@ -71,7 +74,7 @@ forwarding, or operator/customer metadata is returned.
   unavailable records must also pass Ed25519 verification against the configured public key;
   otherwise the adapter fails closed to `unavailable`.
 - The public status endpoint uses a 5-second CDN cache with no stale-on-error
-  serving. The browser refreshes every 10 seconds.
+  serving. The browser refreshes every 15 seconds.
 - A salted, in-memory, best-effort limit of 60 requests per minute per client
   is applied per warm serverless isolate. It does not replace edge-level DDoS
   protection.
@@ -86,10 +89,15 @@ code, logs, source commits, or `NEXT_PUBLIC_*` variables.
 
 | Variable | Purpose |
 | --- | --- |
-| `FENRUA_OBSERVATION_GATEWAY_URL` | Fixed HTTPS public-observation gateway route. |
-| `FENRUA_OBSERVATION_READ_TOKEN` | Vercel-to-gateway read credential. |
-| `FENRUA_OBSERVATION_PUBLIC_KEY_B64` | Public Ed25519 verification key. |
-| `FENRUA_OBSERVATION_KEY_ID` | Identifier bound into each signed record. |
+| `FENRUA_OBSERVATION_GATEWAY_URL` | Chain 978 fixed HTTPS public-observation gateway route. |
+| `FENRUA_OBSERVATION_READ_TOKEN` | Chain 978 Vercel-to-gateway read credential. |
+| `FENRUA_OBSERVATION_PUBLIC_KEY_B64` | Chain 978 public Ed25519 verification key. |
+| `FENRUA_OBSERVATION_KEY_ID` | Chain 978 identifier bound into each signed record. |
+| `FENRUA_N521_OBSERVATION_GATEWAY_URL` | Chain N521 fixed HTTPS public-observation gateway route. |
+| `FENRUA_N521_OBSERVATION_READ_TOKEN` | Chain N521 Vercel-to-gateway read credential. |
+| `FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64` | Chain N521 public Ed25519 verification key. |
+| `FENRUA_N521_OBSERVATION_KEY_ID` | Chain N521 identifier bound into each signed record. |
 
-The final two values are intentionally publishable through the bounded
-verification endpoint. The gateway URL and read token are not.
+The public keys and key IDs are intentionally publishable through
+`/api/chain-observation-key` (978) and `/api/chain-n521-observation-key`
+(N521). Gateway URLs and read tokens are not.

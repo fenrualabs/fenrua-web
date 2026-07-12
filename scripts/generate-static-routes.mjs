@@ -183,11 +183,11 @@ const researchItems = [
     title: "Read-Only Chain Observation Boundary",
     category: "Chain research",
     primitive: "Verification",
-    claim: "Chain 978 is exposed as a signed, bounded read-only observation; Chain N521 telemetry is intentionally not published.",
+    claim: "Chain 978 and Chain N521 can be exposed only as independently signed, bounded read-only observations.",
     nonClaim: "A chain observation does not prove contract safety, bytecode identity, reserve state, or deployment correctness.",
     threat: "Public telemetry could be mistaken for contract assurance.",
     invariant: "No private endpoint, admin URL, RPC credential, peer detail, validator identity, or signing key appears in browser payloads.",
-    implementation: "api/chain-progress.js, api/chain-observation-key.js, and scripts/test-chain-progress.mjs.",
+    implementation: "api/chain-progress.js, fixed per-chain observation-key endpoints, and scripts/test-chain-progress.mjs.",
     tooling: "Node.js API test harness and sanitized response assertions.",
     commands: ["node scripts/test-chain-progress.mjs"],
     evidence: "chain-progress public-feed test output.",
@@ -339,6 +339,7 @@ function chainRail(className, label = "Live block updates") {
             <small data-chain-field="978-checked">loading</small>
             <small data-chain-field="978-source">Evidence source: loading</small>
             <small data-chain-field="978-confidence">Confidence: loading</small>
+            <small data-chain-field="978-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
         </article>
@@ -353,6 +354,7 @@ function chainRail(className, label = "Live block updates") {
             <small data-chain-field="521-checked">loading</small>
             <small data-chain-field="521-source">Evidence source: loading</small>
             <small data-chain-field="521-confidence">Confidence: loading</small>
+            <small data-chain-field="521-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
         </article>
@@ -477,8 +479,8 @@ function chainProgressSection() {
   return `<section id="chain-progress" class="section-shell chain-progress desktop-chain-progress" aria-labelledby="chain-progress-title">
         <div class="section-heading">
           <p class="eyebrow">SIGNED READ-ONLY OBSERVATION</p>
-          <h2 id="chain-progress-title">Chain 978 Observation Boundary</h2>
-          <p>Chain 978 is published through a bounded signed observation gateway. Chain N521 telemetry remains private. Neither state proves contract safety, bytecode identity, reserve state, or deployment correctness.</p>
+          <h2 id="chain-progress-title">Signed Chain Observation Boundary</h2>
+          <p>Each chain can publish only an independently signed bounded observation. Chain N521 remains awaiting evidence until its own gateway and verification key are configured. Neither state proves contract safety, bytecode identity, reserve state, or deployment correctness.</p>
         </div>
         <div class="status-band" aria-label="Live chain feed status">
           <span>Feed <strong data-chain-meta="feed-status">loading</strong></span>
@@ -499,8 +501,9 @@ function chainProgressSection() {
               <div><dt>Evidence source</dt><dd data-chain-field="978-source">loading</dd></div>
               <div><dt>Confidence</dt><dd data-chain-field="978-confidence">loading</dd></div>
               <div><dt>Observed</dt><dd data-chain-field="978-checked">loading</dd></div>
+              <div><dt>Signed activity</dt><dd data-chain-field="978-activity">loading</dd></div>
             </dl>
-            <div class="chain-progress-meter" aria-label="Chain 978 next verification progress">
+            <div class="chain-progress-meter" aria-label="Chain 978 next signed observation progress">
               <div class="chain-progress-meter-top">
                 <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
                 <strong data-chain-field="978-progress">loading</strong>
@@ -520,8 +523,9 @@ function chainProgressSection() {
               <div><dt>Evidence source</dt><dd data-chain-field="521-source">loading</dd></div>
               <div><dt>Confidence</dt><dd data-chain-field="521-confidence">loading</dd></div>
               <div><dt>Observed</dt><dd data-chain-field="521-checked">loading</dd></div>
+              <div><dt>Signed activity</dt><dd data-chain-field="521-activity">loading</dd></div>
             </dl>
-            <div class="chain-progress-meter" aria-label="Chain N521 next verification progress">
+            <div class="chain-progress-meter" aria-label="Chain N521 next signed observation progress">
               <div class="chain-progress-meter-top">
                 <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
                 <strong data-chain-field="521-progress">loading</strong>
@@ -889,8 +893,8 @@ function status() {
     ["Developer quick start", "success", "Reproducibility guide", "/developers/", generatedDate, "clean checkout report", "npm run validate", "Node 24 required.", "Tagged release reproduction"],
     ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedDate, "registry validation", "node scripts/test-toolchain-registry.mjs", "Version capture is not security proof.", "New frozen evidence bundle"],
     ["Evidence registry", "success", "Evidence surface", "/evidence/", generatedDate, "static route validation", "npm run validate", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
-    ["Chain 978 observation", "success", "Signed bounded observation", "/api/chain-progress", "5 second public cache", "10 second refresh, 45 second freshness", "node scripts/test-chain-progress.mjs", "Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Contract evidence refresh boundary"],
-    ["Chain N521 observation", "partial", "Private telemetry not published", "/api/chain-progress", "unavailable by design", "No public observation", "node scripts/test-chain-progress.mjs", "No Chain N521 liveness claim is made while its telemetry remains private.", "Independent bounded observation gateway"],
+    ["Chain 978 observation", "success", "Signed bounded observation", "/api/chain-progress", "5 second public cache", "15 second refresh, 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Contract evidence refresh boundary"],
+    ["Chain N521 observation", "partial", "Awaiting independently signed observation", "/api/chain-progress", "No synthetic status", "15 second refresh once configured", "node scripts/test-chain-progress.mjs", "No Chain N521 liveness claim is made until its own signed gateway and verification key are configured.", "Independent bounded observation gateway"],
     ["Contract evidence", "pending evidence", "Pending refreshed bundle", "docs/FENRUA_CONTRACT_EVIDENCE_REFRESH_BOUNDARY.md", generatedDate, "manual evidence gate", "none", "No current contract, bytecode, reserve, or deployment claim.", "Frozen contract evidence bundle"],
     ["Public repository", "success", "Source surface", "https://github.com/fenrualabs/fenrua-web", generatedDate, "git provenance", "git rev-parse HEAD", "Repository state changes after each deployment.", "Tagged release"],
     ["Schema set", "success", "Specification", "/docs/", generatedDate, "example corpus validation", "node scripts/test-verify-examples.mjs", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],

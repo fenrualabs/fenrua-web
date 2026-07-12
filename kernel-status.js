@@ -292,6 +292,7 @@ const chainFieldMap = {
     checked: '[data-chain-field="978-checked"]',
     source: '[data-chain-field="978-source"]',
     confidence: '[data-chain-field="978-confidence"]',
+    activity: '[data-chain-field="978-activity"]',
     progress: '[data-chain-field="978-progress"]',
     progressRail: '[data-chain-card="978"] .chain-progress-rail i',
     card: '[data-chain-card="978"]',
@@ -304,17 +305,18 @@ const chainFieldMap = {
     checked: '[data-chain-field="521-checked"]',
     source: '[data-chain-field="521-source"]',
     confidence: '[data-chain-field="521-confidence"]',
+    activity: '[data-chain-field="521-activity"]',
     progress: '[data-chain-field="521-progress"]',
     progressRail: '[data-chain-card="521"] .chain-progress-rail i',
     card: '[data-chain-card="521"]',
   },
 };
 
-const chainRefreshMs = 10_000;
+const chainRefreshMs = 15_000;
 const chainFetchTimeoutMs = 8_000;
 const chainMaxBackoffMs = 60_000;
-const maxSnapshotAgeSeconds = 15;
-const maxFreshHeadAgeSeconds = 60;
+const maxSnapshotAgeSeconds = 30;
+const defaultFreshnessSeconds = 90;
 const chainProbe = {
   nextAt: 0,
   tickId: null,
@@ -322,6 +324,9 @@ const chainProbe = {
   controller: null,
   refreshMs: chainRefreshMs,
   retryMs: chainRefreshMs,
+  freshnessSeconds: defaultFreshnessSeconds,
+  hasSnapshot: false,
+  sequences: new Map(),
 };
 
 function formatNumber(value) {
@@ -349,8 +354,11 @@ function secondsSince(value) {
   return Math.max(0, Math.floor((Date.now() - timestamp) / 1_000));
 }
 
-function effectiveHeadAge(chain) {
-  const elapsed = secondsSince(chain.checkedAt);
+function effectiveHeadAge(chain, payload) {
+  // `blockAgeSeconds` is already calculated from `observed_at` by the server.
+  // Add only time since this browser received the snapshot; adding checkedAt
+  // again would double-count the same age and cause false stale states.
+  const elapsed = secondsSince(payload.generatedAt);
   if (!Number.isSafeInteger(chain.blockAgeSeconds) || elapsed === null) return null;
   return chain.blockAgeSeconds + elapsed;
 }
@@ -360,9 +368,14 @@ function normalizeRefreshMs(value) {
   return Math.min(Math.max(value, 5_000), 60_000);
 }
 
+function normalizeFreshnessSeconds(value) {
+  if (!Number.isSafeInteger(value)) return defaultFreshnessSeconds;
+  return Math.min(Math.max(value, 30), 300);
+}
+
 function cardStatus(chain) {
-  if (chain.confirmation?.evidenceSource === "private-telemetry") {
-    return { label: "Private telemetry not published", state: "unavailable" };
+  if (chain.status === "waiting") {
+    return { label: "Awaiting signed observation", state: "waiting" };
   }
 
   if (chain.status === "wrong-chain") {
@@ -421,14 +434,37 @@ function formatChainIdentity(chain) {
 }
 
 function formatSource(value) {
+  if (value === "awaiting-signed-observation") return "Evidence source: awaiting signed observation";
   if (value === "signed-observation") return "Evidence source: signed bounded observation";
   if (value === "stale-observation") return "Evidence source: signed observation (stale)";
   if (value === "partial-observation") return "Evidence source: partial observation";
-  if (value === "private-telemetry") return "Evidence source: private telemetry not published";
   if (value === "confirmed") return "Evidence source: live observation confirmed";
   if (value === "stale") return "Evidence source: stale observation";
   if (value === "mismatch") return "Evidence source: chain mismatch";
   return "Evidence source: unavailable";
+}
+
+function describeSignedActivity(chain) {
+  const sequence = chain.observationSequence;
+  if (!Number.isSafeInteger(sequence)) {
+    return chain.status === "waiting"
+      ? { label: "Awaiting signed observation", state: "waiting" }
+      : { label: "No verified sequence", state: "unavailable" };
+  }
+
+  const previous = chainProbe.sequences.get(chain.expectedChainId);
+  chainProbe.sequences.set(chain.expectedChainId, sequence);
+
+  if (!Number.isSafeInteger(previous)) {
+    return { label: `Signed sequence ${formatNumber(sequence)} · current`, state: "steady" };
+  }
+  if (sequence > previous) {
+    return { label: `Signed sequence ${formatNumber(sequence)} · advanced`, state: "advanced" };
+  }
+  if (sequence < previous) {
+    return { label: `Signed sequence ${formatNumber(sequence)} · reset`, state: "reset" };
+  }
+  return { label: `Signed sequence ${formatNumber(sequence)} · current`, state: "steady" };
 }
 
 function formatConfidence(value) {
@@ -459,6 +495,7 @@ function startChainCountdown() {
 function updateChainMeta(payload, cardStates) {
   const refreshMs = normalizeRefreshMs(payload.refreshMs);
   chainProbe.refreshMs = refreshMs;
+  chainProbe.freshnessSeconds = normalizeFreshnessSeconds(payload.freshnessSeconds);
   chainProbe.nextAt = Date.now() + refreshMs;
 
   const healthy = cardStates.filter((state) => state === "confirmed" || state === "partial" || state === "waiting");
@@ -482,19 +519,23 @@ function updateChainCard(chain, payload) {
   if (!fields) return "unavailable";
 
   const snapshotAge = secondsSince(payload.generatedAt);
-  const agedHead = effectiveHeadAge(chain);
+  const agedHead = effectiveHeadAge(chain, payload);
   const displayChain = {
     ...chain,
     blockAgeSeconds: agedHead,
     status:
       chain.status === "live" &&
-      (snapshotAge === null || snapshotAge > maxSnapshotAgeSeconds || agedHead === null || agedHead > maxFreshHeadAgeSeconds)
+      (snapshotAge === null ||
+        snapshotAge > maxSnapshotAgeSeconds ||
+        agedHead === null ||
+        agedHead > chainProbe.freshnessSeconds)
         ? "delayed"
         : chain.status,
   };
   const hasCurrentBlock = Number.isSafeInteger(chain.blockNumber);
   const status = cardStatus(displayChain);
   const confirmation = displayChain.confirmation ?? {};
+  const activity = describeSignedActivity(displayChain);
 
   setText(fields.status, status.label);
   setText(fields.progress, progressLabel(status.state));
@@ -503,9 +544,11 @@ function updateChainCard(chain, payload) {
   setText(fields.checked, hasCurrentBlock ? formatCheckedAt(chain.checkedAt) : "not observed");
   setText(fields.source, formatSource(confirmation.evidenceSource));
   setText(fields.confidence, formatConfidence(confirmation.confidence));
+  setText(fields.activity, activity.label);
 
   document.querySelectorAll(fields.card).forEach((card) => {
     card.dataset.status = status.state;
+    card.dataset.activity = activity.state;
   });
 
   return status.state;
@@ -526,21 +569,25 @@ function showFeedFailure() {
   setText('[data-chain-meta="feed-status"]', "retrying");
   updateChainCountdown();
 
-  Object.values(chainFieldMap).forEach((fields) => {
-    const privateTelemetry = fields.chainKey === 521;
-    setText(fields.status, privateTelemetry ? "Private telemetry not published" : "Failure");
-    setText(fields.block, "Observation unavailable");
-    setText(fields.checked, "not observed");
-    setText(
-      fields.source,
-      privateTelemetry ? "Evidence source: private telemetry not published" : "Evidence source: unavailable"
-    );
-    setText(fields.confidence, "Confidence: unavailable");
-    setText(fields.progress, privateTelemetry ? "offline" : "retrying");
-    document.querySelectorAll(fields.card).forEach((card) => {
-      card.dataset.status = "unavailable";
+  if (!chainProbe.hasSnapshot) {
+    Object.values(chainFieldMap).forEach((fields) => {
+      const awaiting = fields.chainKey === 521;
+      setText(fields.status, awaiting ? "Awaiting signed observation" : "Failure");
+      setText(fields.block, "Observation unavailable");
+      setText(fields.checked, "not observed");
+      setText(
+        fields.source,
+        awaiting ? "Evidence source: awaiting signed observation" : "Evidence source: unavailable"
+      );
+      setText(fields.confidence, "Confidence: unavailable");
+      setText(fields.activity, awaiting ? "Awaiting signed observation" : "No verified sequence");
+      setText(fields.progress, awaiting ? "loading" : "retrying");
+      document.querySelectorAll(fields.card).forEach((card) => {
+        card.dataset.status = awaiting ? "waiting" : "unavailable";
+        card.dataset.activity = awaiting ? "waiting" : "unavailable";
+      });
     });
-  });
+  }
 }
 
 async function fetchChainProgress() {
@@ -572,6 +619,7 @@ async function readChainProgress() {
     const payload = await fetchChainProgress();
     const cardStates = payload.chains.map((chain) => updateChainCard(chain, payload));
     updateChainMeta(payload, cardStates);
+    chainProbe.hasSnapshot = true;
     chainProbe.retryMs = chainProbe.refreshMs;
     scheduleChainRead(chainProbe.refreshMs);
   } catch {

@@ -3,8 +3,8 @@ import { createHash, createPublicKey, randomBytes, verify as verifySignature } f
 // This route is intentionally a bounded public adapter. It never forwards a
 // browser request to JSON-RPC and never includes an endpoint, peer, hash, or
 // operator detail in its response.
-const refreshMs = 10_000;
-const maxFreshObservationAgeSeconds = 45;
+const refreshMs = 15_000;
+const maxFreshObservationAgeSeconds = 90;
 const gatewayTimeoutMs = 5_000;
 const maxGatewayResponseBytes = 2_048;
 const responseCacheControl = "public, max-age=0, must-revalidate";
@@ -44,24 +44,39 @@ const ed25519SpkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
 const rateLimitSalt = randomBytes(16).toString("base64url");
 const rateLimitEntries = new Map();
 
+const observationTargets = [
+  {
+    id: "fenchain-978",
+    chain: "978",
+    title: "Chain 978",
+    label: "FENc978",
+    expectedChainId: 978,
+    role: "Public Observation Gateway over Encrypted Private-Mesh Transport",
+    env: {
+      gatewayUrl: "FENRUA_OBSERVATION_GATEWAY_URL",
+      readToken: "FENRUA_OBSERVATION_READ_TOKEN",
+      publicKey: "FENRUA_OBSERVATION_PUBLIC_KEY_B64",
+      keyId: "FENRUA_OBSERVATION_KEY_ID",
+    },
+  },
+  {
+    id: "fenchain-n521",
+    chain: "521",
+    title: "Chain N521",
+    label: "FENn521",
+    expectedChainId: 521,
+    role: "Public Observation Gateway over Encrypted Private-Mesh Transport",
+    env: {
+      gatewayUrl: "FENRUA_N521_OBSERVATION_GATEWAY_URL",
+      readToken: "FENRUA_N521_OBSERVATION_READ_TOKEN",
+      publicKey: "FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64",
+      keyId: "FENRUA_N521_OBSERVATION_KEY_ID",
+    },
+  },
+];
+
 let activeSnapshot = null;
 let rateLimitSweeps = 0;
-
-const chain978 = {
-  id: "fenchain-978",
-  title: "Chain 978",
-  label: "FENc978",
-  expectedChainId: 978,
-  role: "Public Observation Gateway over Encrypted Private-Mesh Transport",
-};
-
-const chainN521 = {
-  id: "fenchain-n521",
-  title: "Chain N521",
-  label: "FENn521",
-  expectedChainId: 521,
-  role: "Private telemetry not published",
-};
 
 function readHeader(request, name) {
   const headers = request?.headers;
@@ -125,10 +140,10 @@ function allowRequest(request) {
   return true;
 }
 
-function readGatewayConfig() {
-  const candidate = process.env.FENRUA_OBSERVATION_GATEWAY_URL?.trim();
-  const readToken = process.env.FENRUA_OBSERVATION_READ_TOKEN?.trim();
-  if (!candidate || !readToken) return null;
+function readGatewayConfig(target) {
+  const candidate = process.env[target.env.gatewayUrl]?.trim();
+  const readToken = process.env[target.env.readToken]?.trim();
+  if (!candidate || !readToken) return { state: "missing" };
 
   try {
     const endpoint = new URL(candidate);
@@ -139,12 +154,12 @@ function readGatewayConfig() {
       endpoint.search ||
       endpoint.hash
     ) {
-      return null;
+      return { state: "invalid" };
     }
 
-    return { endpoint: endpoint.toString(), readToken };
+    return { state: "configured", endpoint: endpoint.toString(), readToken };
   } catch {
-    return null;
+    return { state: "invalid" };
   }
 }
 
@@ -162,9 +177,9 @@ function parseObservedAt(value) {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-function readVerificationKey(expectedKeyId) {
-  const encodedPublicKey = process.env.FENRUA_OBSERVATION_PUBLIC_KEY_B64?.trim();
-  const configuredKeyId = process.env.FENRUA_OBSERVATION_KEY_ID?.trim();
+function readVerificationKey(target, expectedKeyId) {
+  const encodedPublicKey = process.env[target.env.publicKey]?.trim();
+  const configuredKeyId = process.env[target.env.keyId]?.trim();
   if (
     !encodedPublicKey ||
     !configuredKeyId ||
@@ -177,8 +192,6 @@ function readVerificationKey(expectedKeyId) {
 
   try {
     const keyBytes = Buffer.from(encodedPublicKey, "base64url");
-    // Support either a raw 32-byte Ed25519 public key or a standard SPKI DER
-    // value. The public metadata endpoint serves the exact configured form.
     const der = keyBytes.length === 32 ? Buffer.concat([ed25519SpkiPrefix, keyBytes]) : keyBytes;
     const key = createPublicKey({ key: der, format: "der", type: "spki" });
     return key.asymmetricKeyType === "ed25519" ? key : null;
@@ -203,8 +216,8 @@ function canonicalSignedPayload(observation) {
   });
 }
 
-function hasValidSignature(observation) {
-  const key = readVerificationKey(observation.key_id);
+function hasValidSignature(target, observation) {
+  const key = readVerificationKey(target, observation.key_id);
   if (!key || typeof observation.signature !== "string") return false;
 
   try {
@@ -219,14 +232,14 @@ function hasValidSignature(observation) {
   }
 }
 
-function normalizeGatewayObservation(payload) {
+function normalizeGatewayObservation(payload, target) {
   if (!isPlainObject(payload)) return null;
 
   const keys = Object.keys(payload);
   if (keys.some((key) => !allowedGatewayFields.has(key))) return null;
   if (requiredGatewayFields.some((key) => !Object.hasOwn(payload, key))) return null;
   if (Object.hasOwn(payload, "version") && payload.version !== 1) return null;
-  if (payload.chain !== "978" || !safeStatuses.has(payload.status)) return null;
+  if (payload.chain !== target.chain || !safeStatuses.has(payload.status)) return null;
   if (!isNonNegativeSafeInteger(payload.source_quorum) || payload.source_quorum > 2) return null;
   if (!isNonNegativeSafeInteger(payload.staleness_seconds)) return null;
   if (!keyIdPattern.test(payload.key_id)) return null;
@@ -260,7 +273,7 @@ function normalizeGatewayObservation(payload) {
 
   const observation = {
     version: payload.version ?? 1,
-    chain: "978",
+    chain: target.chain,
     observed_block: observedBlock,
     observed_at: payload.observed_at,
     sequence,
@@ -271,14 +284,14 @@ function normalizeGatewayObservation(payload) {
     key_id: payload.key_id,
   };
 
-  if (observation.signature !== null && !hasValidSignature(observation)) return null;
+  if (observation.signature !== null && !hasValidSignature(target, observation)) return null;
   if (observation.status !== "unavailable" && observation.signature === null) return null;
   return observation;
 }
 
-async function fetchGatewayObservation() {
-  const config = readGatewayConfig();
-  if (!config) return null;
+async function fetchGatewayObservation(target) {
+  const config = readGatewayConfig(target);
+  if (config.state !== "configured") return { observation: null, configuration: config.state };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), gatewayTimeoutMs);
@@ -295,33 +308,40 @@ async function fetchGatewayObservation() {
       signal: controller.signal,
     });
 
-    if (!upstream.ok) return null;
+    if (!upstream.ok) return { observation: null, configuration: "configured" };
 
     const contentLength = upstream.headers?.get?.("content-length");
     if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > maxGatewayResponseBytes)) {
-      return null;
+      return { observation: null, configuration: "configured" };
     }
 
     const text = await upstream.text();
-    if (Buffer.byteLength(text, "utf8") > maxGatewayResponseBytes) return null;
-    return normalizeGatewayObservation(JSON.parse(text));
+    if (Buffer.byteLength(text, "utf8") > maxGatewayResponseBytes) {
+      return { observation: null, configuration: "configured" };
+    }
+
+    return {
+      observation: normalizeGatewayObservation(JSON.parse(text), target),
+      configuration: "configured",
+    };
   } catch {
-    return null;
+    return { observation: null, configuration: "configured" };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function unavailable978(checkedAt) {
+function unavailableChain(target, checkedAt) {
   return {
-    id: chain978.id,
-    title: chain978.title,
-    label: chain978.label,
-    role: chain978.role,
-    expectedChainId: chain978.expectedChainId,
+    id: target.id,
+    title: target.title,
+    label: target.label,
+    role: target.role,
+    expectedChainId: target.expectedChainId,
     chainId: null,
     blockNumber: null,
     blockAgeSeconds: null,
+    observationSequence: null,
     status: "unavailable",
     confirmation: {
       evidenceSource: "unavailable",
@@ -331,27 +351,33 @@ function unavailable978(checkedAt) {
   };
 }
 
-function n521NotPublished(checkedAt) {
+function awaitingSignedObservation(target, checkedAt) {
   return {
-    id: chainN521.id,
-    title: chainN521.title,
-    label: chainN521.label,
-    role: chainN521.role,
-    expectedChainId: chainN521.expectedChainId,
+    id: target.id,
+    title: target.title,
+    label: target.label,
+    role: "Awaiting independently signed bounded observation",
+    expectedChainId: target.expectedChainId,
     chainId: null,
     blockNumber: null,
     blockAgeSeconds: null,
-    status: "unavailable",
+    observationSequence: null,
+    status: "waiting",
     confirmation: {
-      evidenceSource: "private-telemetry",
+      evidenceSource: "awaiting-signed-observation",
       confidence: "unavailable",
     },
     checkedAt,
   };
 }
 
-function map978Observation(observation, checkedAt) {
-  if (!observation || observation.status === "unavailable") return unavailable978(checkedAt);
+function mapObservation(target, source, checkedAt) {
+  const { observation, configuration } = source;
+  if (!observation || observation.status === "unavailable") {
+    return target.chain === "521" && configuration === "missing"
+      ? awaitingSignedObservation(target, checkedAt)
+      : unavailableChain(target, checkedAt);
+  }
 
   const isFreshConfirmed =
     observation.status === "confirmed" && observation.staleness_seconds <= maxFreshObservationAgeSeconds;
@@ -359,14 +385,15 @@ function map978Observation(observation, checkedAt) {
   const isConfirmedObservation = observation.status === "confirmed";
 
   return {
-    id: chain978.id,
-    title: chain978.title,
-    label: chain978.label,
-    role: chain978.role,
-    expectedChainId: chain978.expectedChainId,
-    chainId: isConfirmedObservation ? chain978.expectedChainId : null,
+    id: target.id,
+    title: target.title,
+    label: target.label,
+    role: target.role,
+    expectedChainId: target.expectedChainId,
+    chainId: isConfirmedObservation ? target.expectedChainId : null,
     blockNumber: isConfirmedObservation ? observation.observed_block : null,
     blockAgeSeconds: isConfirmedObservation ? observation.staleness_seconds : null,
+    observationSequence: observation.sequence,
     status,
     confirmation:
       status === "live"
@@ -380,18 +407,18 @@ function map978Observation(observation, checkedAt) {
 
 async function buildSnapshot() {
   if (!activeSnapshot) {
-    activeSnapshot = fetchGatewayObservation()
-      .then((observation) => {
+    activeSnapshot = Promise.all(observationTargets.map(fetchGatewayObservation))
+      .then((sources) => {
         const generatedAt = new Date().toISOString();
         return {
           version: 1,
           generatedAt,
           refreshMs,
-          // The signed observation is intentionally public and contains only
-          // bounded fields. It enables independent verification through
-          // /api/chain-observation-key without exposing transport details.
-          observations: observation ? [observation] : [],
-          chains: [map978Observation(observation, generatedAt), n521NotPublished(generatedAt)],
+          freshnessSeconds: maxFreshObservationAgeSeconds,
+          // Every entry is a verified bounded record. No synthetic N521 block,
+          // sequence, or successful state is created when its gateway is absent.
+          observations: sources.flatMap(({ observation }) => (observation ? [observation] : [])),
+          chains: observationTargets.map((target, index) => mapObservation(target, sources[index], generatedAt)),
         };
       })
       .finally(() => {
