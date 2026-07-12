@@ -156,4 +156,97 @@ function hydrateKernelStatus() {
   bindRegistrySearch();
 }
 
+const chainFieldMap = {
+  978: {
+    status: '[data-chain-field="978-status"]',
+    chainId: '[data-chain-field="978-chain-id"]',
+    block: '[data-chain-field="978-block"]',
+    latency: '[data-chain-field="978-latency"]',
+    checked: '[data-chain-field="978-checked"]',
+    card: '[data-chain-card="978"]',
+  },
+  521: {
+    status: '[data-chain-field="521-status"]',
+    chainId: '[data-chain-field="521-chain-id"]',
+    block: '[data-chain-field="521-block"]',
+    latency: '[data-chain-field="521-latency"]',
+    checked: '[data-chain-field="521-checked"]',
+    card: '[data-chain-card="521"]',
+  },
+};
+
+function formatNumber(value) {
+  return Number.isSafeInteger(value) ? new Intl.NumberFormat("en-US").format(value) : "Reading";
+}
+
+function formatCheckedAt(value) {
+  if (!value) return "pending";
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return "pending";
+  }
+}
+
+function chainStatusText(chain) {
+  if (chain.status === "online" && Number.isSafeInteger(chain.blockNumber)) {
+    return "Block progress live";
+  }
+
+  if (chain.status === "wrong-chain") {
+    return "Chain mismatch";
+  }
+
+  return "Reading progress";
+}
+
+function updateChainCard(chain) {
+  const fields = chainFieldMap[chain.expectedChainId];
+  if (!fields) return;
+
+  setText(fields.status, chainStatusText(chain));
+  setText(fields.chainId, `${chain.chainId ?? chain.expectedChainId} / 0x${chain.expectedChainId.toString(16)}`);
+  setText(fields.block, formatNumber(chain.blockNumber));
+  setText(fields.latency, Number.isSafeInteger(chain.latencyMs) ? `${chain.latencyMs}ms` : "pending");
+  setText(fields.checked, formatCheckedAt(chain.checkedAt));
+
+  document.querySelectorAll(fields.card).forEach((card) => {
+    card.dataset.status = chain.status || "offline";
+  });
+}
+
+async function readChainProgress() {
+  const response = await fetch("/api/chain-progress", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Chain progress HTTP ${response.status}`);
+  const payload = await response.json();
+  if (!Array.isArray(payload.chains)) throw new Error("Missing chain progress");
+  payload.chains.forEach(updateChainCard);
+  return Number.isSafeInteger(payload.refreshMs) ? payload.refreshMs : 15_000;
+}
+
+function hydrateChainProgress() {
+  if (!document.querySelector("[data-chain-card]")) return;
+
+  let interval = 15_000;
+
+  const read = async () => {
+    try {
+      interval = await readChainProgress();
+    } catch {
+      document.querySelectorAll("[data-chain-card]").forEach((card) => {
+        card.dataset.status = "offline";
+      });
+    }
+  };
+
+  void read();
+  window.setInterval(() => void read(), interval);
+}
+
 hydrateKernelStatus();
+hydrateChainProgress();

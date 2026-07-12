@@ -9,7 +9,7 @@
   },
   "packageManager": "npm@11.18.0",
   "scripts": {
-    "validate": "node scripts/require-node24.mjs && node --check kernel-status.js && node scripts/check-static-links.mjs",
+    "validate": "node scripts/require-node24.mjs && node --check kernel-status.js && node --check api/chain-progress.js && node scripts/check-static-links.mjs",
     "deploy:production:node24": "node scripts/require-node24.mjs && npx --yes vercel@latest deploy --prod --yes --project fenrua-commons",
     "deploy:prodction:node24": "npm run deploy:production:node24"
   }

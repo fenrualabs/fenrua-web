@@ -44,6 +44,7 @@
 
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="#repositories">Repositories</a>
+        <a href="#chain-progress">Chain Progress</a>
         <a href="#kernel">Kernel State</a>
         <a href="#day-zero">Day Zero</a>
         <a href="#primitives">Primitives</a>
@@ -108,6 +109,73 @@ privacy: no analytics, no beacons, no third-party scripts</code></pre>
         <div>
           <strong><a data-link="ci" href="https://github.com/fenrualabs/fenrua-kernel/actions" data-kernel-field="ciOutput">Hardening: PASS</a></strong>
           <span>CI Output</span>
+        </div>
+      </section>
+
+      <section id="chain-progress" class="section-shell chain-progress" aria-labelledby="chain-progress-title">
+        <div class="section-heading">
+          <p class="eyebrow">LIVE CHAIN PROGRESS</p>
+          <h2 id="chain-progress-title">Chain 978 + Chain N521</h2>
+          <p>
+            Public RPC continuity for the two Fenrua evidence lanes. Chain 978
+            carries FEN protocol support; Chain N521 carries N / P-521 research.
+          </p>
+        </div>
+
+        <div class="chain-grid" aria-live="polite">
+          <article class="chain-card" data-chain-card="978">
+            <div class="chain-card-top">
+              <span>FENc978</span>
+              <strong data-chain-field="978-status">Reading</strong>
+            </div>
+            <h3>Chain 978</h3>
+            <dl>
+              <div>
+                <dt>Chain ID</dt>
+                <dd data-chain-field="978-chain-id">978 / 0x3d2</dd>
+              </div>
+              <div>
+                <dt>Latest Block</dt>
+                <dd data-chain-field="978-block">Reading</dd>
+              </div>
+              <div>
+                <dt>Latency</dt>
+                <dd data-chain-field="978-latency">pending</dd>
+              </div>
+              <div>
+                <dt>Checked</dt>
+                <dd data-chain-field="978-checked">pending</dd>
+              </div>
+            </dl>
+            <a href="https://fenchain.info">Open explorer</a>
+          </article>
+
+          <article class="chain-card" data-chain-card="521">
+            <div class="chain-card-top">
+              <span>FENn521</span>
+              <strong data-chain-field="521-status">Reading</strong>
+            </div>
+            <h3>Chain N521</h3>
+            <dl>
+              <div>
+                <dt>Chain ID</dt>
+                <dd data-chain-field="521-chain-id">521 / 0x209</dd>
+              </div>
+              <div>
+                <dt>Latest Block</dt>
+                <dd data-chain-field="521-block">Reading</dd>
+              </div>
+              <div>
+                <dt>Latency</dt>
+                <dd data-chain-field="521-latency">pending</dd>
+              </div>
+              <div>
+                <dt>Checked</dt>
+                <dd data-chain-field="521-checked">pending</dd>
+              </div>
+            </dl>
+            <a href="https://fenchain521.info">Open explorer</a>
+          </article>
         </div>
       </section>
 

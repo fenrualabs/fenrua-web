@@ -45,6 +45,7 @@ npm run validate
 - `index.html` - protocol explorer
 - `styles.css` - terminal-grade dark-mode reset and interface styling
 - `kernel-status.js` - local telemetry and registry manifest
+- `api/chain-progress.js` - server-side live Chain 978 and Chain N521 progress probe
 - `assets/sigil.svg` - local Fenrua mark
 - `docs/SECURITY_AUDIT_LOG.md` - audit log
 - `docs/GENESIS_MANIFEST.md` - Genesis Manifest Record

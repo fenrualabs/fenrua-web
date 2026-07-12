@@ -366,6 +366,107 @@ h1 {
   text-transform: uppercase;
 }
 
+.chain-progress {
+  background:
+    linear-gradient(135deg, rgba(101, 242, 154, 0.09), transparent 42%),
+    rgba(18, 18, 18, 0.94);
+}
+
+.chain-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.chain-card {
+  display: grid;
+  gap: 1rem;
+  min-height: 20rem;
+  border: 1px solid rgba(101, 242, 154, 0.32);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(101, 242, 154, 0.105), rgba(101, 242, 154, 0.025)),
+    #101412;
+  padding: 1rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(101, 242, 154, 0.035),
+    0 20px 60px rgba(0, 0, 0, 0.24);
+}
+
+.chain-card[data-status="online"] {
+  border-color: rgba(101, 242, 154, 0.58);
+}
+
+.chain-card[data-status="wrong-chain"] {
+  border-color: rgba(242, 201, 109, 0.58);
+}
+
+.chain-card[data-status="offline"] {
+  border-color: rgba(255, 107, 107, 0.45);
+}
+
+.chain-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chain-card-top span,
+.chain-card dt {
+  color: var(--dim);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.chain-card-top strong {
+  color: var(--green);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.chain-card h3 {
+  color: var(--green);
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+}
+
+.chain-card dl {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.chain-card dl div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.6fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  border-top: 1px solid rgba(101, 242, 154, 0.12);
+  padding-top: 0.65rem;
+}
+
+.chain-card dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.chain-card a {
+  width: fit-content;
+  border: 1px solid rgba(101, 242, 154, 0.32);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  color: var(--green);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.chain-card a:hover,
+.chain-card a:focus-visible {
+  border-color: var(--blue);
+  color: var(--blue);
+  outline: none;
+}
+
 .section-shell,
 .manifesto {
   margin-top: 1rem;
@@ -789,7 +890,8 @@ tr:last-child td {
   }
 
   .status-band,
-  .dashboard-grid {
+  .dashboard-grid,
+  .chain-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -830,7 +932,8 @@ tr:last-child td {
   }
 
   .status-band,
-  .dashboard-grid {
+  .dashboard-grid,
+  .chain-grid {
     grid-template-columns: 1fr;
   }
 
