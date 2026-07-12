@@ -31,6 +31,12 @@ assert.match(toolchain, /Registry SHA-256/);
 assert.match(toolchain, /Download JSON/);
 assert.match(toolchain, /Download Markdown lock/);
 
+const overview = await readFile(new URL("../index.html", import.meta.url), "utf8");
+assert.match(overview, /<script src="\/kernel-status\.js" defer><\/script>/, "overview must load live chain updater");
+assert.match(overview, /data-chain-card="978"/, "overview must render Chain 978 live block card");
+assert.match(overview, /data-chain-card="521"/, "overview must render Chain N521 live block card");
+assert.match(overview, /data-chain-meta="feed-status"/, "overview must expose live chain feed status");
+
 const status = await readFile(new URL("../status/index.html", import.meta.url), "utf8");
 for (const state of ["loading", "success", "partial", "stale", "failure", "paused", "maintenance"]) {
   assert.match(status, new RegExp(`data-state="${state}"`), `status page must document ${state}`);

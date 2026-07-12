@@ -283,11 +283,68 @@ ${rows.join("\n")}
         </div>`;
 }
 
+function chainProgressSection() {
+  return `<section id="chain-progress" class="section-shell chain-progress" aria-labelledby="chain-progress-title">
+        <div class="section-heading">
+          <p class="eyebrow">READ-ONLY LIVE OBSERVATION</p>
+          <h2 id="chain-progress-title">Chain 978 + Chain N521</h2>
+          <p>Live block observations are public status signals only. They do not prove contract safety, bytecode identity, reserve state, or deployment correctness.</p>
+        </div>
+        <div class="status-band" aria-label="Live chain feed status">
+          <span>Feed <strong data-chain-meta="feed-status">starting</strong></span>
+          <span>Generated <strong data-chain-meta="generated">pending</strong></span>
+          <span>Refresh <strong data-chain-meta="countdown">arming probe</strong></span>
+          <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
+        </div>
+        <div class="chain-grid">
+          <article class="chain-card" data-chain-card="978">
+            <div class="chain-card-top">
+              <span>FENc978</span>
+              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="978-status">Reading</span></strong>
+            </div>
+            <h3>Chain 978</h3>
+            <dl>
+              <div><dt>Chain identity</dt><dd data-chain-field="978-chain-id">978 - pending</dd></div>
+              <div><dt>Latest block</dt><dd data-chain-field="978-block">Reading</dd></div>
+              <div><dt>Last check</dt><dd data-chain-field="978-checked">pending</dd></div>
+            </dl>
+            <div class="chain-progress-meter" aria-label="Chain 978 next verification progress">
+              <div class="chain-progress-meter-top">
+                <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
+                <strong data-chain-field="978-progress">connecting</strong>
+              </div>
+              <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
+            </div>
+          </article>
+          <article class="chain-card" data-chain-card="521">
+            <div class="chain-card-top">
+              <span>FENn521</span>
+              <strong><i class="live-dot" aria-hidden="true"></i><span data-chain-field="521-status">Reading</span></strong>
+            </div>
+            <h3>Chain N521</h3>
+            <dl>
+              <div><dt>Chain identity</dt><dd data-chain-field="521-chain-id">521 - pending</dd></div>
+              <div><dt>Latest block</dt><dd data-chain-field="521-block">Reading</dd></div>
+              <div><dt>Last check</dt><dd data-chain-field="521-checked">pending</dd></div>
+            </dl>
+            <div class="chain-progress-meter" aria-label="Chain N521 next verification progress">
+              <div class="chain-progress-meter-top">
+                <span><i class="chain-progress-glyph" aria-hidden="true"></i>Next verification</span>
+                <strong data-chain-field="521-progress">connecting</strong>
+              </div>
+              <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
+            </div>
+          </article>
+        </div>
+      </section>`;
+}
+
 function home() {
   return layout({
     title: "Fenrua | Layer 0 AI Security Infrastructure",
     description: "Fenrua is the public evidence surface for the open security kernel beneath autonomous AI systems.",
     current: "Overview",
+    scripts: '<script src="/kernel-status.js" defer></script>',
     body: `${routeHero(
       "LAYER 0 AI SECURITY UTILITY INFRASTRUCTURE",
       "The security kernel beneath autonomous AI.",
@@ -308,6 +365,7 @@ function home() {
           { kicker: "NEXT", title: "Developers start locally", text: "The verifier page and developer quick-start show the local workflow without pretending a live verifier exists.", href: "/developers/", link: "Quick start" },
         ])}
       </section>
+      ${chainProgressSection()}
       <section class="section-shell split-section" aria-labelledby="home-boundary">
         <div>
           <p class="eyebrow">NON-CLAIM</p>

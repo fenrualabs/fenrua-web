@@ -363,7 +363,7 @@ function cardStatus(chain) {
 
   if (chain.status === "unavailable") {
     return {
-      label: Number.isSafeInteger(previousBlock) ? "Updates delayed" : "Updates unavailable",
+      label: "Updates unavailable",
       state: "unavailable",
     };
   }
