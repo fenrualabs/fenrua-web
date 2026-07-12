@@ -3,26 +3,33 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const html = readFileSync(resolve(root, "index.html"), "utf8");
+const htmlFiles = ["index.html", "toolchain/index.html"];
 const linkPattern = /\b(?:href|src)="([^"]+)"/g;
 const missing = [];
 
-for (const match of html.matchAll(linkPattern)) {
-  const target = match[1];
+for (const htmlFile of htmlFiles) {
+  const htmlPath = resolve(root, htmlFile);
+  const html = readFileSync(htmlPath, "utf8");
+  const base = dirname(htmlPath);
 
-  if (
-    target === "/" ||
-    target.startsWith("#") ||
-    target.startsWith("https://") ||
-    target.startsWith("http://") ||
-    target.startsWith("mailto:")
-  ) {
-    continue;
-  }
+  for (const match of html.matchAll(linkPattern)) {
+    const target = match[1];
 
-  const [path] = target.split("#");
-  if (!existsSync(resolve(root, path))) {
-    missing.push(target);
+    if (
+      target === "/" ||
+      target.startsWith("#") ||
+      target.startsWith("https://") ||
+      target.startsWith("http://") ||
+      target.startsWith("mailto:")
+    ) {
+      continue;
+    }
+
+    const [path] = target.split("#");
+    const resolved = path.startsWith("/") ? resolve(root, `.${path}`) : resolve(base, path);
+    if (!existsSync(resolved)) {
+      missing.push(`${htmlFile}: ${target}`);
+    }
   }
 }
 

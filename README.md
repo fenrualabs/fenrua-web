@@ -10,6 +10,10 @@ This repo is a standalone website for Fenrua Labs and the `fenrua-kernel`
 evidence surface. It uses plain HTML, one CSS file, a local SVG asset, and one
 local JavaScript manifest for status hydration.
 
+The public site now also exposes Fenrua's Layer 0 AI security architecture,
+security-kernel model, toolchain registry, claim register, maturity register,
+and contract evidence refresh boundary.
+
 Collaboration contact: `partnerships@fenrua.ai`.
 
 Live Chain 978 and Chain N521 progress is fetched through the server-side
@@ -49,6 +53,8 @@ npm run validate
 - `index.html` - protocol explorer
 - `styles.css` - terminal-grade dark-mode reset and interface styling
 - `kernel-status.js` - local telemetry and registry manifest
+- `data/toolchain-registry.json` - public machine-readable toolchain registry
+- `toolchain/index.html` - searchable public toolchain route
 - `api/chain-progress.js` - server-side live Chain 978 and Chain N521 progress probe
 - `assets/sigil.svg` - local Fenrua mark
 - `docs/SECURITY_AUDIT_LOG.md` - audit log
@@ -58,6 +64,9 @@ npm run validate
 - `docs/DEPLOYMENT.md` - hosting notes
 - `docs/VERCEL.md` - Vercel publishing notes for `fenrua.ai`
 - `docs/UTILITY_STANDARD.md` - repository operating standard
+- `docs/FENRUA_TOOLCHAIN_LOCK.md` - public toolchain lock
+- `docs/FENRUA_PUBLIC_CLAIM_EVIDENCE_REGISTER.md` - public claim register
+- `docs/FENRUA_CONTRACT_EVIDENCE_REFRESH_BOUNDARY.md` - contract evidence freeze boundary
 
 ## Tracking Policy
 

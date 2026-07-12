@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Public Fenrua toolchain registry with detected versions, execution status, evidence boundaries, validation pipelines, and known limitations."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <link rel="canonical" href="https://fenrua.ai/toolchain/" />
+    <title>Fenrua Toolchain Registry</title>
+    <link rel="icon" href="../assets/sigil.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../styles.css" />
+    <script src="toolchain.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="site-header" aria-label="Site header">
+      <a class="brand" href="../" aria-label="Fenrua home">
+        <img src="../assets/sigil.svg" width="40" height="40" alt="" />
+        <span>
+          <strong>Fenrua</strong>
+          <small>Toolchain registry</small>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="../#overview">Overview</a>
+        <a href="../#architecture">Architecture</a>
+        <a href="../#security-kernel">Security Kernel</a>
+        <a href="../#utilities">Utilities</a>
+        <a href="../#research">Research</a>
+        <a href="../#verify">Verify</a>
+        <a href="../#developers">Developers</a>
+        <a href="./" aria-current="page">Toolchain</a>
+        <a href="../#evidence">Evidence</a>
+        <a href="../#status">Status</a>
+      </nav>
+    </header>
+
+    <main id="content">
+      <section class="hero toolchain-hero" aria-labelledby="toolchain-title">
+        <div class="hero-copy">
+          <p class="eyebrow">VERIFICATION LABORATORY / VERSION CAPTURE / CLAIM CONTROL</p>
+          <h1 id="toolchain-title">The verification laboratory behind Fenrua.</h1>
+          <p class="hero-subtitle">
+            Fenrua combines independent compilers, test frameworks, fuzzers,
+            symbolic engines, static analysers, cryptographic tooling,
+            application tests, container scanners, and reproducible build
+            utilities. Tool presence is not treated as proof.
+          </p>
+          <div class="cta-row">
+            <a class="button button-primary" href="../data/toolchain-registry.json">Download registry JSON</a>
+            <a class="button button-secondary" href="../docs/FENRUA_TOOLCHAIN_LOCK.md">Toolchain lock</a>
+            <a class="button button-secondary" href="../docs/FENRUA_SECURITY_TOOLCHAIN_EVIDENCE_MAP.md">Evidence map</a>
+            <a class="button button-secondary" href="../#evidence">Frozen evidence bundles</a>
+          </div>
+        </div>
+
+        <aside class="hero-console" aria-label="Toolchain boundary console">
+          <div class="console-top">
+            <span>toolchain-registry.json</span>
+            <span data-toolchain-meta="tool-count">loading</span>
+          </div>
+          <pre><code>method: read-only version capture
+source: ../data/toolchain-registry.json
+semgrep: <span data-toolchain-meta="semgrep-version">loading</span>
+installed: <span data-toolchain-meta="installed-count">loading</span>
+evidence_producing: <span data-toolchain-meta="evidence-count">loading</span>
+container_only: <span data-toolchain-meta="container-count">loading</span>
+boundary: installation != security proof</code></pre>
+        </aside>
+      </section>
+
+      <section class="section-shell" aria-labelledby="pipelines-title">
+        <div class="section-heading">
+          <p class="eyebrow">CANONICAL VALIDATION PIPELINES</p>
+          <h2 id="pipelines-title">Toolchain-to-evidence flow</h2>
+          <p>
+            Pipelines describe where a tool can participate. A tool appears in
+            the registry only after local inspection, but pipeline membership is
+            not a claim that it produced the current frozen evidence bundle.
+          </p>
+        </div>
+        <div id="pipeline-grid" class="flow-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="section-shell" aria-labelledby="registry-title">
+        <div class="section-heading">
+          <p class="eyebrow">SEARCH AND FILTERS</p>
+          <h2 id="registry-title">Full version registry</h2>
+          <p>
+            Filter by category, installation mode, execution state, evidence
+            status, and technical domain. Rows show normalized public evidence;
+            raw shell output with private paths is not published.
+          </p>
+        </div>
+
+        <div class="registry-tools toolchain-tools">
+          <label for="tool-search">Search tools</label>
+          <input id="tool-search" type="search" autocomplete="off" placeholder="Search tool, category, pipeline, command, or status..." />
+          <div class="filter-groups" aria-label="Toolchain filters">
+            <button type="button" data-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-filter="native">Native</button>
+            <button type="button" data-filter="container">Container</button>
+            <button type="button" data-filter="project-local">Project-local</button>
+            <button type="button" data-filter="installed">Installed</button>
+            <button type="button" data-filter="executed">Executed</button>
+            <button type="button" data-filter="evidence">Evidence-producing</button>
+            <button type="button" data-filter="exploratory">Exploratory</button>
+            <button type="button" data-filter="canonical">Canonical</button>
+            <button type="button" data-filter="superseded">Superseded</button>
+            <button type="button" data-filter="current">Current</button>
+            <button type="button" data-filter="version-review">Version review required</button>
+            <button type="button" data-filter="solidity">Solidity</button>
+            <button type="button" data-filter="zk">ZK</button>
+            <button type="button" data-filter="cryptography">Cryptography</button>
+            <button type="button" data-filter="application">Application</button>
+            <button type="button" data-filter="infrastructure">Infrastructure</button>
+            <button type="button" data-filter="database">Database</button>
+            <button type="button" data-filter="chain-clients">Chain clients</button>
+            <button type="button" data-filter="native-compilation">Native compilation</button>
+            <button type="button" data-filter="source-control">Source control</button>
+          </div>
+        </div>
+
+        <div class="toolchain-summary" aria-label="Toolchain status summaries">
+          <article><span>Evidence-producing tools</span><strong data-toolchain-meta="evidence-count">loading</strong></article>
+          <article><span>Exploratory tools</span><strong data-toolchain-meta="exploratory-count">loading</strong></article>
+          <article><span>Container-only tools</span><strong data-toolchain-meta="container-count">loading</strong></article>
+          <article><span>Project-local tools</span><strong data-toolchain-meta="project-count">loading</strong></article>
+          <article><span>Native tools</span><strong data-toolchain-meta="native-count">loading</strong></article>
+          <article><span>Superseded versions</span><strong data-toolchain-meta="superseded-count">loading</strong></article>
+        </div>
+
+        <div class="registry" role="region" aria-label="Full toolchain registry" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Tool</th>
+                <th scope="col">Detected Version</th>
+                <th scope="col">Category</th>
+                <th scope="col">Mode</th>
+                <th scope="col">Status</th>
+                <th scope="col">Evidence</th>
+                <th scope="col">Command</th>
+                <th scope="col">Limitations</th>
+              </tr>
+            </thead>
+            <tbody id="toolchain-registry">
+              <tr>
+                <td>Loading registry</td>
+                <td>Loading</td>
+                <td>Loading</td>
+                <td>Loading</td>
+                <td>Loading</td>
+                <td>Loading</td>
+                <td>Loading</td>
+                <td>Loading</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="empty-state" id="toolchain-empty" hidden>No tools match the active filter.</p>
+      </section>
+
+      <section class="section-shell" aria-labelledby="method-title">
+        <div class="section-heading">
+          <p class="eyebrow">VERSION VERIFICATION METHOD</p>
+          <h2 id="method-title">What the registry proves</h2>
+          <p>
+            The registry proves that a bounded command or repository inspection
+            was performed and that the normalized result was published. It does
+            not prove a tool was used in a security campaign unless the row
+            marks evidence production and points to the relevant path.
+          </p>
+        </div>
+
+        <div class="constraint-list">
+          <p><strong>Installed:</strong> a binary, container image, or project dependency was detected.</p>
+          <p><strong>Executed:</strong> a read-only version, help, list, or repository inspection command was run.</p>
+          <p><strong>Evidence-producing:</strong> the tool participates in an existing repeatable evidence path in this repository.</p>
+          <p><strong>Exploratory:</strong> available or inspected, but not part of the canonical verification pipeline.</p>
+          <p><strong>Unavailable:</strong> the expected command or dependency was not detected locally.</p>
+          <p><strong>Known limitation:</strong> contract evidence refresh is pending; no stale deployment, bytecode, reserve, or invariant claim is finalized here.</p>
+          <p><strong>Evidence-lock integrity:</strong> dependencies and tool versions are preserved to match the inspected evidence environment; no post-evidence updates are implied.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        <strong>Fenrua Toolchain</strong>
+        <span>Public version and evidence status registry.</span>
+      </div>
+      <div class="footer-social">
+        <p>Machine-readable source remains the authority.</p>
+        <div class="footer-links">
+          <a href="../data/toolchain-registry.json">Registry JSON</a>
+          <a href="../docs/FENRUA_TOOLCHAIN_LOCK.md">Toolchain lock</a>
+          <a href="../docs/FENRUA_LAYER0_WEBSITE_IMPLEMENTATION_REPORT.md">Implementation report</a>
+          <a href="../">Fenrua home</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -703,11 +703,52 @@ h3 {
 .primitive-grid p,
 .repo-grid p,
 .artifact-grid p,
+.flow-grid p,
 .spec-panel p,
 .philosophy-grid p,
 .constraint-list p,
 .manifesto blockquote {
   color: var(--muted);
+}
+
+.stack-diagram {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b0f0d;
+  padding: 1rem;
+}
+
+.stack-diagram span,
+.stack-diagram strong,
+.stack-diagram code {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.75rem 0.85rem;
+  text-align: center;
+}
+
+.stack-diagram span::after {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--dim);
+  content: "down";
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.stack-diagram strong {
+  border-color: rgba(101, 242, 154, 0.54);
+  color: var(--green);
+}
+
+.stack-diagram code {
+  color: var(--blue);
+  white-space: normal;
 }
 
 .dashboard-grid,
@@ -769,7 +810,10 @@ h3 {
 .repo-grid,
 .artifact-grid,
 .spec-grid,
-.philosophy-grid {
+.philosophy-grid,
+.flow-grid,
+.doc-grid,
+.toolchain-summary {
   display: grid;
   gap: 0.75rem;
 }
@@ -779,7 +823,8 @@ h3 {
 }
 
 .artifact-grid,
-.philosophy-grid {
+.philosophy-grid,
+.flow-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -789,8 +834,10 @@ h3 {
 
 .repo-grid article,
 .artifact-grid article,
+.flow-grid article,
 .spec-panel,
-.philosophy-grid article {
+.philosophy-grid article,
+.toolchain-summary article {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -829,8 +876,75 @@ h3 {
 }
 
 .artifact-grid article,
-.philosophy-grid article {
+.philosophy-grid article,
+.flow-grid article {
   min-height: 12rem;
+}
+
+.flow-grid article span,
+.toolchain-summary span {
+  display: inline-flex;
+  margin-bottom: 1rem;
+  color: var(--blue);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.utility-table {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lifecycle-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: lifecycle;
+}
+
+.lifecycle-list li {
+  min-height: 8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 1rem;
+  color: var(--muted);
+  counter-increment: lifecycle;
+}
+
+.lifecycle-list li::before {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--green);
+  content: counter(lifecycle, decimal-leading-zero);
+  font-weight: 700;
+}
+
+.doc-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.doc-grid a {
+  display: flex;
+  min-height: 5rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.doc-grid a:hover,
+.doc-grid a:focus-visible {
+  border-color: var(--green);
+  color: var(--green);
+  outline: none;
 }
 
 .spec-panel {
@@ -897,6 +1011,80 @@ h3 {
   padding: 0.75rem 0.85rem;
   color: var(--text);
   font: inherit;
+}
+
+.filter-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.filter-groups button {
+  min-height: 2.35rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #101515;
+  padding: 0.5rem 0.65rem;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.filter-groups button:hover,
+.filter-groups button:focus-visible,
+.filter-groups button[aria-pressed="true"] {
+  border-color: var(--green);
+  color: var(--green);
+  outline: none;
+}
+
+.toolchain-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 0.75rem;
+}
+
+.toolchain-summary article {
+  min-height: 7rem;
+}
+
+.toolchain-summary strong {
+  display: block;
+  color: var(--text);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.status-badge {
+  display: inline-flex;
+  max-width: 100%;
+  border: 1px solid rgba(101, 242, 154, 0.32);
+  border-radius: 6px;
+  background: rgba(101, 242, 154, 0.06);
+  padding: 0.28rem 0.42rem;
+  color: var(--green);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.command-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.command-list code {
+  display: block;
+  color: var(--blue);
+  overflow-wrap: anywhere;
+}
+
+.empty-state {
+  margin: 0.75rem 0 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 1rem;
+  color: var(--muted);
 }
 
 .registry-tools input:focus {
@@ -1124,7 +1312,11 @@ tr:last-child td {
   .repo-grid,
   .artifact-grid,
   .spec-grid,
-  .philosophy-grid {
+  .philosophy-grid,
+  .flow-grid,
+  .doc-grid,
+  .toolchain-summary,
+  .lifecycle-list {
     grid-template-columns: 1fr;
   }
 
@@ -1164,6 +1356,10 @@ tr:last-child td {
   }
 
   .cta-row .button {
+    width: 100%;
+  }
+
+  .filter-groups button {
     width: 100%;
   }
 }
