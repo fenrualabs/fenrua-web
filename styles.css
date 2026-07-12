@@ -564,6 +564,95 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+/* The reference's fill interaction, retaining Fenrua's existing visual palette. */
+.chain-card::after {
+  display: none;
+}
+
+.chain-progress-meter {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: auto;
+  border-top: 1px solid rgba(101, 242, 154, 0.12);
+  padding-top: 1rem;
+}
+
+.chain-progress-meter-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.chain-progress-meter-top span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chain-progress-meter-top strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.chain-progress-glyph {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid var(--text);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  transform: rotate(42deg);
+}
+
+.chain-progress-rail {
+  height: 0.72rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #080b0a;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.65);
+}
+
+.chain-progress-rail i {
+  display: block;
+  width: var(--chain-progress, 18%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(101, 242, 154, 0.32);
+  transition: width 700ms ease;
+}
+
+.chain-card[data-status="advanced"] .chain-progress-rail i {
+  animation: none;
+}
+
+.chain-card[data-status="delayed"] .chain-progress-rail i,
+.chain-card[data-status="wrong-chain"] .chain-progress-rail i {
+  background: var(--amber);
+  box-shadow: none;
+}
+
+.chain-card[data-status="unavailable"] .chain-progress-rail i {
+  background: var(--red);
+  box-shadow: none;
+}
+
+.chain-card[data-status="delayed"] .chain-progress-meter-top strong,
+.chain-card[data-status="wrong-chain"] .chain-progress-meter-top strong {
+  color: var(--amber);
+}
+
+.chain-card[data-status="unavailable"] .chain-progress-meter-top strong {
+  color: var(--red);
+}
+
 @keyframes live-pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(101, 242, 154, 0.68);

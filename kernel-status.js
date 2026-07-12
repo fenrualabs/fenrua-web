@@ -165,6 +165,8 @@ const chainFieldMap = {
     delta: '[data-chain-field="978-delta"]',
     headAge: '[data-chain-field="978-head-age"]',
     checked: '[data-chain-field="978-checked"]',
+    progress: '[data-chain-field="978-progress"]',
+    progressRail: '[data-chain-card="978"] .chain-progress-rail i',
     card: '[data-chain-card="978"]',
   },
   521: {
@@ -175,6 +177,8 @@ const chainFieldMap = {
     delta: '[data-chain-field="521-delta"]',
     headAge: '[data-chain-field="521-head-age"]',
     checked: '[data-chain-field="521-checked"]',
+    progress: '[data-chain-field="521-progress"]',
+    progressRail: '[data-chain-card="521"] .chain-progress-rail i',
     card: '[data-chain-card="521"]',
   },
 };
@@ -269,6 +273,19 @@ function cardStatus(chain, previousBlock, delta, outOfOrder) {
   return { label: "Head confirmed", state: "confirmed" };
 }
 
+function progressLabel(state) {
+  if (state === "advanced" || state === "confirmed" || state === "waiting") return "live";
+  if (state === "delayed") return "delayed";
+  if (state === "wrong-chain") return "mismatch";
+  return "offline";
+}
+
+function updateProgressRail(selector, value) {
+  document.querySelectorAll(selector).forEach((rail) => {
+    rail.style.setProperty("--chain-progress", `${value}%`);
+  });
+}
+
 function formatCountdown() {
   if (!chainProbe.nextAt) return "starting";
   const seconds = Math.max(0, Math.ceil((chainProbe.nextAt - Date.now()) / 1000));
@@ -339,6 +356,13 @@ function updateChainCard(chain, payload) {
   const status = cardStatus(displayChain, previousBlock, delta, outOfOrder);
 
   setText(fields.status, status.label);
+  setText(fields.progress, progressLabel(status.state));
+  updateProgressRail(
+    fields.progressRail,
+    hasCurrentBlock && displayChain.status !== "wrong-chain"
+      ? Math.min(100, 42 + (delta ?? 0) * 18)
+      : 18
+  );
   setText(fields.chainId, `${chain.chainId ?? "unavailable"} / expected 0x${chain.expectedChainId.toString(16)}`);
   if (hasCurrentBlock) {
     setText(fields.block, formatNumber(chain.blockNumber));
