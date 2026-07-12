@@ -55,6 +55,7 @@ const observationTargets = [
     env: {
       gatewayUrl: "FENRUA_OBSERVATION_GATEWAY_URL",
       readToken: "FENRUA_OBSERVATION_READ_TOKEN",
+      readHeader: "x-fenrua-observation-read-token",
       publicKey: "FENRUA_OBSERVATION_PUBLIC_KEY_B64",
       keyId: "FENRUA_OBSERVATION_KEY_ID",
     },
@@ -69,6 +70,7 @@ const observationTargets = [
     env: {
       gatewayUrl: "FENRUA_N521_OBSERVATION_GATEWAY_URL",
       readToken: "FENRUA_N521_OBSERVATION_READ_TOKEN",
+      readHeader: "x-fenrua-n521-observation-read-token",
       publicKey: "FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64",
       keyId: "FENRUA_N521_OBSERVATION_KEY_ID",
     },
@@ -301,7 +303,7 @@ async function fetchGatewayObservation(target) {
       method: "GET",
       headers: {
         accept: "application/json",
-        "x-fenrua-observation-read-token": config.readToken,
+        [target.env.readHeader]: config.readToken,
       },
       cache: "no-store",
       redirect: "error",

@@ -186,10 +186,12 @@ function twoGatewayFetch(overrides = {}) {
     assert.equal(options.body, undefined);
     if (endpoint === "https://observation-978.example.test/status") {
       assert.equal(options.headers["x-fenrua-observation-read-token"], "test-978-read-token");
+      assert.equal(options.headers["x-fenrua-n521-observation-read-token"], undefined);
       return gatewayResponse(observation("978", overrides["978"]));
     }
     if (endpoint === "https://observation-521.example.test/status") {
-      assert.equal(options.headers["x-fenrua-observation-read-token"], "test-521-read-token");
+      assert.equal(options.headers["x-fenrua-n521-observation-read-token"], "test-521-read-token");
+      assert.equal(options.headers["x-fenrua-observation-read-token"], undefined);
       return gatewayResponse(observation("521", overrides["521"]));
     }
     throw new Error("Unexpected gateway request");
@@ -245,6 +247,7 @@ try {
   globalThis.fetch = async (endpoint, options) => {
     assert.equal(endpoint, "https://observation-978.example.test/status");
     assert.equal(options.headers["x-fenrua-observation-read-token"], "test-978-read-token");
+    assert.equal(options.headers["x-fenrua-n521-observation-read-token"], undefined);
     return gatewayResponse(observation("978"));
   };
   const awaitingN521 = await callHandler({ headers: { "x-forwarded-for": "198.51.100.5" } });
