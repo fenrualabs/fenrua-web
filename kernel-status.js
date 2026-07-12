@@ -289,7 +289,6 @@ const chainFieldMap = {
     status: '[data-chain-field="978-status"]',
     chainId: '[data-chain-field="978-chain-id"]',
     block: '[data-chain-field="978-block"]',
-    delta: '[data-chain-field="978-delta"]',
     headAge: '[data-chain-field="978-head-age"]',
     checked: '[data-chain-field="978-checked"]',
     progress: '[data-chain-field="978-progress"]',
@@ -301,7 +300,6 @@ const chainFieldMap = {
     status: '[data-chain-field="521-status"]',
     chainId: '[data-chain-field="521-chain-id"]',
     block: '[data-chain-field="521-block"]',
-    delta: '[data-chain-field="521-delta"]',
     headAge: '[data-chain-field="521-head-age"]',
     checked: '[data-chain-field="521-checked"]',
     progress: '[data-chain-field="521-progress"]',
@@ -503,14 +501,8 @@ function updateChainCard(chain, payload) {
   setText(fields.chainId, formatChainIdentity(chain));
   if (hasCurrentBlock) {
     setText(fields.block, formatNumber(chain.blockNumber));
-    setText(
-      fields.delta,
-      delta === null ? "Initial read confirmed" : delta > 0 ? `+${delta} blocks since last check` : "No new block since last check"
-    );
     setText(fields.headAge, formatHeadAge(displayChain.blockAgeSeconds));
     setText(fields.checked, formatCheckedAt(chain.checkedAt));
-  } else if (Number.isSafeInteger(previousBlock)) {
-    setText(fields.delta, "Last verified value retained");
   }
 
   if (hasCurrentBlock && displayChain.status === "live" && !outOfOrder) {
@@ -544,7 +536,6 @@ function showFeedFailure() {
   Object.values(chainFieldMap).forEach((fields) => {
     const hasLastBlock = Number.isSafeInteger(lastChainBlocks[fields.chainKey]);
     setText(fields.status, hasLastBlock ? "Updates delayed" : "Updates unavailable");
-    if (hasLastBlock) setText(fields.delta, "Last verified value retained");
     document.querySelectorAll(fields.card).forEach((card) => {
       card.dataset.status = "unavailable";
     });
