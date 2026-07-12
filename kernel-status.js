@@ -289,7 +289,7 @@ const chainFieldMap = {
     status: '[data-chain-field="978-status"]',
     chainId: '[data-chain-field="978-chain-id"]',
     block: '[data-chain-field="978-block"]',
-    headAge: '[data-chain-field="978-head-age"]',
+    delta: '[data-chain-field="978-delta"]',
     checked: '[data-chain-field="978-checked"]',
     progress: '[data-chain-field="978-progress"]',
     progressRail: '[data-chain-card="978"] .chain-progress-rail i',
@@ -300,7 +300,7 @@ const chainFieldMap = {
     status: '[data-chain-field="521-status"]',
     chainId: '[data-chain-field="521-chain-id"]',
     block: '[data-chain-field="521-block"]',
-    headAge: '[data-chain-field="521-head-age"]',
+    delta: '[data-chain-field="521-delta"]',
     checked: '[data-chain-field="521-checked"]',
     progress: '[data-chain-field="521-progress"]',
     progressRail: '[data-chain-card="521"] .chain-progress-rail i',
@@ -314,7 +314,6 @@ const chainMaxBackoffMs = 60_000;
 const maxCachedSnapshotAgeSeconds = 30;
 const maxFreshHeadAgeSeconds = 60;
 const lastChainBlocks = {};
-const lastChainHeadAges = {};
 const lastChainCheckedAt = {};
 const chainProbe = {
   nextAt: 0,
@@ -341,12 +340,6 @@ function formatCheckedAt(value) {
   } catch {
     return "pending";
   }
-}
-
-function formatHeadAge(value) {
-  if (!Number.isSafeInteger(value) || value < 0) return "pending";
-  if (value < 60) return `${value}s ago`;
-  return `${Math.floor(value / 60)}m ago`;
 }
 
 function secondsSince(value) {
@@ -435,11 +428,6 @@ function formatCountdown() {
 function updateChainCountdown() {
   setText('[data-chain-meta="countdown"]', formatCountdown());
   updateVerificationRails();
-  Object.entries(lastChainHeadAges).forEach(([chainId, reportedAge]) => {
-    const fields = chainFieldMap[chainId];
-    const elapsed = secondsSince(lastChainCheckedAt[chainId]);
-    if (fields && elapsed !== null) setText(fields.headAge, formatHeadAge(reportedAge + elapsed));
-  });
 }
 
 function startChainCountdown() {
@@ -501,13 +489,23 @@ function updateChainCard(chain, payload) {
   setText(fields.chainId, formatChainIdentity(chain));
   if (hasCurrentBlock) {
     setText(fields.block, formatNumber(chain.blockNumber));
-    setText(fields.headAge, formatHeadAge(displayChain.blockAgeSeconds));
+    setText(
+      fields.delta,
+      displayChain.status !== "live" || outOfOrder
+        ? "Awaiting fresh sample"
+        : delta === null
+          ? "Waiting for second check"
+          : delta > 0
+            ? `+${delta} ${delta === 1 ? "block" : "blocks"}`
+            : "0 blocks"
+    );
     setText(fields.checked, formatCheckedAt(chain.checkedAt));
+  } else if (Number.isSafeInteger(previousBlock)) {
+    setText(fields.delta, "Last verified height retained");
   }
 
   if (hasCurrentBlock && displayChain.status === "live" && !outOfOrder) {
     lastChainBlocks[chain.expectedChainId] = chain.blockNumber;
-    lastChainHeadAges[chain.expectedChainId] = chain.blockAgeSeconds;
     lastChainCheckedAt[chain.expectedChainId] = chain.checkedAt;
   }
 
@@ -536,6 +534,7 @@ function showFeedFailure() {
   Object.values(chainFieldMap).forEach((fields) => {
     const hasLastBlock = Number.isSafeInteger(lastChainBlocks[fields.chainKey]);
     setText(fields.status, hasLastBlock ? "Updates delayed" : "Updates unavailable");
+    if (hasLastBlock) setText(fields.delta, "Last verified height retained");
     document.querySelectorAll(fields.card).forEach((card) => {
       card.dataset.status = "unavailable";
     });
