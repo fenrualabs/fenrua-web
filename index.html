@@ -114,21 +114,23 @@ privacy: no analytics, no beacons, no third-party scripts</code></pre>
 
       <section id="chain-progress" class="section-shell chain-progress" aria-labelledby="chain-progress-title">
         <div class="section-heading">
-          <p class="eyebrow">LIVE CHAIN PROGRESS</p>
+          <p class="eyebrow">LIVE BLOCK FEED</p>
           <h2 id="chain-progress-title">Chain 978 + Chain N521</h2>
           <p>
-            Server-side continuity probes for the two Fenrua evidence lanes.
-            Chain 978 carries FEN protocol support; Chain N521 carries N / P-521 research.
+            Read-only, independently confirmed block observations for the two Fenrua evidence lanes.
+            Chain 978 carries FEN protocol support; Chain N521 carries N / P-521 research. Private
+            node addresses and operator controls are not part of this public feed.
           </p>
         </div>
 
-        <div class="probe-strip" aria-live="polite">
-          <span>Probe <strong data-chain-meta="probe-id">pending</strong></span>
+        <div class="probe-strip">
+          <span>Feed <strong data-chain-meta="feed-status">starting</strong></span>
           <span>Generated <strong data-chain-meta="generated">pending</strong></span>
           <span>Refresh <strong data-chain-meta="countdown">arming probe</strong></span>
+          <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
 
-        <div class="chain-grid" aria-live="polite">
+        <div class="chain-grid">
           <article class="chain-card" data-chain-card="978">
             <div class="chain-card-top">
               <span>FENc978</span>
@@ -145,27 +147,18 @@ privacy: no analytics, no beacons, no third-party scripts</code></pre>
                 <dd data-chain-field="978-block">Reading</dd>
               </div>
               <div>
-                <dt>Block Delta</dt>
+                <dt>Latest movement</dt>
                 <dd data-chain-field="978-delta">syncing</dd>
               </div>
               <div>
-                <dt>Latency</dt>
-                <dd data-chain-field="978-latency">pending</dd>
+                <dt>Head age</dt>
+                <dd data-chain-field="978-head-age">pending</dd>
               </div>
               <div>
-                <dt>Refresh</dt>
-                <dd data-chain-field="978-refresh">arming probe</dd>
-              </div>
-              <div>
-                <dt>Probe ID</dt>
-                <dd data-chain-field="978-request">pending</dd>
-              </div>
-              <div>
-                <dt>Checked</dt>
+                <dt>Last confirmed</dt>
                 <dd data-chain-field="978-checked">pending</dd>
               </div>
             </dl>
-            <a href="https://fenchain.info">Open explorer</a>
           </article>
 
           <article class="chain-card" data-chain-card="521">
@@ -184,27 +177,18 @@ privacy: no analytics, no beacons, no third-party scripts</code></pre>
                 <dd data-chain-field="521-block">Reading</dd>
               </div>
               <div>
-                <dt>Block Delta</dt>
+                <dt>Latest movement</dt>
                 <dd data-chain-field="521-delta">syncing</dd>
               </div>
               <div>
-                <dt>Latency</dt>
-                <dd data-chain-field="521-latency">pending</dd>
+                <dt>Head age</dt>
+                <dd data-chain-field="521-head-age">pending</dd>
               </div>
               <div>
-                <dt>Refresh</dt>
-                <dd data-chain-field="521-refresh">arming probe</dd>
-              </div>
-              <div>
-                <dt>Probe ID</dt>
-                <dd data-chain-field="521-request">pending</dd>
-              </div>
-              <div>
-                <dt>Checked</dt>
+                <dt>Last confirmed</dt>
                 <dd data-chain-field="521-checked">pending</dd>
               </div>
             </dl>
-            <a href="https://fenchain521.info">Open explorer</a>
           </article>
         </div>
       </section>

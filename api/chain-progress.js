@@ -1,4 +1,7 @@
 const refreshMs = 10_000;
+const maxFreshHeadAgeSeconds = 60;
+const responseCacheControl =
+  "public, max-age=0, s-maxage=10, stale-while-revalidate=20, stale-if-error=60";
 
 const chainTargets = [
   {
@@ -19,13 +22,15 @@ const chainTargets = [
   },
 ];
 
+let activeProbe = null;
+
 function readProbeEndpoint(envKey) {
   const endpoint = process.env[envKey]?.trim();
   if (!endpoint) return "";
 
   try {
     const parsed = new URL(endpoint);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return "";
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) return "";
     return endpoint;
   } catch {
     return "";
@@ -38,7 +43,33 @@ function hexToNumber(value) {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-async function callProbeEndpoint(endpoint, method) {
+function readLatestHead(value) {
+  if (!value || typeof value !== "object") {
+    return { blockNumber: null, blockTimestamp: null };
+  }
+
+  return {
+    blockNumber: hexToNumber(value.number),
+    blockTimestamp: hexToNumber(value.timestamp),
+  };
+}
+
+function unavailableChain(chain) {
+  return {
+    id: chain.id,
+    title: chain.title,
+    label: chain.label,
+    role: chain.role,
+    expectedChainId: chain.expectedChainId,
+    chainId: null,
+    blockNumber: null,
+    blockAgeSeconds: null,
+    status: "unavailable",
+    checkedAt: new Date().toISOString(),
+  };
+}
+
+async function callProbeEndpoint(endpoint, method, params = []) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 6_000);
 
@@ -46,19 +77,15 @@ async function callProbeEndpoint(endpoint, method) {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: method, method, params: [] }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: method, method, params }),
       signal: controller.signal,
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      throw new Error(`RPC HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error("Upstream unavailable");
 
     const payload = await response.json();
-    if (payload.error) {
-      throw new Error(payload.error.message || "RPC error");
-    }
+    if (payload.error) throw new Error("Upstream rejected the read");
 
     return payload.result;
   } finally {
@@ -67,32 +94,28 @@ async function callProbeEndpoint(endpoint, method) {
 }
 
 async function probeChain(chain) {
-  const startedAt = Date.now();
   const endpoint = readProbeEndpoint(chain.envKey);
-
-  if (!endpoint) {
-    return {
-      id: chain.id,
-      title: chain.title,
-      label: chain.label,
-      role: chain.role,
-      expectedChainId: chain.expectedChainId,
-      chainId: null,
-      blockNumber: null,
-      status: "offline",
-      latencyMs: null,
-      checkedAt: new Date().toISOString(),
-    };
-  }
+  if (!endpoint) return unavailableChain(chain);
 
   try {
-    const [chainIdHex, blockNumberHex] = await Promise.all([
+    const [chainIdHex, latestHead] = await Promise.all([
       callProbeEndpoint(endpoint, "eth_chainId"),
-      callProbeEndpoint(endpoint, "eth_blockNumber"),
+      callProbeEndpoint(endpoint, "eth_getBlockByNumber", ["latest", false]),
     ]);
     const chainId = hexToNumber(chainIdHex);
-    const blockNumber = hexToNumber(blockNumberHex);
-    const online = chainId === chain.expectedChainId && blockNumber !== null;
+    const { blockNumber, blockTimestamp } = readLatestHead(latestHead);
+    const blockAgeSeconds =
+      blockTimestamp === null ? null : Math.max(0, Math.floor(Date.now() / 1_000 - blockTimestamp));
+    const status =
+      chainId === null
+        ? "unavailable"
+        : chainId !== chain.expectedChainId
+          ? "wrong-chain"
+          : blockNumber === null || blockAgeSeconds === null
+            ? "unavailable"
+            : blockAgeSeconds <= maxFreshHeadAgeSeconds
+              ? "live"
+              : "delayed";
 
     return {
       id: chain.id,
@@ -102,44 +125,63 @@ async function probeChain(chain) {
       expectedChainId: chain.expectedChainId,
       chainId,
       blockNumber,
-      status: online ? "online" : "wrong-chain",
-      latencyMs: Date.now() - startedAt,
+      blockAgeSeconds,
+      status,
       checkedAt: new Date().toISOString(),
     };
   } catch {
-    return {
-      id: chain.id,
-      title: chain.title,
-      label: chain.label,
-      role: chain.role,
-      expectedChainId: chain.expectedChainId,
-      chainId: null,
-      blockNumber: null,
-      status: "offline",
-      latencyMs: Date.now() - startedAt,
-      checkedAt: new Date().toISOString(),
-    };
+    return unavailableChain(chain);
   }
 }
 
-export default async function handler(request, response) {
-  response.setHeader("cache-control", "no-store, no-cache, must-revalidate");
-  response.setHeader("pragma", "no-cache");
+function buildSnapshot() {
+  if (!activeProbe) {
+    activeProbe = Promise.all(chainTargets.map(probeChain))
+      .then((chains) => ({
+        generatedAt: new Date().toISOString(),
+        refreshMs,
+        chains,
+      }))
+      .finally(() => {
+        activeProbe = null;
+      });
+  }
 
+  return activeProbe;
+}
+
+function sendSnapshot(response, statusCode, snapshot) {
+  response.setHeader("Cache-Control", responseCacheControl);
+  response.status(statusCode).json(snapshot);
+}
+
+export default async function handler(request, response) {
   if (request.method !== "GET") {
-    response.setHeader("allow", "GET");
+    response.setHeader("Allow", "GET");
     response.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const generatedAt = new Date();
-  const probeId = `probe-${generatedAt.getTime().toString(36)}`;
-  const chains = await Promise.all(chainTargets.map(probeChain));
+  const requestUrl = new URL(request.url || "/api/chain-progress", "https://fenrua.ai");
+  if (requestUrl.search) {
+    response.status(400).json({ error: "Query parameters are not supported" });
+    return;
+  }
 
-  response.status(200).json({
-    generatedAt: generatedAt.toISOString(),
-    probeId,
-    refreshMs,
-    chains,
-  });
+  const headers = request.headers || {};
+  const cacheControl = String(headers["cache-control"] || "").toLowerCase();
+  const pragma = String(headers.pragma || "").toLowerCase();
+  if (
+    headers.authorization ||
+    headers.range ||
+    pragma.includes("no-cache") ||
+    /(?:no-cache|no-store|max-age\s*=\s*0)/.test(cacheControl)
+  ) {
+    response.status(400).json({ error: "Cache-bypass request headers are not supported" });
+    return;
+  }
+
+  const snapshot = await buildSnapshot();
+  const allUnavailable = snapshot.chains.every((chain) => chain.status === "unavailable");
+  sendSnapshot(response, allUnavailable ? 503 : 200, snapshot);
 }
