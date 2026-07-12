@@ -6,7 +6,7 @@
 
 Open `index.html` directly in a browser.
 
-No package install or build step is required.
+No dependency setup or build step is required.
 
 ## Vercel
 

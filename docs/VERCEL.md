@@ -16,7 +16,7 @@ Use these settings for the existing Vercel project:
 - Node.js version: `24.x`
 - Build command: automatic/static
 - Output directory: automatic/static
-- Install command: automatic
+- Dependency step: automatic
 - Production branch: `main`
 - Production domain: `fenrua.ai`
 
