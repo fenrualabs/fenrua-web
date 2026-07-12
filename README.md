@@ -10,6 +10,8 @@ This repo is a standalone website for Fenrua Labs and the `fenrua-kernel`
 evidence surface. It uses plain HTML, one CSS file, a local SVG asset, and one
 local JavaScript manifest for status hydration.
 
+Collaboration contact: `partnerships@fenrua.ai`.
+
 ## Canonical Website
 
 `fenrua-web` is the canonical public website for Fenrua Labs. Production

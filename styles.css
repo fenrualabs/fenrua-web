@@ -698,6 +698,20 @@ tr:last-child td {
   line-height: 1.55;
 }
 
+.work-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.work-section p:not(.eyebrow) {
+  max-width: 72ch;
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .site-footer {
   display: flex;
   align-items: center;
@@ -753,7 +767,8 @@ tr:last-child td {
   }
 
   .hero,
-  .split-section {
+  .split-section,
+  .work-section {
     grid-template-columns: 1fr;
     min-height: auto;
   }
