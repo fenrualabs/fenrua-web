@@ -20,6 +20,7 @@ assert.deepEqual(routes, [...routes].sort((left, right) => left.localeCompare(ri
 assert.equal(new Set(routes).size, routes.length, "Manifest artifact routes must be unique.");
 assert.ok(routes.includes("/audit"));
 assert.ok(routes.includes("/data/public-document-register.json"));
+assert.ok(routes.includes("/status-monitor.js"));
 for (const artifact of manifest.record.publicArtifactSet.artifacts) {
   assert.match(artifact.route, /^\//);
   assert.match(artifact.sha256, /^[0-9a-f]{64}$/);

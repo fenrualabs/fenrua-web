@@ -288,25 +288,8 @@ function copyAttr(value) {
   return attr(value).replaceAll("\n", "&#10;");
 }
 
-function statusBadge(value) {
-  return `<span class="status-badge status-${attr(value.toLowerCase().replaceAll(" ", "-"))}">${esc(value)}</span>`;
-}
-
-function statusTimestamp(iso) {
-  const safeIso = attr(iso);
-  const date = esc(iso.slice(0, 10));
-  const time = esc(iso.slice(11, 19));
-  return `<div class="timestamp-stack">
-      <time datetime="${safeIso}"><span>${date}</span><span>${time} UTC</span></time>
-      <small data-relative-time="${safeIso}">Evidence timestamp</small>
-    </div>`;
-}
-
-function statusTimestampInline(iso) {
-  const safeIso = attr(iso);
-  const date = esc(iso.slice(0, 10));
-  const time = esc(iso.slice(11, 19));
-  return `<span class="timestamp-inline"><time datetime="${safeIso}">${date} ${time} UTC</time><span data-relative-time="${safeIso}">Evidence timestamp</span></span>`;
+function statusBadge(value, label = value) {
+  return `<span class="status-badge status-${attr(value.toLowerCase().replaceAll(" ", "-"))}">${esc(label)}</span>`;
 }
 
 function toolchainDisplayTags(tool) {
@@ -1122,39 +1105,53 @@ function audit() {
 }
 
 function status() {
-  const rows = [
-    ["Homepage", "success", "Routing surface", "index.html", generatedIso, "static route validation", "npm run validate", "Live chain observations remain read-only public telemetry.", "Browser viewport matrix"],
-    ["Architecture", "success", "Specification", "/architecture", generatedIso, "static route validation", "npm run validate", "Architecture is descriptive, not a deployed control plane.", "Independent architecture review"],
-    ["Kernel", "success", "Specification/reference mix", "/kernel", generatedIso, "static route validation", "npm run validate", "Primitive maturity varies by row.", "Per-primitive evidence expansion"],
-    ["Utilities", "success", "Catalogue", "/utilities", generatedIso, "static route validation", "npm run validate", "No fake live utility service is claimed.", "SDK or CLI evidence"],
-    ["Research registry", "success", "Evidence surface", "/research", generatedIso, "static route validation", "npm run validate", "Dedicated pages expose current reproduction limits.", "Independent reproduction"],
-    ["Verify examples", "partial", "Prototype foundation", "/verify", generatedIso, "fixture corpus validation", "node scripts/test-verify-examples.mjs", "No hosted verifier or upload model exists.", "Real verifier implementation"],
-    ["Developer quick start", "success", "Reproducibility guide", "/developers", generatedIso, "clean checkout report", "npm run validate", "Node 24 required.", "Tagged release reproduction"],
-    ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedIso, "registry validation", "node scripts/test-toolchain-registry.mjs", "Version capture is not security proof.", "New frozen evidence bundle"],
-    ["Evidence registry", "success", "Evidence surface", "/evidence", generatedIso, "static route validation", "npm run validate", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
-    ["Chain 978 observation", "success", "Signed bounded observation", "/api/chain-progress", generatedIso, "5 second public cache; 20 second refresh; 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Independent bounded observation review"],
-    ["Chain N521 observation", "success", "Signed bounded observation", "/api/chain-progress", generatedIso, "5 second public cache; 20 second refresh; 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is an independent signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Independent bounded observation gateway"],
-    ["Commercial access", "success", "Access-only services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", generatedIso, "public boundary review", "data/site-evidence.json", "Subscriptions and client-specific agreements do not create a financial product, token entitlement, or return expectation.", "Designated business-owner review"],
-    ["Public repository", "success", "Source surface", "https://github.com/fenrualabs/fenrua-web", generatedIso, "git provenance", "git rev-parse HEAD", "Repository state changes after each deployment.", "Tagged release"],
-    ["Schema set", "success", "Specification", "/docs/", generatedIso, "example corpus validation", "node scripts/test-verify-examples.mjs", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
+  const staticRows = [
+    ["Homepage", "success", "Published", "Routing surface", "index.html", "Static release artifact", "static route validation", "Live chain observations remain separate read-only public telemetry.", "Browser viewport matrix"],
+    ["Architecture", "success", "Published", "Specification", "/architecture", "Static release artifact", "static route validation", "Architecture is descriptive, not a deployed control plane.", "Independent architecture review"],
+    ["Kernel", "success", "Published", "Specification/reference mix", "/kernel", "Static release artifact", "static route validation", "Primitive maturity varies by row.", "Per-primitive evidence expansion"],
+    ["Utilities", "success", "Published", "Catalogue", "/utilities", "Static release artifact", "static route validation", "No fake live utility service is claimed.", "SDK or CLI evidence"],
+    ["Research registry", "success", "Published", "Evidence surface", "/research", "Static release artifact", "static route validation", "Dedicated pages expose current reproduction limits.", "Independent reproduction"],
+    ["Verify examples", "partial", "Partial", "Prototype foundation", "/verify", "Fixture corpus", "fixture corpus validation", "No hosted verifier or upload model exists.", "Real verifier implementation"],
+    ["Developer quick start", "success", "Published", "Reproducibility guide", "/developers", "Static release artifact", "clean checkout report", "Node 24 required.", "Tagged release reproduction"],
+    ["Toolchain registry", "success", "Published", "Read-only release evidence", "data/toolchain-registry.json", "Frozen registry input", "registry validation", "Version capture is not security proof.", "New frozen evidence bundle"],
+    ["Evidence registry", "success", "Published", "Evidence surface", "/evidence", "Static release artifact", "static route validation", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
+    ["Commercial access", "success", "Published", "Access-only services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", "Public boundary statement", "public boundary review", "Subscriptions and client-specific agreements do not create a financial product, token entitlement, or return expectation.", "Designated business-owner review"],
+    ["Public repository", "success", "Published", "Source surface", "https://github.com/fenrualabs/fenrua-web", "Release provenance", "git provenance", "Repository state changes after each deployment.", "Tagged release"],
+    ["Schema set", "success", "Published", "Specification", "/docs/", "Static specification set", "example corpus validation", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
   ].map(
     (r) => `<tr>
-      <td data-label="Component">${esc(r[0])}</td>
-      <td data-label="Operational state">${statusBadge(r[1])}</td>
-      <td data-label="Maturity">${esc(r[2])}</td>
-      <td data-label="Source">${esc(r[3])}</td>
-      <td data-label="Timestamp">${statusTimestamp(r[4])}</td>
-      <td data-label="Freshness policy">${esc(r[5])}</td>
-      <td data-label="Last successful check"><code>${esc(r[6])}</code></td>
+      <td data-label="Release record">${esc(r[0])}</td>
+      <td data-label="Publication state">${statusBadge(r[1], r[2])}</td>
+      <td data-label="Maturity">${esc(r[3])}</td>
+      <td data-label="Public artifact">${esc(r[4])}</td>
+      <td data-label="Evidence basis">${esc(r[5])}</td>
+      <td data-label="Validation scope">${esc(r[6])}</td>
       <td data-label="Current limitation">${esc(r[7])}</td>
       <td data-label="Next evidence gate">${esc(r[8])}</td>
     </tr>`
   );
+  const monitorRows = [
+    ["978", "Chain 978 observation", "A current observation is not activation history, contract assurance, bytecode identity, reserve proof, deployment assurance, or a safety guarantee."],
+    ["521", "Chain N521 observation", "A current observation is not activation history, contract assurance, bytecode identity, reserve proof, deployment assurance, or a safety guarantee."],
+  ]
+    .map(
+      ([chain, title, limitation]) => `<tr data-status-monitor-row="${attr(chain)}">
+        <td data-label="Public monitor"><strong>${esc(title)}</strong><br><small>Bounded public observation</small></td>
+        <td data-label="Current public state"><span class="status-badge" data-status-monitor-state>Checking</span></td>
+        <td data-label="Last signed observation" data-status-monitor-time>Checking for a signed public observation.</td>
+        <td data-label="Signed sequence" data-status-monitor-sequence>Not yet verified</td>
+        <td data-label="Observed block" data-status-monitor-block>Not yet verified</td>
+        <td data-label="Evidence basis" data-status-monitor-source>Public monitor pending</td>
+        <td data-label="Freshness" data-status-monitor-freshness>Awaiting monitor response</td>
+        <td data-label="Scope limitation">${esc(limitation)}</td>
+      </tr>`
+    );
   return layout({
     title: "Fenrua Status",
-    description: "Fenrua status system with loading, success, partial, stale, failure, paused, and maintenance states.",
+    description: "Fenrua public signed-observation monitor and static release-status reference.",
     current: "Status",
-    body: `${routeHero("STATE SYSTEM", "Status", "Every telemetry widget must expose state, timestamp, source, retry behavior, and explanation.")}
+    scripts: '<script src="/status-monitor.js" defer></script>',
+    body: `${routeHero("STATUS AND PUBLIC OBSERVATIONS", "Status", "Current signed observations are monitored separately from static release records. A release record is never presented as a chain event or activation time.")}
       <section class="section-shell">
         <div class="toolchain-summary state-grid">
           ${statusCards
@@ -1163,15 +1160,31 @@ function status() {
                 <span>${esc(state)}</span>
                 <strong>${esc(label)}</strong>
                 <p>${esc(explanation)}</p>
-                <small>Source: status definition · ${statusTimestampInline(generatedIso)} · Retry: ${esc(retry)}</small>
+                <small>Reference definition · Retry: ${esc(retry)}</small>
               </article>`
             )
             .join("\n")}
         </div>
       </section>
       <section class="section-shell">
-        <p class="mobile-data-notice"><strong>Mobile view is optimised for record-by-record inspection.</strong> Each status row remains complete, including UTC seconds and freshness.</p>
-        ${table(["Component", "Operational state", "Maturity", "Source", "Timestamp", "Freshness policy", "Last successful check", "Current limitation", "Next evidence gate"], rows, "status-table", "Public status records")}
+        <div class="section-heading">
+          <p class="eyebrow">LIVE SIGNED OBSERVATIONS</p>
+          <h2>Current public monitor</h2>
+          <p>Each chain row is populated only from the bounded public observation endpoint. “Last signed observation” is that chain’s signed observation time, not an activation event or release-build time.</p>
+        </div>
+        <p class="status-monitor-meta" data-status-monitor-meta>Checking the bounded public monitor. No current chain state is asserted until a signed observation is returned.</p>
+        <span class="sr-only" data-status-monitor-announcer role="status" aria-live="polite" aria-atomic="true"></span>
+        <p class="mobile-data-notice"><strong>Mobile view is optimised for record-by-record inspection.</strong> Monitor rows preserve exact UTC observation times, signed sequence, and freshness scope.</p>
+        ${table(["Public monitor", "Current public state", "Last signed observation", "Signed sequence", "Observed block", "Evidence basis", "Freshness", "Scope limitation"], monitorRows, "status-table status-monitor-table", "Current public signed observations")}
+      </section>
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">STATIC RELEASE RECORDS</p>
+          <h2>Public release inventory</h2>
+          <p>These are static publication records, not runtime monitors. They intentionally have no per-row event timestamp; use the <a href="/.well-known/fenrua-release.json">current release manifest</a> for source-commit and artifact-hash evidence.</p>
+        </div>
+        <p class="mobile-data-notice"><strong>Static release records are not live checks.</strong> Their validation scope and limitations remain visible without implying a current event.</p>
+        ${table(["Release record", "Publication state", "Maturity", "Public artifact", "Evidence basis", "Validation scope", "Current limitation", "Next evidence gate"], staticRows, "status-table", "Static public release records")}
       </section>`,
   });
 }

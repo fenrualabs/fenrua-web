@@ -1812,8 +1812,23 @@ h3 {
   color: var(--muted);
 }
 
-.state-grid .timestamp-inline {
-  margin: 0.4rem 0;
+.status-monitor-meta {
+  margin: 0 0 0.85rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+  border-radius: 8px;
+  background: rgba(13, 17, 15, 0.88);
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.status-monitor-timestamp {
+  min-width: 11rem;
+}
+
+.status-monitor-table td:nth-child(8) {
+  min-width: 22rem;
 }
 
 .registry-tools input:focus {

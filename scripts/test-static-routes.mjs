@@ -95,14 +95,19 @@ const status = await readFile(new URL("../status/index.html", import.meta.url), 
 for (const state of ["loading", "success", "partial", "stale", "failure", "paused", "maintenance"]) {
   assert.match(status, new RegExp(`data-state="${state}"`), `status page must document ${state}`);
 }
-assert.match(status, /Operational state/);
+assert.match(status, /Current public state/);
 assert.match(status, /Commercial access/);
 assert.match(status, /Access-only services/);
-assert.match(status, /<time datetime="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z">/);
-assert.match(status, /\d{2}:\d{2}:\d{2} UTC/);
-assert.match(status, /data-relative-time="/);
+assert.match(status, /LIVE SIGNED OBSERVATIONS/);
+assert.match(status, /STATIC RELEASE RECORDS/);
+assert.match(status, /<script src="\/status-monitor\.js" defer><\/script>/);
+assert.match(status, /data-status-monitor-row="978"/);
+assert.match(status, /data-status-monitor-row="521"/);
+assert.match(status, /Last signed observation/);
 assert.match(status, /status-table/);
-assert.match(status, /data-label="Timestamp"/);
+assert.doesNotMatch(status, /data-relative-time="/);
+assert.doesNotMatch(status, /data-label="Timestamp"/);
+assert.doesNotMatch(status, /Last successful check/);
 assert.doesNotMatch(status, /<script>\s*\(\(\) =>/, "Status must not ship a CSP-blocked inline relative-time script.");
 
 const evidence = await readFile(new URL("../evidence/index.html", import.meta.url), "utf8");

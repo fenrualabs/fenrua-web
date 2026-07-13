@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta name="description" content="Fenrua status system with loading, success, partial, stale, failure, paused, and maintenance states." />
+    <meta name="description" content="Fenrua public signed-observation monitor and static release-status reference." />
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0d0d0d" />
     <link rel="canonical" href="https://fenrua.ai/status" />
@@ -24,6 +24,7 @@
     <link rel="icon" href="/assets/fenrua-header-logo.jpg" type="image/jpeg" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="/technical-data.js" defer></script>
+    <script src="/status-monitor.js" defer></script>
     <script src="/mobile-chain-status.js" defer></script>
 
   </head>
@@ -90,9 +91,9 @@
     </header>
     <main id="content">
       <section class="route-hero" aria-labelledby="page-title">
-        <p class="eyebrow">STATE SYSTEM</p>
+        <p class="eyebrow">STATUS AND PUBLIC OBSERVATIONS</p>
         <h1 id="page-title">Status</h1>
-        <p>Every telemetry widget must expose state, timestamp, source, retry behavior, and explanation.</p>
+        <p>Current signed observations are monitored separately from static release records. A release record is never presented as a chain event or activation time.</p>
         
       </section>
       <section class="section-shell">
@@ -101,245 +102,211 @@
                 <span>loading</span>
                 <strong>Loading</strong>
                 <p>Request started; verified status not yet available.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Retry after the configured refresh interval.</small>
+                <small>Reference definition · Retry: Retry after the configured refresh interval.</small>
               </article>
 <article data-state="success">
                 <span>success</span>
                 <strong>Success</strong>
                 <p>Source responded and supplied evidence within the freshness window.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Next check follows normal cadence.</small>
+                <small>Reference definition · Retry: Next check follows normal cadence.</small>
               </article>
 <article data-state="partial">
                 <span>partial</span>
                 <strong>Partial</strong>
                 <p>Some required evidence is present but one or more declared checks remain incomplete.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Retry with scoped confidence.</small>
+                <small>Reference definition · Retry: Retry with scoped confidence.</small>
               </article>
 <article data-state="stale">
                 <span>stale</span>
                 <strong>Stale</strong>
                 <p>Last evidence is older than the freshness policy.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Retry and keep previous value labelled stale.</small>
+                <small>Reference definition · Retry: Retry and keep previous value labelled stale.</small>
               </article>
 <article data-state="failure">
                 <span>failure</span>
                 <strong>Failure</strong>
                 <p>Source failed or returned invalid evidence.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Retry with backoff and fail closed for decisions.</small>
+                <small>Reference definition · Retry: Retry with backoff and fail closed for decisions.</small>
               </article>
 <article data-state="paused">
                 <span>paused</span>
                 <strong>Paused</strong>
                 <p>Source is intentionally paused.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: No automatic retry until pause is lifted.</small>
+                <small>Reference definition · Retry: No automatic retry until pause is lifted.</small>
               </article>
 <article data-state="maintenance">
                 <span>maintenance</span>
                 <strong>Maintenance</strong>
                 <p>Source is undergoing maintenance.</p>
-                <small>Source: status definition · <span class="timestamp-inline"><time datetime="2026-07-13T07:56:58Z">2026-07-13 07:56:58 UTC</time><span data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</span></span> · Retry: Retry after the published maintenance window.</small>
+                <small>Reference definition · Retry: Retry after the published maintenance window.</small>
               </article>
         </div>
       </section>
       <section class="section-shell">
-        <p class="mobile-data-notice"><strong>Mobile view is optimised for record-by-record inspection.</strong> Each status row remains complete, including UTC seconds and freshness.</p>
-        <div class="registry status-table" role="region" tabindex="0" aria-label="Public status records">
+        <div class="section-heading">
+          <p class="eyebrow">LIVE SIGNED OBSERVATIONS</p>
+          <h2>Current public monitor</h2>
+          <p>Each chain row is populated only from the bounded public observation endpoint. “Last signed observation” is that chain’s signed observation time, not an activation event or release-build time.</p>
+        </div>
+        <p class="status-monitor-meta" data-status-monitor-meta>Checking the bounded public monitor. No current chain state is asserted until a signed observation is returned.</p>
+        <span class="sr-only" data-status-monitor-announcer role="status" aria-live="polite" aria-atomic="true"></span>
+        <p class="mobile-data-notice"><strong>Mobile view is optimised for record-by-record inspection.</strong> Monitor rows preserve exact UTC observation times, signed sequence, and freshness scope.</p>
+        <div class="registry status-table status-monitor-table" role="region" tabindex="0" aria-label="Current public signed observations">
           <table>
-            <thead><tr><th scope="col">Component</th><th scope="col">Operational state</th><th scope="col">Maturity</th><th scope="col">Source</th><th scope="col">Timestamp</th><th scope="col">Freshness policy</th><th scope="col">Last successful check</th><th scope="col">Current limitation</th><th scope="col">Next evidence gate</th></tr></thead>
+            <thead><tr><th scope="col">Public monitor</th><th scope="col">Current public state</th><th scope="col">Last signed observation</th><th scope="col">Signed sequence</th><th scope="col">Observed block</th><th scope="col">Evidence basis</th><th scope="col">Freshness</th><th scope="col">Scope limitation</th></tr></thead>
+            <tbody>
+<tr data-status-monitor-row="978">
+        <td data-label="Public monitor"><strong>Chain 978 observation</strong><br><small>Bounded public observation</small></td>
+        <td data-label="Current public state"><span class="status-badge" data-status-monitor-state>Checking</span></td>
+        <td data-label="Last signed observation" data-status-monitor-time>Checking for a signed public observation.</td>
+        <td data-label="Signed sequence" data-status-monitor-sequence>Not yet verified</td>
+        <td data-label="Observed block" data-status-monitor-block>Not yet verified</td>
+        <td data-label="Evidence basis" data-status-monitor-source>Public monitor pending</td>
+        <td data-label="Freshness" data-status-monitor-freshness>Awaiting monitor response</td>
+        <td data-label="Scope limitation">A current observation is not activation history, contract assurance, bytecode identity, reserve proof, deployment assurance, or a safety guarantee.</td>
+      </tr>
+<tr data-status-monitor-row="521">
+        <td data-label="Public monitor"><strong>Chain N521 observation</strong><br><small>Bounded public observation</small></td>
+        <td data-label="Current public state"><span class="status-badge" data-status-monitor-state>Checking</span></td>
+        <td data-label="Last signed observation" data-status-monitor-time>Checking for a signed public observation.</td>
+        <td data-label="Signed sequence" data-status-monitor-sequence>Not yet verified</td>
+        <td data-label="Observed block" data-status-monitor-block>Not yet verified</td>
+        <td data-label="Evidence basis" data-status-monitor-source>Public monitor pending</td>
+        <td data-label="Freshness" data-status-monitor-freshness>Awaiting monitor response</td>
+        <td data-label="Scope limitation">A current observation is not activation history, contract assurance, bytecode identity, reserve proof, deployment assurance, or a safety guarantee.</td>
+      </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">STATIC RELEASE RECORDS</p>
+          <h2>Public release inventory</h2>
+          <p>These are static publication records, not runtime monitors. They intentionally have no per-row event timestamp; use the <a href="/.well-known/fenrua-release.json">current release manifest</a> for source-commit and artifact-hash evidence.</p>
+        </div>
+        <p class="mobile-data-notice"><strong>Static release records are not live checks.</strong> Their validation scope and limitations remain visible without implying a current event.</p>
+        <div class="registry status-table" role="region" tabindex="0" aria-label="Static public release records">
+          <table>
+            <thead><tr><th scope="col">Release record</th><th scope="col">Publication state</th><th scope="col">Maturity</th><th scope="col">Public artifact</th><th scope="col">Evidence basis</th><th scope="col">Validation scope</th><th scope="col">Current limitation</th><th scope="col">Next evidence gate</th></tr></thead>
             <tbody>
 <tr>
-      <td data-label="Component">Homepage</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Homepage</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Routing surface</td>
-      <td data-label="Source">index.html</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
-      <td data-label="Current limitation">Live chain observations remain read-only public telemetry.</td>
+      <td data-label="Public artifact">index.html</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
+      <td data-label="Current limitation">Live chain observations remain separate read-only public telemetry.</td>
       <td data-label="Next evidence gate">Browser viewport matrix</td>
     </tr>
 <tr>
-      <td data-label="Component">Architecture</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Architecture</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Specification</td>
-      <td data-label="Source">/architecture</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/architecture</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
       <td data-label="Current limitation">Architecture is descriptive, not a deployed control plane.</td>
       <td data-label="Next evidence gate">Independent architecture review</td>
     </tr>
 <tr>
-      <td data-label="Component">Kernel</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Kernel</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Specification/reference mix</td>
-      <td data-label="Source">/kernel</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/kernel</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
       <td data-label="Current limitation">Primitive maturity varies by row.</td>
       <td data-label="Next evidence gate">Per-primitive evidence expansion</td>
     </tr>
 <tr>
-      <td data-label="Component">Utilities</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Utilities</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Catalogue</td>
-      <td data-label="Source">/utilities</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/utilities</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
       <td data-label="Current limitation">No fake live utility service is claimed.</td>
       <td data-label="Next evidence gate">SDK or CLI evidence</td>
     </tr>
 <tr>
-      <td data-label="Component">Research registry</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Research registry</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Evidence surface</td>
-      <td data-label="Source">/research</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/research</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
       <td data-label="Current limitation">Dedicated pages expose current reproduction limits.</td>
       <td data-label="Next evidence gate">Independent reproduction</td>
     </tr>
 <tr>
-      <td data-label="Component">Verify examples</td>
-      <td data-label="Operational state"><span class="status-badge status-partial">partial</span></td>
+      <td data-label="Release record">Verify examples</td>
+      <td data-label="Publication state"><span class="status-badge status-partial">Partial</span></td>
       <td data-label="Maturity">Prototype foundation</td>
-      <td data-label="Source">/verify</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">fixture corpus validation</td>
-      <td data-label="Last successful check"><code>node scripts/test-verify-examples.mjs</code></td>
+      <td data-label="Public artifact">/verify</td>
+      <td data-label="Evidence basis">Fixture corpus</td>
+      <td data-label="Validation scope">fixture corpus validation</td>
       <td data-label="Current limitation">No hosted verifier or upload model exists.</td>
       <td data-label="Next evidence gate">Real verifier implementation</td>
     </tr>
 <tr>
-      <td data-label="Component">Developer quick start</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Developer quick start</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Reproducibility guide</td>
-      <td data-label="Source">/developers</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">clean checkout report</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/developers</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">clean checkout report</td>
       <td data-label="Current limitation">Node 24 required.</td>
       <td data-label="Next evidence gate">Tagged release reproduction</td>
     </tr>
 <tr>
-      <td data-label="Component">Toolchain registry</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
-      <td data-label="Maturity">Read-only live</td>
-      <td data-label="Source">data/toolchain-registry.json</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">registry validation</td>
-      <td data-label="Last successful check"><code>node scripts/test-toolchain-registry.mjs</code></td>
+      <td data-label="Release record">Toolchain registry</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
+      <td data-label="Maturity">Read-only release evidence</td>
+      <td data-label="Public artifact">data/toolchain-registry.json</td>
+      <td data-label="Evidence basis">Frozen registry input</td>
+      <td data-label="Validation scope">registry validation</td>
       <td data-label="Current limitation">Version capture is not security proof.</td>
       <td data-label="Next evidence gate">New frozen evidence bundle</td>
     </tr>
 <tr>
-      <td data-label="Component">Evidence registry</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Evidence registry</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Evidence surface</td>
-      <td data-label="Source">/evidence</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">static route validation</td>
-      <td data-label="Last successful check"><code>npm run validate</code></td>
+      <td data-label="Public artifact">/evidence</td>
+      <td data-label="Evidence basis">Static release artifact</td>
+      <td data-label="Validation scope">static route validation</td>
       <td data-label="Current limitation">Evidence provenance is scoped to public artifacts.</td>
       <td data-label="Next evidence gate">External evidence review</td>
     </tr>
 <tr>
-      <td data-label="Component">Chain 978 observation</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
-      <td data-label="Maturity">Signed bounded observation</td>
-      <td data-label="Source">/api/chain-progress</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">5 second public cache; 20 second refresh; 90 second freshness</td>
-      <td data-label="Last successful check"><code>node scripts/test-chain-progress.mjs</code></td>
-      <td data-label="Current limitation">Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.</td>
-      <td data-label="Next evidence gate">Independent bounded observation review</td>
-    </tr>
-<tr>
-      <td data-label="Component">Chain N521 observation</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
-      <td data-label="Maturity">Signed bounded observation</td>
-      <td data-label="Source">/api/chain-progress</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">5 second public cache; 20 second refresh; 90 second freshness</td>
-      <td data-label="Last successful check"><code>node scripts/test-chain-progress.mjs</code></td>
-      <td data-label="Current limitation">Public status is an independent signed bounded observation; not contract, bytecode, reserve, or deployment assurance.</td>
-      <td data-label="Next evidence gate">Independent bounded observation gateway</td>
-    </tr>
-<tr>
-      <td data-label="Component">Commercial access</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Commercial access</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Access-only services</td>
-      <td data-label="Source">/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">public boundary review</td>
-      <td data-label="Last successful check"><code>data/site-evidence.json</code></td>
+      <td data-label="Public artifact">/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md</td>
+      <td data-label="Evidence basis">Public boundary statement</td>
+      <td data-label="Validation scope">public boundary review</td>
       <td data-label="Current limitation">Subscriptions and client-specific agreements do not create a financial product, token entitlement, or return expectation.</td>
       <td data-label="Next evidence gate">Designated business-owner review</td>
     </tr>
 <tr>
-      <td data-label="Component">Public repository</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Public repository</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Source surface</td>
-      <td data-label="Source">https://github.com/fenrualabs/fenrua-web</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">git provenance</td>
-      <td data-label="Last successful check"><code>git rev-parse HEAD</code></td>
+      <td data-label="Public artifact">https://github.com/fenrualabs/fenrua-web</td>
+      <td data-label="Evidence basis">Release provenance</td>
+      <td data-label="Validation scope">git provenance</td>
       <td data-label="Current limitation">Repository state changes after each deployment.</td>
       <td data-label="Next evidence gate">Tagged release</td>
     </tr>
 <tr>
-      <td data-label="Component">Schema set</td>
-      <td data-label="Operational state"><span class="status-badge status-success">success</span></td>
+      <td data-label="Release record">Schema set</td>
+      <td data-label="Publication state"><span class="status-badge status-success">Published</span></td>
       <td data-label="Maturity">Specification</td>
-      <td data-label="Source">/docs/</td>
-      <td data-label="Timestamp"><div class="timestamp-stack">
-      <time datetime="2026-07-13T07:56:58Z"><span>2026-07-13</span><span>07:56:58 UTC</span></time>
-      <small data-relative-time="2026-07-13T07:56:58Z">Evidence timestamp</small>
-    </div></td>
-      <td data-label="Freshness policy">example corpus validation</td>
-      <td data-label="Last successful check"><code>node scripts/test-verify-examples.mjs</code></td>
+      <td data-label="Public artifact">/docs/</td>
+      <td data-label="Evidence basis">Static specification set</td>
+      <td data-label="Validation scope">example corpus validation</td>
       <td data-label="Current limitation">Schemas are examples/specifications, not a hosted validator.</td>
       <td data-label="Next evidence gate">Schema validator package</td>
     </tr>

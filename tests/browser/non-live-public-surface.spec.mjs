@@ -63,6 +63,69 @@ async function gotoPublic(page, pathname) {
   await page.waitForLoadState("networkidle");
 }
 
+function monitorPayload({ sequence978 = 2113, sequence521 = 2052 } = {}) {
+  const generatedAt = new Date().toISOString();
+  const observed978 = new Date(Date.now() - 7_000).toISOString();
+  const observed521 = new Date(Date.now() - 41_000).toISOString();
+  const observations = [
+    {
+      chain: "978",
+      observed_block: 333682,
+      observed_at: observed978,
+      sequence: sequence978,
+      source_quorum: 2,
+      status: "confirmed",
+      signature: "signed-978",
+    },
+    {
+      chain: "521",
+      observed_block: 272007,
+      observed_at: observed521,
+      sequence: sequence521,
+      source_quorum: 2,
+      status: "confirmed",
+      signature: "signed-521",
+    },
+  ];
+  return {
+    version: 1,
+    generatedAt,
+    refreshMs: 20_000,
+    freshnessSeconds: 90,
+    observations,
+    chains: [
+      {
+        expectedChainId: 978,
+        status: "live",
+        blockNumber: observations[0].observed_block,
+        blockAgeSeconds: 7,
+        checkedAt: observations[0].observed_at,
+        observationSequence: observations[0].sequence,
+        confirmation: { evidenceSource: "signed-observation", confidence: "confirmed" },
+      },
+      {
+        expectedChainId: 521,
+        status: "live",
+        blockNumber: observations[1].observed_block,
+        blockAgeSeconds: 41,
+        checkedAt: observations[1].observed_at,
+        observationSequence: observations[1].sequence,
+        confirmation: { evidenceSource: "signed-observation", confidence: "confirmed" },
+      },
+    ],
+  };
+}
+
+async function mockPublicMonitor(page, response) {
+  await page.route("**/api/chain-progress", async (route) => {
+    if (response instanceof Error) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"unavailable"}' });
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(response) });
+  });
+}
+
 test("Evidence keeps the Overview mobile live blocks without extra API access", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   await page.setViewportSize({ width: 320, height: 900 });
@@ -78,6 +141,8 @@ test("Evidence keeps the Overview mobile live blocks without extra API access", 
 test("Status uses the permitted external relative-time script and responsive grid", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   const consoleErrors = [];
+  const payload = monitorPayload();
+  await mockPublicMonitor(page, payload);
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
@@ -85,25 +150,47 @@ test("Status uses the permitted external relative-time script and responsive gri
   await page.setViewportSize({ width: 320, height: 900 });
   await gotoPublic(page, "/status");
   await expectMobileLiveBlocks(page);
-  await expect(page.locator("[data-relative-time]").first()).toHaveText(/^Updated /);
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-state]')).toHaveText("Live");
+  await expect(page.locator('[data-status-monitor-row="521"] [data-status-monitor-state]')).toHaveText("Live");
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-time] time')).toHaveAttribute("datetime", payload.observations[0].observed_at);
+  await expect(page.locator('[data-status-monitor-row="521"] [data-status-monitor-time] time')).toHaveAttribute("datetime", payload.observations[1].observed_at);
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-sequence]')).toContainText(String(payload.observations[0].sequence));
+  await expect(page.locator("[data-status-monitor-meta]")).toContainText("not an activation event");
+  expect(await page.locator("[data-relative-time]").count()).toBe(0);
   await noHorizontalOverflow(page);
   expect(consoleErrors.filter((message) => /content security policy|refused to execute/i.test(message))).toEqual([]);
 
   await page.setViewportSize({ width: 1280, height: 900 });
   const stateGrid = page.locator(".state-grid");
   await expect.poll(() => stateGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length)).toBeGreaterThanOrEqual(3);
-  await expect(page.locator(".timestamp-inline").first()).toHaveCSS("display", "grid");
+  await expect(page.locator(".status-monitor-timestamp").first()).toHaveCSS("display", "grid");
   await expect(page.locator("[data-chain-card]")).toHaveCount(2);
   assertBoundary();
 });
 
-test("Status keeps the copied live rail hidden and unloaded at desktop width", async ({ page }) => {
+test("Status keeps the copied live rail hidden while its isolated monitor runs at desktop width", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
+  await mockPublicMonitor(page, monitorPayload());
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoPublic(page, "/status");
   await expect(page.locator(".mobile-chain-rail")).toBeHidden();
   await expect(page.locator("[data-chain-card]")).toHaveCount(2);
-  expect(assertBoundary.liveRequests).toEqual([]);
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-state]')).toHaveText("Live");
+  expect(assertBoundary.liveRequests).toContain("/api/chain-progress");
+  expect(assertBoundary.liveRequests).not.toContain("/kernel-status.js");
+  assertBoundary();
+});
+
+test("Status fails closed when the public monitor is unavailable", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  await mockPublicMonitor(page, new Error("unavailable"));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/status");
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-state]')).toHaveText("Unavailable");
+  await expect(page.locator('[data-status-monitor-row="521"] [data-status-monitor-state]')).toHaveText("Unavailable");
+  await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-time]')).toHaveText(/no current observation is asserted/i);
+  await expect(page.locator("[data-status-monitor-meta]")).toContainText("No current state is asserted");
+  expect(await page.locator('[data-status-monitor-time] time').count()).toBe(0);
   assertBoundary();
 });
 

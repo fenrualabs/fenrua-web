@@ -227,9 +227,11 @@ try {
   assert.equal(healthy.body.freshnessSeconds, 90);
   assert.equal(healthy.body.chains[0].status, "live");
   assert.equal(healthy.body.chains[0].observationSequence, 41);
+  assert.equal(healthy.body.chains[0].checkedAt, healthy.body.observations.find((record) => record.chain === "978")?.observed_at);
   assert.equal(healthy.body.chains[1].status, "live");
   assert.equal(healthy.body.chains[1].blockNumber, 521001);
   assert.equal(healthy.body.chains[1].observationSequence, 7);
+  assert.equal(healthy.body.chains[1].checkedAt, healthy.body.observations.find((record) => record.chain === "521")?.observed_at);
   assert.equal(healthy.body.observations.length, 2);
   assertSanitized(healthy.body);
 

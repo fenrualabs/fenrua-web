@@ -32,6 +32,7 @@ export const publicEntries = [
   "security",
   "sitemap.xml",
   "status",
+  "status-monitor.js",
   "styles.css",
   "support",
   "technical-data.js",

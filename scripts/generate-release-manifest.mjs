@@ -63,6 +63,7 @@ const artifacts = [
   ["/mobile-chain-status.js", "mobile-chain-status.js"],
   ["/research", "research/index.html"],
   ["/status", "status/index.html"],
+  ["/status-monitor.js", "status-monitor.js"],
   ["/toolchain", "toolchain/index.html"],
   ["/utilities", "utilities/index.html"],
   ["/verify", "verify/index.html"],
