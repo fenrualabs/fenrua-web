@@ -17,9 +17,18 @@ contract evidence refresh boundary.
 
 Collaboration contact: `partnerships@fenrua.ai`.
 
-Live Chain 978 and Chain N521 progress is fetched through the server-side
-`/api/chain-progress` probe. The browser receives only sanitized status fields;
-private endpoint values stay in Vercel environment variables.
+Each chain is published only through a **Public Observation Gateway over
+Encrypted Private-Mesh Transport**. `/api/chain-progress` reads fixed,
+per-chain signed schema-validated observations through server-only Vercel
+credentials, verifies their Ed25519 signatures, and never probes or forwards
+JSON-RPC. `/api/chain-observation-key` and
+`/api/chain-n521-observation-key` expose the matching public verification
+metadata. Until Chain N521 has its own independently signed gateway and key,
+the UI truthfully shows that evidence is awaiting rather than simulating a live
+head.
+
+See [Public Observation Gateway](docs/PUBLIC_OBSERVATION_GATEWAY.md) and copy
+the server-only variable names from `.env.example`; never commit their values.
 
 ## Canonical Website
 
@@ -72,7 +81,9 @@ npm run generate:static
 - `evidence/index.html` - evidence registry
 - `status/index.html` - status-state system
 - `examples/*.json` - verifier example artifacts
-- `api/chain-progress.js` - server-side live Chain 978 and Chain N521 progress probe
+- `api/chain-progress.js` - bounded signed Chain 978 and Chain N521 observation adapter
+- `api/chain-observation-key.js` - Chain 978 public Ed25519 verification metadata endpoint
+- `api/chain-n521-observation-key.js` - Chain N521 public Ed25519 verification metadata endpoint
 - `assets/sigil.svg` - local Fenrua mark
 - `docs/SECURITY_AUDIT_LOG.md` - audit log
 - `docs/GENESIS_MANIFEST.md` - Genesis Manifest Record

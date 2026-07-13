@@ -1,0 +1,11 @@
+{
+  "schema": "fenrua.verification-result.v1",
+  "result": "RUNTIME_UNVERIFIED",
+  "inputFixture": "examples/runtime-unverified.fixture.json",
+  "trigger": "Runtime attestation is absent or cannot be matched to the reviewed artifact.",
+  "evidenceSupplied": ["manifest", "evidenceBundle"],
+  "evidenceAbsent": ["runtimeAttestation"],
+  "safetyConsequence": "Do not claim runtime conformity.",
+  "continueExecution": false,
+  "humanReviewRequired": true
+}

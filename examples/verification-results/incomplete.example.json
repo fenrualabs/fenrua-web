@@ -1,0 +1,11 @@
+{
+  "schema": "fenrua.verification-result.v1",
+  "result": "INCOMPLETE",
+  "inputFixture": "examples/incomplete.fixture.json",
+  "trigger": "Required manifest, policy, signature, or evidence fields are missing.",
+  "evidenceSupplied": ["partialManifest"],
+  "evidenceAbsent": ["authorityPolicy", "completeEvidenceBundle"],
+  "safetyConsequence": "Verifier cannot establish the minimum evidence set.",
+  "continueExecution": false,
+  "humanReviewRequired": true
+}

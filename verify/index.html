@@ -23,10 +23,12 @@
     <title>Fenrua Verify</title>
     <link rel="icon" href="/assets/sigil.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="/technical-data.js" defer></script>
     
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
+    <span class="sr-only" data-copy-announcer role="status" aria-live="polite" aria-atomic="true"></span>
     <header class="site-header" aria-label="Site header">
       <a class="brand" href="/" aria-label="Fenrua home">
         <img src="/assets/sigil.svg" width="40" height="40" alt="" />
@@ -61,7 +63,15 @@
           <h2>Run the current checks</h2>
           <p>Use the repository validation suite and schema examples. The example verifier output is deterministic and explicitly marks runtime attestation as unverified.</p>
         </div>
-        <pre><code>npm run validate
+        <div class="code-panel" data-code-panel data-wrap="false">
+          <div class="code-panel-toolbar">
+            <span>Local verifier commands</span>
+            <div>
+              <button type="button" data-copy="npm run validate&#10;node scripts/test-toolchain-registry.mjs&#10;&#10;# Example artifacts&#10;examples/entity-manifest.example.json&#10;examples/authority-policy.example.json&#10;examples/evidence-bundle.example.json&#10;examples/verification-result.example.json" data-copy-label="Code copied">Copy</button>
+              <button type="button" data-wrap-toggle aria-pressed="false">Wrap lines</button>
+            </div>
+          </div>
+          <pre data-language="bash"><code data-code-value>npm run validate
 node scripts/test-toolchain-registry.mjs
 
 # Example artifacts
@@ -69,6 +79,7 @@ examples/entity-manifest.example.json
 examples/authority-policy.example.json
 examples/evidence-bundle.example.json
 examples/verification-result.example.json</code></pre>
+        </div>
       </section>
       <section class="section-shell">
         <div class="doc-grid">
@@ -76,43 +87,115 @@ examples/verification-result.example.json</code></pre>
           <a href="/examples/authority-policy.example.json">Authority policy example</a>
           <a href="/examples/evidence-bundle.example.json">Evidence bundle example</a>
           <a href="/examples/verification-result.example.json">Verification result example</a>
+          <a href="/examples/verification-results/pass.example.json">PASS fixture</a>
+          <a href="/examples/verification-results/fail-closed.example.json">FAIL_CLOSED fixture</a>
           <a href="/docs/FENRUA_ENTITY_MANIFEST_SPEC.md">Entity manifest schema</a>
           <a href="/docs/FENRUA_AUTHORITY_POLICY_SPEC.md">Authority policy schema</a>
           <a href="/docs/FENRUA_EVIDENCE_BUNDLE_SPEC.md">Evidence bundle schema</a>
           <a href="/docs/FENRUA_VERIFICATION_RESULT_SPEC.md">Verification result schema</a>
+          <a href="/docs/FENRUA_VERIFY_RESULT_CORPUS.md">Result corpus report</a>
         </div>
       </section>
       <section class="section-shell split-section">
         <div><p class="eyebrow">DETERMINISTIC OUTPUT</p><h2>Example result</h2></div>
-        <pre><code>{
-  "result": "PASS_WITH_LIMITATIONS",
-  "manifestSchema": "valid",
-  "identity": "verified",
-  "signatures": "verified",
-  "artifactIntegrity": "verified",
-  "policyIntegrity": "verified",
-  "evidenceCompleteness": "partial",
-  "runtimeConformity": "unverified",
-  "revocationStatus": "active"
+        <div class="code-panel" data-code-panel data-wrap="false">
+          <div class="code-panel-toolbar">
+            <span>Verification result JSON</span>
+            <div>
+              <button type="button" data-copy="{&#10;  &quot;result&quot;: &quot;PASS_WITH_LIMITATIONS&quot;,&#10;  &quot;manifestSchema&quot;: &quot;valid&quot;,&#10;  &quot;identity&quot;: &quot;verified&quot;,&#10;  &quot;signatures&quot;: &quot;verified&quot;,&#10;  &quot;artifactIntegrity&quot;: &quot;verified&quot;,&#10;  &quot;policyIntegrity&quot;: &quot;verified&quot;,&#10;  &quot;evidenceCompleteness&quot;: &quot;partial&quot;,&#10;  &quot;runtimeConformity&quot;: &quot;unverified&quot;,&#10;  &quot;revocationStatus&quot;: &quot;active&quot;&#10;}" data-copy-label="Code copied">Copy</button>
+              <button type="button" data-wrap-toggle aria-pressed="false">Wrap lines</button>
+            </div>
+          </div>
+          <pre data-language="json"><code data-code-value>{
+  &quot;result&quot;: &quot;PASS_WITH_LIMITATIONS&quot;,
+  &quot;manifestSchema&quot;: &quot;valid&quot;,
+  &quot;identity&quot;: &quot;verified&quot;,
+  &quot;signatures&quot;: &quot;verified&quot;,
+  &quot;artifactIntegrity&quot;: &quot;verified&quot;,
+  &quot;policyIntegrity&quot;: &quot;verified&quot;,
+  &quot;evidenceCompleteness&quot;: &quot;partial&quot;,
+  &quot;runtimeConformity&quot;: &quot;unverified&quot;,
+  &quot;revocationStatus&quot;: &quot;active&quot;
 }</code></pre>
+        </div>
       </section>
       <section class="section-shell">
         <div class="registry " role="region" tabindex="0">
           <table>
-            <thead><tr><th scope="col">Code</th><th scope="col">Meaning</th></tr></thead>
+            <thead><tr><th scope="col">Code</th><th scope="col">Meaning</th><th scope="col">Fixture</th><th scope="col">Safety consequence</th></tr></thead>
             <tbody>
-<tr><td><code>PASS</code></td><td>All supplied checks passed.</td></tr>
-<tr><td><code>PASS_WITH_LIMITATIONS</code></td><td>Checks passed but runtime or completeness limitations remain.</td></tr>
-<tr><td><code>INCOMPLETE</code></td><td>Required manifest, policy, or evidence fields are missing.</td></tr>
-<tr><td><code>STALE</code></td><td>Evidence is older than the accepted freshness policy.</td></tr>
-<tr><td><code>POLICY_VIOLATION</code></td><td>Requested action violates policy.</td></tr>
-<tr><td><code>INTEGRITY_MISMATCH</code></td><td>Hash, build, source, or runtime value does not match.</td></tr>
-<tr><td><code>SIGNATURE_INVALID</code></td><td>Signature could not be verified.</td></tr>
-<tr><td><code>RUNTIME_UNVERIFIED</code></td><td>Runtime attestation was not supplied or accepted.</td></tr>
-<tr><td><code>REVOKED</code></td><td>Artifact, entity, or policy is revoked.</td></tr>
-<tr><td><code>FAIL_CLOSED</code></td><td>Verifier reached an unsafe or unsupported state.</td></tr>
-<tr><td><code>UNSUPPORTED_SCHEMA</code></td><td>Schema version is not supported.</td></tr>
-<tr><td><code>ERROR</code></td><td>Verifier failed unexpectedly.</td></tr>
+<tr>
+      <td><code>PASS</code></td>
+      <td>All supplied checks passed.</td>
+      <td><a href="/examples/verification-results/pass.example.json">pass.example.json</a></td>
+      <td>Execution may continue within scope.</td>
+    </tr>
+<tr>
+      <td><code>PASS_WITH_LIMITATIONS</code></td>
+      <td>Checks passed but runtime or completeness limitations remain.</td>
+      <td><a href="/examples/verification-results/pass-with-limitations.example.json">pass-with-limitations.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>INCOMPLETE</code></td>
+      <td>Required manifest, policy, or evidence fields are missing.</td>
+      <td><a href="/examples/verification-results/incomplete.example.json">incomplete.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>STALE</code></td>
+      <td>Evidence is older than the accepted freshness policy.</td>
+      <td><a href="/examples/verification-results/stale.example.json">stale.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>POLICY_VIOLATION</code></td>
+      <td>Requested action violates policy.</td>
+      <td><a href="/examples/verification-results/policy-violation.example.json">policy-violation.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>INTEGRITY_MISMATCH</code></td>
+      <td>Hash, build, source, or runtime value does not match.</td>
+      <td><a href="/examples/verification-results/integrity-mismatch.example.json">integrity-mismatch.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>SIGNATURE_INVALID</code></td>
+      <td>Signature could not be verified.</td>
+      <td><a href="/examples/verification-results/signature-invalid.example.json">signature-invalid.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>RUNTIME_UNVERIFIED</code></td>
+      <td>Runtime attestation was not supplied or accepted.</td>
+      <td><a href="/examples/verification-results/runtime-unverified.example.json">runtime-unverified.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>REVOKED</code></td>
+      <td>Artifact, entity, or policy is revoked.</td>
+      <td><a href="/examples/verification-results/revoked.example.json">revoked.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>FAIL_CLOSED</code></td>
+      <td>Verifier reached an unsafe or unsupported state.</td>
+      <td><a href="/examples/verification-results/fail-closed.example.json">fail-closed.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>UNSUPPORTED_SCHEMA</code></td>
+      <td>Schema version is not supported.</td>
+      <td><a href="/examples/verification-results/unsupported-schema.example.json">unsupported-schema.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
+<tr>
+      <td><code>ERROR</code></td>
+      <td>Verifier failed unexpectedly.</td>
+      <td><a href="/examples/verification-results/error.example.json">error.example.json</a></td>
+      <td>Execution must pause, degrade, fail closed, or require review as declared in the fixture.</td>
+    </tr>
             </tbody>
           </table>
         </div>
