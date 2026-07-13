@@ -133,6 +133,32 @@
     return age === null || age > freshnessSeconds ? "delayed" : "live";
   }
 
+  function isAcceptedKeyRotation(observation, previous, candidate) {
+    const rotation = observation.key_rotation;
+    if (!isObject(rotation)) return false;
+    const fields = Object.keys(rotation).sort();
+    const expectedFields = [
+      "certificate_sha256",
+      "from_key_id",
+      "from_payload_sha256",
+      "from_sequence",
+      "to_key_id",
+      "version",
+    ];
+    return (
+      fields.length === expectedFields.length &&
+      fields.every((field, index) => field === expectedFields[index]) &&
+      rotation.version === 1 &&
+      /^[a-f0-9]{64}$/.test(rotation.certificate_sha256) &&
+      /^[a-f0-9]{64}$/.test(rotation.from_payload_sha256) &&
+      rotation.from_key_id === previous.keyId &&
+      Number.isSafeInteger(rotation.from_sequence) &&
+      rotation.from_sequence >= previous.sequence &&
+      rotation.to_key_id === candidate.keyId &&
+      candidate.sequence > rotation.from_sequence
+    );
+  }
+
   function assessMonotonicity(chain, observation) {
     const previous = monitor.highWater.get(chain);
     const candidate = {
@@ -147,7 +173,9 @@
       monitor.highWater.set(chain, candidate);
       return { accepted: true, label: "current", highWater: candidate };
     }
-    if (candidate.keyId !== previous.keyId) {
+    const acceptedKeyRotation =
+      candidate.keyId !== previous.keyId && isAcceptedKeyRotation(observation, previous, candidate);
+    if (candidate.keyId !== previous.keyId && !acceptedKeyRotation) {
       return { accepted: false, reason: "verification-key change rejected", highWater: previous };
     }
     if (candidate.sequence < previous.sequence) {
@@ -175,7 +203,13 @@
     }
 
     monitor.highWater.set(chain, candidate);
-    return { accepted: true, label: "advanced in this browser session", highWater: candidate };
+    return {
+      accepted: true,
+      label: acceptedKeyRotation
+        ? "authenticated key rotation accepted"
+        : "advanced in this browser session",
+      highWater: candidate,
+    };
   }
 
   function setObservationTime(row, observedAt) {

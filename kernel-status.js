@@ -378,6 +378,32 @@ function signedObservationForChain(chain, payload) {
   return observation;
 }
 
+function isAcceptedKeyRotation(observation, previous, candidate) {
+  const rotation = observation.key_rotation;
+  if (!isObject(rotation)) return false;
+  const fields = Object.keys(rotation).sort();
+  const expectedFields = [
+    "certificate_sha256",
+    "from_key_id",
+    "from_payload_sha256",
+    "from_sequence",
+    "to_key_id",
+    "version",
+  ];
+  return (
+    fields.length === expectedFields.length &&
+    fields.every((field, index) => field === expectedFields[index]) &&
+    rotation.version === 1 &&
+    /^[a-f0-9]{64}$/.test(rotation.certificate_sha256) &&
+    /^[a-f0-9]{64}$/.test(rotation.from_payload_sha256) &&
+    rotation.from_key_id === previous.keyId &&
+    Number.isSafeInteger(rotation.from_sequence) &&
+    rotation.from_sequence >= previous.sequence &&
+    rotation.to_key_id === candidate.keyId &&
+    candidate.sequence > rotation.from_sequence
+  );
+}
+
 function isValidChainRecord(chain, payload) {
   if (!isObject(chain) || !monitoredChainIds.has(chain.expectedChainId) || !allowedChainStates.has(chain.status)) {
     return false;
@@ -451,7 +477,9 @@ function assessSignedActivity(chain, payload) {
       state: "steady",
     };
   }
-  if (candidate.keyId !== previous.keyId) {
+  const acceptedKeyRotation =
+    candidate.keyId !== previous.keyId && isAcceptedKeyRotation(observation, previous, candidate);
+  if (candidate.keyId !== previous.keyId && !acceptedKeyRotation) {
     return { accepted: false, reason: "verification-key change rejected", highWater: previous };
   }
   if (candidate.sequence < previous.sequence) {
@@ -484,8 +512,10 @@ function assessSignedActivity(chain, payload) {
   chainProbe.highWater.set(chain.expectedChainId, candidate);
   return {
     accepted: true,
-    label: `Signed sequence ${formatNumber(sequence)} · advanced`,
-    state: "advanced",
+    label: acceptedKeyRotation
+      ? `Signed sequence ${formatNumber(sequence)} · authenticated key rotation accepted`
+      : `Signed sequence ${formatNumber(sequence)} · advanced`,
+    state: acceptedKeyRotation ? "rotated" : "advanced",
   };
 }
 

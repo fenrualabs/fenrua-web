@@ -26,6 +26,13 @@ assert.match(monitor, /No current state is asserted/, "Unavailable monitor respo
 assert.match(monitor, /advanced in this browser session/, "Sequence progress must be scoped to the current browser session.");
 assert.match(monitor, /highWater: new Map\(\)/, "The monitor must retain a browser-session high-water record per chain.");
 assert.match(monitor, /candidate\.keyId !== previous\.keyId/, "An unannounced verification-key change must be rejected.");
+assert.match(monitor, /isAcceptedKeyRotation/, "The monitor must evaluate server-validated key rotation bindings.");
+assert.match(
+  monitor,
+  /rotation\.from_key_id === previous\.keyId[\s\S]{0,350}rotation\.from_sequence >= previous\.sequence/,
+  "Rotation acceptance must bind the browser high-water key and a non-regressing bridge sequence."
+);
+assert.match(monitor, /authenticated key rotation accepted/, "A valid rotation must advance without a page reload.");
 assert.match(monitor, /candidate\.sequence < previous\.sequence/, "A lower signed sequence must be rejected.");
 assert.match(monitor, /candidate\.signature !== previous\.signature/, "Same-sequence equivocation must be rejected.");
 assert.match(

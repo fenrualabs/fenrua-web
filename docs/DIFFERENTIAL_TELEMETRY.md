@@ -52,10 +52,22 @@ allowlisted public artifacts only.
 
 ## Replay and rollback boundary
 
-The browser applies a session-local high-water check to signed observation
-sequence, time, block, key, and payload identity. It rejects a lower sequence or
-block, time rollback, same-sequence equivocation, and an unannounced key change
-within that browser session. This is defense in depth, not durable replay
-protection: a page reload clears browser memory. Persistent anti-replay state,
-key-rotation policy, and cross-session rollback rejection are responsibilities
-of the signed observation gateway and its operator.
+The public adapter applies a durable per-chain checkpoint after strict schema
+and Ed25519 verification and before a record can reach the public response. A
+single atomic Redis script binds the highest accepted sequence, observation
+time, confirmed block, key fingerprint, and canonical payload digest. It
+rejects rollback, same-sequence equivocation, unannounced key replacement, and
+reuse of retired key material across requests and serverless instances.
+
+Production fails closed unless the checkpoint store and stable production
+namespace are configured. Authenticated rotation requires a certificate signed
+by the previous Ed25519 key and bound to the exact previous checkpoint. The
+browser retains its session-local high-water check as an additional independent
+defense and accepts a changed key only when the public adapter supplies the
+server-validated rotation binding for that browser's exact previous key and
+a non-regressing bridge sequence. Clearing browser memory does not clear the
+server-side checkpoint.
+
+This control is an application-level continuity check backed by the configured
+storage provider. It is not presented as Byzantine consensus, formal
+linearizability during provider partitions, or evidence about private systems.

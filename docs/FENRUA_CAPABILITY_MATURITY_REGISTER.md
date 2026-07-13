@@ -10,7 +10,7 @@ Last reviewed: 2026-07-13
 | Evidence registry | Point-in-time public snapshot | `/evidence/`, `kernel-status.js` | Hash and link validation does not rerun or prove the source campaigns |
 | Toolchain registry | Point-in-time published inventory | `data/toolchain-registry.json`, `/toolchain/` | Version capture is not current-install, availability, or security proof |
 | Public verifier | Prototype foundation | `#verify`, verification result spec | No live server-side verifier claimed |
-| Chain 978 observation | Read-only live | `/api/chain-progress`, `/api/chain-observation-key` | Signed bounded observation is not contract safety; persistent anti-replay belongs at the gateway |
+| Chain 978 observation | Read-only live | `/api/chain-progress`, `/api/chain-observation-key`, `server/observation-continuity.js` | Signed bounded observation is not contract safety; production continuity requires its configured durable checkpoint store |
 | Chain N521 observation | Awaiting independent evidence | `/api/chain-progress`, `/api/chain-n521-observation-key` | No liveness claim until its signed gateway and key are configured |
 | Entity manifest | Specification | `FENRUA_ENTITY_MANIFEST_SPEC.md` | Schema foundation only |
 | Authority policy | Specification | `FENRUA_AUTHORITY_POLICY_SPEC.md` | Enforcement requires integration |

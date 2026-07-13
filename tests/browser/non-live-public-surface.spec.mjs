@@ -77,6 +77,7 @@ function monitorPayload({
   signature521 = "signed-521",
   keyId978 = "fenchain-978-observation-v1",
   keyId521 = "fenchain-521-observation-v1",
+  keyRotation978 = null,
   refreshMs = 20_000,
 } = {}) {
   const generatedAt = new Date().toISOString();
@@ -102,6 +103,7 @@ function monitorPayload({
       key_id: keyId521,
     },
   ];
+  if (keyRotation978) observations[0].key_rotation = keyRotation978;
   return {
     version: 1,
     generatedAt,
@@ -130,6 +132,17 @@ function monitorPayload({
         confirmation: { evidenceSource: "signed-observation", confidence: "confirmed" },
       },
     ],
+  };
+}
+
+function rotationBinding(fromSequence, toKeyId = "fenchain-978-observation-v2") {
+  return {
+    version: 1,
+    certificate_sha256: "a".repeat(64),
+    from_key_id: "fenchain-978-observation-v1",
+    from_payload_sha256: "b".repeat(64),
+    from_sequence: fromSequence,
+    to_key_id: toKeyId,
   };
 }
 
@@ -199,6 +212,37 @@ test("Overview removes current-state claims after a successful snapshot is follo
   await expect(card.locator('[data-chain-field="978-confidence"]')).toHaveText("Unavailable");
   await expect(card).toHaveAttribute("data-status", "unavailable");
   await expect(page.locator('[data-chain-meta="feed-status"]').first()).toHaveText("retrying");
+  assertBoundary();
+});
+
+test("Overview accepts an authenticated key rotation in an open browser session", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const initialObservedAt = new Date(Date.now() - 9_000).toISOString();
+  const rotatedObservedAt = new Date(Date.parse(initialObservedAt) + 2_000).toISOString();
+  const initial = monitorPayload({ observed978: initialObservedAt, refreshMs: 60_000 });
+  const rotated = monitorPayload({
+    sequence978: initial.observations[0].sequence + 3,
+    block978: initial.observations[0].observed_block + 3,
+    observed978: rotatedObservedAt,
+    signature978: "signed-978-rotated",
+    keyId978: "fenchain-978-observation-v2",
+    keyRotation978: rotationBinding(initial.observations[0].sequence + 2),
+    refreshMs: 60_000,
+  });
+  const requestCount = await mockSequentialPublicMonitor(page, [initial, rotated]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/");
+
+  const card = page.locator('.desktop-chain-progress [data-chain-card="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Live");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Live");
+  await expect(card.locator('[data-chain-field="978-activity"]')).toContainText(
+    "authenticated key rotation accepted"
+  );
+  await expect(card.locator('[data-chain-field="978-block"]')).toHaveText("333,685");
   assertBoundary();
 });
 
@@ -375,6 +419,48 @@ test("Status rejects a signed rollback, preserves high-water, and recovers only 
   await expect(row.locator("[data-status-monitor-sequence]")).toHaveText(/2,114.*advanced in this browser session/);
   await expect(row.locator("[data-status-monitor-block]")).toHaveText("333,683");
   await expect(row.locator("[data-status-monitor-time] time")).toHaveAttribute("datetime", recoveredObservedAt);
+  assertBoundary();
+});
+
+test("Status rejects a stale rotation bridge and accepts an authenticated bridge without reload", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const initialObservedAt = new Date(Date.now() - 9_000).toISOString();
+  const nextObservedAt = new Date(Date.parse(initialObservedAt) + 2_000).toISOString();
+  const initial = monitorPayload({ observed978: initialObservedAt, refreshMs: 60_000 });
+  const unannounced = monitorPayload({
+    sequence978: initial.observations[0].sequence + 3,
+    block978: initial.observations[0].observed_block + 3,
+    observed978: nextObservedAt,
+    signature978: "signed-978-unannounced-key",
+    keyId978: "fenchain-978-observation-v2",
+    refreshMs: 60_000,
+  });
+  unannounced.observations[0].key_rotation = rotationBinding(
+    initial.observations[0].sequence - 1
+  );
+  const rotated = structuredClone(unannounced);
+  rotated.generatedAt = new Date().toISOString();
+  rotated.observations[0].key_rotation = rotationBinding(initial.observations[0].sequence + 2);
+
+  const requestCount = await mockSequentialPublicMonitor(page, [initial, unannounced, rotated]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/status");
+  const row = page.locator('[data-status-monitor-row="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Failure");
+  await expect(row.locator("[data-status-monitor-source]")).toContainText("verification-key change rejected");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(3);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+  await expect(row.locator("[data-status-monitor-sequence]")).toContainText(
+    "authenticated key rotation accepted"
+  );
+  await expect(row.locator("[data-status-monitor-block]")).toHaveText("333,685");
   assertBoundary();
 });
 
