@@ -2012,6 +2012,12 @@ tr:last-child td {
   color: var(--text);
 }
 
+.constraint-list code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .manifesto {
   margin-bottom: 1rem;
   background:
