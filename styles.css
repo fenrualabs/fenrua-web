@@ -67,6 +67,18 @@ pre {
   font: inherit;
 }
 
+pre {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  white-space: inherit;
+}
+
 .skip-link {
   position: absolute;
   top: 0.75rem;
@@ -1222,19 +1234,22 @@ h3 {
 .filter-groups {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  align-items: stretch;
+  gap: 0.5rem;
 }
 
 .filter-groups button {
-  min-height: 2.35rem;
+  flex: 0 1 auto;
+  min-height: 2.55rem;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   background: #101515;
-  padding: 0.5rem 0.65rem;
+  padding: 0.54rem 0.72rem;
   color: var(--muted);
   cursor: pointer;
   font: inherit;
   font-size: 0.76rem;
+  line-height: 1.18;
 }
 
 .filter-groups button:hover,
@@ -1263,25 +1278,41 @@ h3 {
 
 .status-badge {
   display: inline-flex;
+  align-items: center;
   max-width: 100%;
+  min-height: 1.72rem;
   border: 1px solid rgba(101, 242, 154, 0.32);
   border-radius: 6px;
   background: rgba(101, 242, 154, 0.06);
-  padding: 0.28rem 0.42rem;
+  padding: 0.3rem 0.48rem;
   color: var(--green);
   font-size: 0.72rem;
+  line-height: 1.14;
   overflow-wrap: anywhere;
+}
+
+.tag-stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.42rem;
+  min-width: 0;
 }
 
 .command-list {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.42rem;
 }
 
 .command-list code {
   display: block;
   color: var(--blue);
   overflow-wrap: anywhere;
+}
+
+.table-prose {
+  max-width: 48ch;
+  line-height: 1.62;
 }
 
 .empty-state {
@@ -1450,8 +1481,10 @@ h3 {
 
 .registry {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border: 1px solid var(--line);
   border-radius: 8px;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 table {
@@ -1483,6 +1516,70 @@ th {
 td {
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.registry code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.hash-copy,
+.hash-stack,
+.timestamp-stack {
+  display: grid;
+  gap: 0.44rem;
+  min-width: 0;
+}
+
+.hash-copy button {
+  justify-self: start;
+}
+
+.hash-value {
+  display: block;
+  max-width: 100%;
+  color: var(--green);
+  white-space: normal;
+}
+
+.evidence-table table {
+  min-width: 76rem;
+}
+
+.evidence-table td:nth-child(3),
+.evidence-table td:nth-child(5) {
+  min-width: 18rem;
+  padding-right: 1.35rem;
+}
+
+.toolchain-table table {
+  min-width: 86rem;
+}
+
+.toolchain-table td:nth-child(5) {
+  min-width: 12rem;
+}
+
+.toolchain-table td:nth-child(8) {
+  min-width: 18rem;
+}
+
+.timestamp-stack time,
+.timestamp-inline {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.timestamp-stack time span:first-child,
+.timestamp-inline time {
+  color: var(--text);
+}
+
+.timestamp-stack time span:last-child,
+.timestamp-stack small,
+.timestamp-inline span {
+  color: var(--dim);
+  font-size: 0.74rem;
 }
 
 td:first-child,
@@ -1786,8 +1883,69 @@ tr:last-child td {
     width: 100%;
   }
 
-  .filter-groups button {
+  .route-hero {
+    min-height: 18rem;
+    padding: 1.25rem;
+  }
+
+  .evidence-table {
+    overflow-x: visible;
+    border: 0;
+  }
+
+  .evidence-table table,
+  .evidence-table tbody,
+  .evidence-table tr,
+  .evidence-table td {
+    display: block;
     width: 100%;
+    min-width: 0;
+  }
+
+  .evidence-table table {
+    background: transparent;
+  }
+
+  .evidence-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .evidence-table tr {
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 0.35rem 0;
+  }
+
+  .evidence-table td {
+    border-bottom: 0;
+    padding: 0.62rem 0.85rem;
+  }
+
+  .evidence-table td::before {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--blue);
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .evidence-table td:nth-child(3),
+  .evidence-table td:nth-child(5) {
+    padding-right: 0.85rem;
+  }
+
+  .filter-groups button {
+    flex: 1 1 10rem;
+    width: auto;
   }
 }
 

@@ -8,7 +8,8 @@ const registryPath = path.join(root, "data", "toolchain-registry.json");
 const registryRaw = readFileSync(registryPath, "utf8");
 const registry = JSON.parse(registryRaw);
 const registryHash = createHash("sha256").update(registryRaw).digest("hex");
-const generatedDate = "2026-07-13";
+const generatedIso = new Date().toISOString();
+const generatedDate = generatedIso.slice(0, 10);
 
 const nav = [
   ["Overview", "/"],
@@ -250,6 +251,50 @@ function attr(value) {
 
 function statusBadge(value) {
   return `<span class="status-badge status-${attr(value.toLowerCase().replaceAll(" ", "-"))}">${esc(value)}</span>`;
+}
+
+function statusTimestamp(iso) {
+  const safeIso = attr(iso);
+  const date = esc(iso.slice(0, 10));
+  const time = esc(iso.slice(11, 19));
+  return `<div class="timestamp-stack">
+      <time datetime="${safeIso}"><span>${date}</span><span>${time} UTC</span></time>
+      <small data-relative-time="${safeIso}">Updated at build time</small>
+    </div>`;
+}
+
+function statusTimestampInline(iso) {
+  const safeIso = attr(iso);
+  const date = esc(iso.slice(0, 10));
+  const time = esc(iso.slice(11, 19));
+  return `<span class="timestamp-inline"><time datetime="${safeIso}">${date} ${time} UTC</time><span data-relative-time="${safeIso}">Updated at build time</span></span>`;
+}
+
+function relativeTimeScript() {
+  return `<script>
+      (() => {
+        const labels = (seconds) => {
+          if (seconds < 5) return "Updated just now";
+          if (seconds < 60) return \`Updated \${seconds} seconds ago\`;
+          const minutes = Math.floor(seconds / 60);
+          if (minutes < 60) return \`Updated \${minutes} minute\${minutes === 1 ? "" : "s"} ago\`;
+          const hours = Math.floor(minutes / 60);
+          if (hours < 48) return \`Updated \${hours} hour\${hours === 1 ? "" : "s"} ago\`;
+          const days = Math.floor(hours / 24);
+          return \`Updated \${days} day\${days === 1 ? "" : "s"} ago\`;
+        };
+        const update = () => {
+          document.querySelectorAll("[data-relative-time]").forEach((node) => {
+            const timestamp = Date.parse(node.dataset.relativeTime || "");
+            if (!Number.isFinite(timestamp)) return;
+            const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+            node.textContent = labels(seconds);
+          });
+        };
+        update();
+        window.setInterval(update, 30000);
+      })();
+    </script>`;
 }
 
 function toolchainDisplayTags(tool) {
@@ -858,16 +903,16 @@ node scripts/test-verify-examples.mjs</code></pre>
 function evidence() {
   const rows = evidenceRecords.map(
     (record) => `<tr id="${attr(record.id)}">
-      <td><code>${esc(record.id)}</code><br>${esc(record.artifact)}<br><small>${esc(record.type)}</small></td>
-      <td>${esc(record.claim)}</td>
-      <td><code>${esc(record.hash)}</code><button type="button" data-copy="${attr(record.hash)}">Copy hash</button></td>
-      <td><a href="${attr(record.sourceUrl)}">${esc(record.source)}</a><br><small>${esc(record.environment)}</small></td>
-      <td><code>${esc(record.sourceCommit)}</code><br><small>Evidence: <code>${esc(record.evidenceCommit)}</code></small></td>
-      <td>${esc(record.producer)}<br><small>${esc(record.toolchainSubset)}</small></td>
-      <td><code>${esc(record.command)}</code></td>
-      <td>${esc(record.verified)}<br><small>Maturity: ${esc(record.maturity)} · Revocation: ${esc(record.revocationState)}</small></td>
-      <td>${esc(record.supersedes)} / ${esc(record.supersededBy)}</td>
-      <td>${esc(record.limitation)}<button type="button" data-copy="${attr(evidenceCitation(record))}">Copy citation</button></td>
+      <td data-label="Artifact"><code>${esc(record.id)}</code><br>${esc(record.artifact)}<br><small>${esc(record.type)}</small></td>
+      <td data-label="Claim">${esc(record.claim)}</td>
+      <td data-label="Hash"><div class="hash-copy"><code class="hash-value">${esc(record.hash)}</code><button type="button" data-copy="${attr(record.hash)}">Copy hash</button></div></td>
+      <td data-label="Source"><a href="${attr(record.sourceUrl)}">${esc(record.source)}</a><br><small>${esc(record.environment)}</small></td>
+      <td data-label="Revisions"><div class="hash-stack"><code class="hash-value">${esc(record.sourceCommit)}</code><small>Evidence: <code class="hash-value">${esc(record.evidenceCommit)}</code></small></div></td>
+      <td data-label="Producer">${esc(record.producer)}<br><small>${esc(record.toolchainSubset)}</small></td>
+      <td data-label="Command"><code>${esc(record.command)}</code></td>
+      <td data-label="Verified / Revocation">${esc(record.verified)}<br><small>Maturity: ${esc(record.maturity)} · Revocation: ${esc(record.revocationState)}</small></td>
+      <td data-label="Supersession">${esc(record.supersedes)} / ${esc(record.supersededBy)}</td>
+      <td data-label="Limitation">${esc(record.limitation)}<button type="button" data-copy="${attr(evidenceCitation(record))}">Copy citation</button></td>
     </tr>`
   );
   return layout({
@@ -877,34 +922,35 @@ function evidence() {
     scripts: '<script src="/toolchain/toolchain.js" defer></script>',
     body: `${routeHero("PUBLIC EVIDENCE", "Evidence Registry", "Every significant claim is tied to source, timestamp, maturity, limitation, provenance, and copyable hash.")}
       <section class="section-shell">
-        ${table(["Artifact", "Claim", "Hash", "Source", "Revisions", "Producer", "Command", "Verified / Revocation", "Supersession", "Limitation"], rows)}
+        ${table(["Artifact", "Claim", "Hash", "Source", "Revisions", "Producer", "Command", "Verified / Revocation", "Supersession", "Limitation"], rows, "evidence-table")}
       </section>`,
   });
 }
 
 function status() {
   const rows = [
-    ["Homepage", "success", "Routing surface", "index.html", generatedDate, "static route validation", "npm run validate", "Live chain observations remain read-only public telemetry.", "Browser viewport matrix"],
-    ["Architecture", "success", "Specification", "/architecture/", generatedDate, "static route validation", "npm run validate", "Architecture is descriptive, not a deployed control plane.", "Independent architecture review"],
-    ["Kernel", "success", "Specification/reference mix", "/kernel/", generatedDate, "static route validation", "npm run validate", "Primitive maturity varies by row.", "Per-primitive evidence expansion"],
-    ["Utilities", "success", "Catalogue", "/utilities/", generatedDate, "static route validation", "npm run validate", "No fake live utility service is claimed.", "SDK or CLI evidence"],
-    ["Research registry", "success", "Evidence surface", "/research/", generatedDate, "static route validation", "npm run validate", "Dedicated pages expose current reproduction limits.", "Independent reproduction"],
-    ["Verify examples", "partial", "Prototype foundation", "/verify/", generatedDate, "fixture corpus validation", "node scripts/test-verify-examples.mjs", "No hosted verifier or upload model exists.", "Real verifier implementation"],
-    ["Developer quick start", "success", "Reproducibility guide", "/developers/", generatedDate, "clean checkout report", "npm run validate", "Node 24 required.", "Tagged release reproduction"],
-    ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedDate, "registry validation", "node scripts/test-toolchain-registry.mjs", "Version capture is not security proof.", "New frozen evidence bundle"],
-    ["Evidence registry", "success", "Evidence surface", "/evidence/", generatedDate, "static route validation", "npm run validate", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
-    ["Chain 978 observation", "success", "Signed bounded observation", "/api/chain-progress", "5 second public cache", "20 second refresh, 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Contract evidence refresh boundary"],
-    ["Chain N521 observation", "success", "Signed bounded observation", "/api/chain-progress", "5 second public cache", "20 second refresh, 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is an independent signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Independent bounded observation gateway"],
-    ["Contract evidence", "pending evidence", "Pending refreshed bundle", "docs/FENRUA_CONTRACT_EVIDENCE_REFRESH_BOUNDARY.md", generatedDate, "manual evidence gate", "none", "No current contract, bytecode, reserve, or deployment claim.", "Frozen contract evidence bundle"],
-    ["Public repository", "success", "Source surface", "https://github.com/fenrualabs/fenrua-web", generatedDate, "git provenance", "git rev-parse HEAD", "Repository state changes after each deployment.", "Tagged release"],
-    ["Schema set", "success", "Specification", "/docs/", generatedDate, "example corpus validation", "node scripts/test-verify-examples.mjs", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
+    ["Homepage", "success", "Routing surface", "index.html", generatedIso, "static route validation", "npm run validate", "Live chain observations remain read-only public telemetry.", "Browser viewport matrix"],
+    ["Architecture", "success", "Specification", "/architecture/", generatedIso, "static route validation", "npm run validate", "Architecture is descriptive, not a deployed control plane.", "Independent architecture review"],
+    ["Kernel", "success", "Specification/reference mix", "/kernel/", generatedIso, "static route validation", "npm run validate", "Primitive maturity varies by row.", "Per-primitive evidence expansion"],
+    ["Utilities", "success", "Catalogue", "/utilities/", generatedIso, "static route validation", "npm run validate", "No fake live utility service is claimed.", "SDK or CLI evidence"],
+    ["Research registry", "success", "Evidence surface", "/research/", generatedIso, "static route validation", "npm run validate", "Dedicated pages expose current reproduction limits.", "Independent reproduction"],
+    ["Verify examples", "partial", "Prototype foundation", "/verify/", generatedIso, "fixture corpus validation", "node scripts/test-verify-examples.mjs", "No hosted verifier or upload model exists.", "Real verifier implementation"],
+    ["Developer quick start", "success", "Reproducibility guide", "/developers/", generatedIso, "clean checkout report", "npm run validate", "Node 24 required.", "Tagged release reproduction"],
+    ["Toolchain registry", "success", "Read-only live", "data/toolchain-registry.json", generatedIso, "registry validation", "node scripts/test-toolchain-registry.mjs", "Version capture is not security proof.", "New frozen evidence bundle"],
+    ["Evidence registry", "success", "Evidence surface", "/evidence/", generatedIso, "static route validation", "npm run validate", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
+    ["Chain 978 observation", "success", "Signed bounded observation", "/api/chain-progress", generatedIso, "5 second public cache; 20 second refresh; 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is a signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Contract evidence refresh boundary"],
+    ["Chain N521 observation", "success", "Signed bounded observation", "/api/chain-progress", generatedIso, "5 second public cache; 20 second refresh; 90 second freshness", "node scripts/test-chain-progress.mjs", "Public status is an independent signed bounded observation; not contract, bytecode, reserve, or deployment assurance.", "Independent bounded observation gateway"],
+    ["Contract evidence", "pending evidence", "Pending refreshed bundle", "docs/FENRUA_CONTRACT_EVIDENCE_REFRESH_BOUNDARY.md", generatedIso, "manual evidence gate", "none", "No current contract, bytecode, reserve, or deployment claim.", "Frozen contract evidence bundle"],
+    ["Public repository", "success", "Source surface", "https://github.com/fenrualabs/fenrua-web", generatedIso, "git provenance", "git rev-parse HEAD", "Repository state changes after each deployment.", "Tagged release"],
+    ["Schema set", "success", "Specification", "/docs/", generatedIso, "example corpus validation", "node scripts/test-verify-examples.mjs", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
   ].map(
-    (r) => `<tr><td>${esc(r[0])}</td><td>${statusBadge(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td><code>${esc(r[6])}</code></td><td>${esc(r[7])}</td><td>${esc(r[8])}</td></tr>`
+    (r) => `<tr><td>${esc(r[0])}</td><td>${statusBadge(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${statusTimestamp(r[4])}</td><td>${esc(r[5])}</td><td><code>${esc(r[6])}</code></td><td>${esc(r[7])}</td><td>${esc(r[8])}</td></tr>`
   );
   return layout({
     title: "Fenrua Status",
     description: "Fenrua status system with loading, success, partial, stale, failure, paused, and maintenance states.",
     current: "Status",
+    scripts: relativeTimeScript(),
     body: `${routeHero("STATE SYSTEM", "Status", "Every telemetry widget must expose state, timestamp, source, retry behavior, and explanation.")}
       <section class="section-shell">
         <div class="toolchain-summary state-grid">
@@ -914,7 +960,7 @@ function status() {
                 <span>${esc(state)}</span>
                 <strong>${esc(label)}</strong>
                 <p>${esc(explanation)}</p>
-                <small>Source: status contract · Timestamp: ${generatedDate} · Retry: ${esc(retry)}</small>
+                <small>Source: status contract · ${statusTimestampInline(generatedIso)} · Retry: ${esc(retry)}</small>
               </article>`
             )
             .join("\n")}
@@ -947,10 +993,10 @@ function toolchain() {
       <td><code>${esc(tool.detectedVersion)}</code><button type="button" data-copy="${attr(tool.detectedVersion)}">Copy version</button></td>
       <td>${esc(tool.category)}</td>
       <td>${esc(tool.installationMode)}</td>
-      <td>${tags.map((tag) => `<span class="status-badge">${esc(tag)}</span>`).join("<br>")}</td>
+      <td><div class="tag-stack">${tags.map((tag) => `<span class="status-badge">${esc(tag)}</span>`).join("")}</div></td>
       <td>${tool.evidenceProduced ? "yes" : "no"}<br><small>${esc(tool.evidencePath)}</small></td>
-      <td>${(tool.commands ?? []).map((command) => `<code>${esc(command)}</code>`).join("<br>")}</td>
-      <td>${esc(tool.limitations)}</td>
+      <td><div class="command-list">${(tool.commands ?? []).map((command) => `<code>${esc(command)}</code>`).join("")}</div></td>
+      <td><div class="table-prose">${esc(tool.limitations)}</div></td>
     </tr>`;
   });
   const categories = [...new Set(tools.map((tool) => tool.category))].sort();

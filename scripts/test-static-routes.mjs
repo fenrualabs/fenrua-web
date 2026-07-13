@@ -36,6 +36,9 @@ assert.match(toolchain, /Version verified/);
 assert.match(toolchain, /Smoke tested/);
 assert.match(toolchain, /Campaign executed/);
 assert.match(toolchain, /VERSION_VERIFIED/);
+assert.match(toolchain, /class="tag-stack"/);
+assert.equal([...toolchain.matchAll(/class="registry-tools toolchain-tools"/g)].length, 1, "toolchain controls must not render duplicate wrappers");
+assert.doesNotMatch(toolchain, /<span class="status-badge">[^<]+<\/span><br>/, "delivery tags must use chip groups, not line-break stacks");
 assert.doesNotMatch(toolchain, />Executed</);
 
 const overview = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -64,6 +67,15 @@ for (const state of ["loading", "success", "partial", "stale", "failure", "pause
 }
 assert.match(status, /Operational state/);
 assert.match(status, /pending evidence/);
+assert.match(status, /<time datetime="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z">/);
+assert.match(status, /\d{2}:\d{2}:\d{2} UTC/);
+assert.match(status, /data-relative-time="/);
+
+const evidence = await readFile(new URL("../evidence/index.html", import.meta.url), "utf8");
+assert.match(evidence, /class="hash-copy"/);
+assert.match(evidence, /class="hash-value"/);
+assert.match(evidence, /data-label="Hash"/);
+assert.match(evidence, /data-label="Limitation"/);
 
 const sitemap = await readFile(new URL("../sitemap.xml", import.meta.url), "utf8");
 for (const route of legacyRoutes) {
