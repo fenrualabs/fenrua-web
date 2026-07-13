@@ -71,6 +71,18 @@
         {
           "type": "header",
           "key": "host",
+          "value": "(?:fenrua-web(?:-[a-z0-9-]+)?|fenrua-[a-z0-9]+-fenrualabs-projects)\\.vercel\\.app"
+        }
+      ],
+      "destination": "https://fenrua.ai/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "host",
           "value": "www\\.fenrua\\.ai"
         }
       ],

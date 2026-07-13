@@ -26,10 +26,18 @@ for (const record of register.records) {
 
 const archiveHeader = vercel.headers.find((entry) => entry.source === "/docs/archive/(.*)");
 assert.ok(archiveHeader?.headers.some((header) => header.key === "X-Robots-Tag" && header.value === "noindex, nofollow, noarchive"));
-const wwwRedirect = vercel.redirects.find((entry) => entry.destination === "https://fenrua.ai/$1");
+const wwwRedirect = vercel.redirects.find(
+  (entry) => entry.destination === "https://fenrua.ai/$1" && entry.has?.[0]?.value === "www\\.fenrua\\.ai"
+);
 assert.equal(wwwRedirect?.source, "/(.*)");
 assert.equal(wwwRedirect?.permanent, true);
 assert.deepEqual(wwwRedirect?.has, [{ type: "header", key: "host", value: "www\\.fenrua\\.ai" }]);
+const vercelAliasRedirect = vercel.redirects.find(
+  (entry) => entry.has?.[0]?.value === "(?:fenrua-web(?:-[a-z0-9-]+)?|fenrua-[a-z0-9]+-fenrualabs-projects)\\.vercel\\.app"
+);
+assert.equal(vercelAliasRedirect?.source, "/(.*)");
+assert.equal(vercelAliasRedirect?.destination, "https://fenrua.ai/$1");
+assert.equal(vercelAliasRedirect?.permanent, true);
 for (const record of register.records.filter((record) => record.formerPath)) {
   const redirect = vercel.redirects.find((entry) => entry.source === `/${record.formerPath}`);
   assert.equal(redirect?.destination, `/${record.path}`, `Former document must redirect to archive: ${record.formerPath}`);
