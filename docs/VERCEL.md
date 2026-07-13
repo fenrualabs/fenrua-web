@@ -20,10 +20,12 @@ Use these settings for the existing Vercel project:
 - Production branch: `main`
 - Production domain: `fenrua.ai`
 
-Enable Vercel's system environment variables so `VERCEL_GIT_COMMIT_SHA` is
-available to the production build. The generated public release manifest binds
-only the listed public static artifacts to that source commit; it never prints
-credentials, project identifiers, or protected operational data.
+The pinned production command passes the checked-out, approved commit as the
+`VERCEL_GIT_COMMIT_SHA` build variable. Enable Vercel's system environment
+variables as well for Git-triggered builds. The generated public release
+manifest binds only the listed public static artifacts to that source commit;
+it never prints credentials, project identifiers, or protected operational
+data.
 
 ## Domain
 
@@ -66,9 +68,10 @@ npm run deploy:production:node24
 
 The script runs the full release gate (including the limited non-live browser
 checks), creates and validates the release manifest, then uses the locked
-`vercel` CLI version to deploy production to `fenrua-web`, which aliases
-production to `fenrua.ai`. Browser testing stays outside the Vercel build
-because Vercel installs production dependencies only.
+`vercel` CLI version to deploy production to `fenrua-web`. It passes the exact
+checked-out commit to the remote build as `VERCEL_GIT_COMMIT_SHA`; browser
+testing stays outside the Vercel build because Vercel installs production
+dependencies only.
 
 After deployment, observe the public static artifact set without writing to
 the deployment:
@@ -84,9 +87,9 @@ future alias state.
 ## Rollback and external cleanup
 
 If the public audit fails, re-promote the last passing production deployment.
-Do not delete a deployment, custom domain, project, or alias solely because it
-looks older. Before retiring a non-canonical deployment, an owner must confirm
-its domains, production alias, build configuration, active functions, server
-environment variable names, DNS/certificates, and the rollback deployment.
-Deletion or domain removal requires separate owner authorization after the
-rollback period.
+The owner has approved removal of every prior deployment and alias associated
+with `fenrua.ai` or `www.fenrua.ai`; retain only the audited canonical
+production release. Keep `www.fenrua.ai` only as a permanent redirect to
+`https://fenrua.ai`, never as a second content site. Do not record credentials,
+server-environment values, or other protected project internals in this
+repository.
