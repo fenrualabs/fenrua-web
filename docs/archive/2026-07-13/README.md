@@ -10,5 +10,6 @@ Use the current [public audit](/audit),
 current scope and status. The records here exclude protected operational data,
 private agreements, keys, endpoints, and secrets.
 
-Additional dated V2 closure, re-audit, architecture, UX, accessibility, and
-roadmap records were redacted and archived here as part of the same cutover.
+Report and review artifacts were removed from this source repository under the
+active external audit-artifact policy. The remaining files are narrowly scoped
+public manifests, histories, boundaries, registers, and deployment notes.

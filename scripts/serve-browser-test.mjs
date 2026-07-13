@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const port = Number.parseInt(process.env.PORT || "4173", 10);
+const host = process.env.FENRUA_TEST_HOST || "127.0.0.2";
 const vercel = JSON.parse(readFileSync(resolve(root, "vercel.json"), "utf8"));
 const csp = vercel.headers
   .find((entry) => entry.source === "/(.*)")
@@ -40,7 +41,7 @@ const server = createServer((request, response) => {
 
   let pathname;
   try {
-    pathname = new URL(request.url, "http://127.0.0.1").pathname;
+    pathname = new URL(request.url, `http://${host}`).pathname;
   } catch {
     response.writeHead(400).end();
     return;
@@ -79,6 +80,6 @@ const server = createServer((request, response) => {
   }
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Browser static test server listening on http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`Browser static test server listening on http://${host}:${port}`);
 });

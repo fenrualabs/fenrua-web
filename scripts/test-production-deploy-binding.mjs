@@ -1,20 +1,64 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const result = spawnSync(process.execPath, ["scripts/deploy-production.mjs"], {
-  cwd: root,
-  encoding: "utf8",
-  env: { ...process.env, FENRUA_DEPLOY_DRY_RUN: "1" },
-});
+const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+const vercel = JSON.parse(readFileSync(resolve(root, "vercel.json"), "utf8"));
+const deploymentNotes = readFileSync(resolve(root, "docs/VERCEL.md"), "utf8");
+const runtimeGuardPath = resolve(root, "scripts/require-node24.mjs");
+const runtimeGuard = readFileSync(runtimeGuardPath, "utf8");
 
-assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-const record = JSON.parse(result.stdout);
-assert.match(record.sourceCommit, /^[0-9a-f]{40}$/);
-assert.ok(
-  record.args.includes(`VERCEL_GIT_COMMIT_SHA=${record.sourceCommit}`),
-  "The production deployment must pass the exact approved source commit to the Vercel build.",
-);
-console.log(JSON.stringify({ status: "ok", scope: "production-deployment-source-commit-binding" }));
+assert.equal(packageJson.devDependencies?.vercel, undefined, "The vulnerable Vercel CLI tree must not be installed in this repository.");
+assert.equal(packageJson.engines?.node, "24.x", "Vercel can select only the audited Node major line.");
+assert.equal(packageJson.scripts?.["release:production-check"], "node scripts/require-node24.mjs && node scripts/require-main-branch.mjs && npm run release:check");
+assert.equal(vercel.buildCommand, "npm run build:release");
+assert.equal(vercel.outputDirectory, "public");
+assert.match(deploymentNotes, /Vercel Git integration/i);
+assert.match(deploymentNotes, /VERCEL_GIT_COMMIT_SHA/);
+assert.match(deploymentNotes, /Node `24\.18\.0` and npm\s+`11\.18\.0`/i);
+assert.match(runtimeGuard, /process\.env\.VERCEL === "1"/);
+assert.match(runtimeGuard, /\^\[0-9a-f\]\{40\}\$/);
+assert.match(runtimeGuard, /nodeMajor !== 24/);
+assert.match(runtimeGuard, /npmMajor !== 11/);
+assert.doesNotMatch(deploymentNotes, /deploy:production:node24|locked `vercel` CLI/i);
+
+const runRuntimeGuard = (npmUserAgent, { vercel = true } = {}) => {
+  const env = {
+    ...process.env,
+    VERCEL: vercel ? "1" : "0",
+    VERCEL_GIT_COMMIT_SHA: vercel ? "a".repeat(40) : "",
+  };
+  if (npmUserAgent === undefined) delete env.npm_config_user_agent;
+  else env.npm_config_user_agent = npmUserAgent;
+
+  return spawnSync(process.execPath, [runtimeGuardPath], {
+    cwd: root,
+    encoding: "utf8",
+    env,
+  });
+};
+
+const supportedVercelRuntime = runRuntimeGuard("npm/11.12.1 node/v24.15.0 linux x64");
+assert.equal(supportedVercelRuntime.status, 0, supportedVercelRuntime.stderr);
+assert.match(supportedVercelRuntime.stdout, /Bound Vercel runtime OK/);
+
+const unsupportedVercelNpm = runRuntimeGuard("npm/12.0.0 node/v24.15.0 linux x64");
+assert.notEqual(unsupportedVercelNpm.status, 0);
+assert.match(unsupportedVercelNpm.stderr, /Vercel npm 11\.x required/);
+
+for (const [label, npmUserAgent] of [
+  ["missing", undefined],
+  ["malformed", "pnpm/10.0.0 node/v24.15.0 linux x64"],
+]) {
+  const rejected = runRuntimeGuard(npmUserAgent);
+  assert.notEqual(rejected.status, 0, `A ${label} Vercel npm identity must fail closed.`);
+  assert.match(rejected.stderr, /Vercel npm 11\.x required/);
+}
+
+const missingExactNpm = runRuntimeGuard(undefined, { vercel: false });
+assert.notEqual(missingExactNpm.status, 0, "The exact release path must reject an unknown npm identity.");
+
+console.log(JSON.stringify({ status: "ok", scope: "production-git-deployment-binding" }));

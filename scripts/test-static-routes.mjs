@@ -16,9 +16,11 @@ const routes = [
   "evidence/index.html",
   "audit/index.html",
   "status/index.html",
+  "legal/index.html",
+  "support/index.html",
+  "security/index.html",
+  "accessibility/index.html",
 ];
-
-const legacyRoutes = ["nexus", "fenswap", "fenpresale", "wallet", "support", "legal", "privacy", "terms", "accessibility", "security"];
 
 for (const route of routes) {
   const html = await readFile(new URL(`../${route}`, import.meta.url), "utf8");
@@ -96,7 +98,7 @@ for (const state of ["loading", "success", "partial", "stale", "failure", "pause
   assert.match(status, new RegExp(`data-state="${state}"`), `status page must document ${state}`);
 }
 assert.match(status, /Current public state/);
-assert.match(status, /Commercial access/);
+assert.match(status, /Commercial boundary statement/);
 assert.match(status, /Access-only services/);
 assert.match(status, /LIVE SIGNED OBSERVATIONS/);
 assert.match(status, /STATIC RELEASE RECORDS/);
@@ -109,6 +111,8 @@ assert.doesNotMatch(status, /data-relative-time="/);
 assert.doesNotMatch(status, /data-label="Timestamp"/);
 assert.doesNotMatch(status, /Last successful check/);
 assert.doesNotMatch(status, /<script>\s*\(\(\) =>/, "Status must not ship a CSP-blocked inline relative-time script.");
+assert.equal([...status.matchAll(/data-chain-meta="announcer"/g)].length, 0, "Status header telemetry must be non-announcing.");
+assert.equal([...status.matchAll(/data-status-monitor-announcer/g)].length, 1, "Status must expose one telemetry live region.");
 
 const evidence = await readFile(new URL("../evidence/index.html", import.meta.url), "utf8");
 assert.match(evidence, /class="hash-copy"/);
@@ -116,19 +120,25 @@ assert.match(evidence, /class="hash-value"/);
 assert.match(evidence, /data-label="Hash"/);
 assert.match(evidence, /data-label="Limitation"/);
 assert.match(evidence, /data-copy-label="Full SHA copied"/);
+assert.match(evidence, /Published kernel regression snapshot/);
+assert.match(evidence, /regression_001_p521_sub_overflow\.bin/);
+assert.match(evidence, /7d11e62691085056fde7193c23cc7b3ffbfde2171807f820fc94cecf6f19ee5e/);
 
 const audit = await readFile(new URL("../audit/index.html", import.meta.url), "utf8");
 assert.match(audit, /CURRENT PUBLIC RELEASE/);
 assert.match(audit, /STATIC RELEASE SCOPE/);
 assert.match(audit, /\.well-known\/fenrua-release\.json/);
-assert.match(audit, /Fenrua Labs Pty Ltd — access-only services/);
+assert.match(audit, /Fenrua Labs Pty Ltd — Access-Only Services/);
 
 const sitemap = await readFile(new URL("../sitemap.xml", import.meta.url), "utf8");
-for (const route of legacyRoutes) {
-  const html = await readFile(new URL(`../${route}/index.html`, import.meta.url), "utf8");
-  assert.match(html, /LEGACY \/ SUPERSEDED/, `${route} must be clearly marked legacy`);
-  assert.match(html, /noindex,nofollow/, `${route} must be noindex`);
-  assert.doesNotMatch(sitemap, new RegExp(`/${route}/`), `${route} must not be in sitemap`);
-}
+for (const route of ["legal", "support", "security", "accessibility"]) assert.match(sitemap, new RegExp(`/${route}<`));
+for (const route of ["nexus", "fenswap", "fenpresale", "wallet", "privacy", "terms"]) assert.doesNotMatch(sitemap, new RegExp(`/${route}<`));
+
+const legal = await readFile(new URL("../legal/index.html", import.meta.url), "utf8");
+assert.match(legal, /FENRUA LABS PTY LTD/);
+assert.match(legal, /ABN 62 700 182 663/);
+assert.match(legal, /ACN 700 182 663/);
+assert.match(legal, /Registered from 2026-07-13/);
+assert.match(legal, /no public account activation, checkout, wallet connection, payment receiver, or reward-settlement action/i);
 
 console.log(JSON.stringify({ status: "ok", scope: "static-routes", routes: routes.length, toolchainRows: renderedRows }));

@@ -1,0 +1,21 @@
+# Fenrua
+
+> Fenrua is the public technical evidence interface for FENRUA LABS PTY LTD
+> (ABN 62 700 182 663; ACN 700 182 663), an Australian provider of access-only
+> AI security infrastructure software, related technology services, and
+> evidence-aware intelligence workflows.
+
+Canonical website: https://fenrua.ai/
+Company and service boundary: https://fenrua.ai/legal
+Architecture: https://fenrua.ai/architecture
+Kernel: https://fenrua.ai/kernel
+Research: https://fenrua.ai/research
+Verification: https://fenrua.ai/verify
+Evidence registry: https://fenrua.ai/evidence
+Release audit: https://fenrua.ai/audit
+Security contact and scope: https://fenrua.ai/security
+
+Fenrua Labs does not offer an investment, token-crowdfunding, exchange,
+trading, yield, or financial-return product. Public evidence is limited to each
+artifact's stated revision, hash, maturity, method, and limitation. Static
+release records must not be interpreted as live-system attestation.

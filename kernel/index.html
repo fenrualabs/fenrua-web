@@ -1,25 +1,125 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="Fenrua security kernel primitives, responsibilities, state transitions, and fail-closed behavior." />
     <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+    <meta name="bingbot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
     <meta name="theme-color" content="#0d0d0d" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:site_name" content="Fenrua" />
+    <meta property="og:title" content="Fenrua Security Kernel" />
+    <meta property="og:description" content="Fenrua security kernel primitives, responsibilities, state transitions, and fail-closed behavior." />
+    <meta property="og:url" content="https://fenrua.ai/kernel" />
+    <meta property="og:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta property="og:image:alt" content="Fenrua logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Fenrua Security Kernel" />
+    <meta name="twitter:description" content="Fenrua security kernel primitives, responsibilities, state transitions, and fail-closed behavior." />
+    <meta name="twitter:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta name="twitter:image:alt" content="Fenrua logo" />
     <link rel="canonical" href="https://fenrua.ai/kernel" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://fenrua.ai/#organization",
-        "name": "Fenrua Labs",
-        "alternateName": "Fenrua",
-        "url": "https://fenrua.ai/",
-        "description": "Fenrua is building open Layer 0 AI security infrastructure with public evidence, maturity-labelled primitives, and reproducible verification records.",
-        "sameAs": ["https://github.com/fenrualabs"]
+    <link rel="alternate" hreflang="en-AU" href="https://fenrua.ai/kernel" />
+    <link rel="alternate" hreflang="x-default" href="https://fenrua.ai/kernel" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://fenrua.ai/#organization",
+  "name": "FENRUA LABS PTY LTD",
+  "legalName": "FENRUA LABS PTY LTD",
+  "alternateName": [
+    "Fenrua Labs",
+    "Fenrua"
+  ],
+  "url": "https://fenrua.ai/",
+  "logo": "https://fenrua.ai/assets/fenrua-header-logo.jpg",
+  "foundingDate": "2026-07-13",
+  "taxID": "ABN 62 700 182 663",
+  "identifier": [
+    {
+      "@type": "PropertyValue",
+      "propertyID": "ABN",
+      "value": "62 700 182 663"
+    },
+    {
+      "@type": "PropertyValue",
+      "propertyID": "ACN",
+      "value": "700 182 663"
+    }
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Ultimo",
+    "addressRegion": "NSW",
+    "postalCode": "2007",
+    "addressCountry": "AU"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "business enquiries",
+    "email": "partnerships@fenrua.ai"
+  },
+  "description": "Fenrua Labs provides access-only AI security infrastructure software, technology services, and evidence-aware intelligence workflows.",
+  "sameAs": [
+    "https://github.com/fenrualabs"
+  ]
+}</script>
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://fenrua.ai/#website",
+      "url": "https://fenrua.ai/",
+      "name": "Fenrua",
+      "inLanguage": "en-AU",
+      "publisher": {
+        "@id": "https://fenrua.ai/#organization"
       }
-    </script>
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://fenrua.ai/kernel#webpage",
+      "url": "https://fenrua.ai/kernel",
+      "name": "Fenrua Security Kernel",
+      "description": "Fenrua security kernel primitives, responsibilities, state transitions, and fail-closed behavior.",
+      "inLanguage": "en-AU",
+      "dateModified": "2026-07-13",
+      "isPartOf": {
+        "@id": "https://fenrua.ai/#website"
+      },
+      "about": {
+        "@id": "https://fenrua.ai/#organization"
+      },
+      "breadcrumb": {
+        "@id": "https://fenrua.ai/kernel#breadcrumb"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://fenrua.ai/kernel#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://fenrua.ai/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Kernel",
+          "item": "https://fenrua.ai/kernel"
+        }
+      ]
+    }
+  ]
+}</script>
     <title>Fenrua Security Kernel</title>
     <link rel="icon" href="/assets/fenrua-header-logo.jpg" type="image/jpeg" />
     <link rel="stylesheet" href="/styles.css" />
@@ -62,7 +162,6 @@
             <strong data-chain-field="978-block">Loading</strong>
             <small data-chain-field="978-checked">loading</small>
             <small data-chain-field="978-source">Evidence source: loading</small>
-            <small data-chain-field="978-confidence">Confidence: loading</small>
             <small data-chain-field="978-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -77,7 +176,6 @@
             <strong data-chain-field="521-block">Loading</strong>
             <small data-chain-field="521-checked">loading</small>
             <small data-chain-field="521-source">Evidence source: loading</small>
-            <small data-chain-field="521-confidence">Confidence: loading</small>
             <small data-chain-field="521-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -93,7 +191,7 @@
         <p class="eyebrow">KERNEL SPACE</p>
         <h1 id="page-title">Security Kernel</h1>
         <p>The kernel owns the security primitives beneath autonomous AI execution. Each primitive carries its own maturity label and evidence boundary.</p>
-        
+
       </section>
       <section class="section-shell">
         <div class="section-heading"><p class="eyebrow">PRIMITIVES</p><h2>Kernel responsibilities</h2></div>
@@ -101,49 +199,49 @@
           <span>Specification</span>
           <h3>Identity</h3>
           <p>AI entities, artifacts, builds, models, tools, operators, deployments, and evidence bundles.</p>
-          
+
         </article>
         <article>
           <span>Specification</span>
           <h3>Authority</h3>
           <p>Allow, deny, approval, scope, expiry, delegation, and revocation.</p>
-          
+
         </article>
         <article>
           <span>Reference</span>
           <h3>Integrity</h3>
           <p>Source, build, dependency, runtime image, policy, manifest, and environment comparisons.</p>
-          
+
         </article>
         <article>
           <span>Specification</span>
           <h3>Policy</h3>
           <p>Filesystem, network, tool, repository, secret, database, signing, deployment, and failure-mode controls.</p>
-          
+
         </article>
         <article>
           <span>Implemented surface</span>
           <h3>Evidence</h3>
           <p>Inputs, outputs, tool calls, decisions, builds, tests, findings, incidents, and recovery events.</p>
-          
+
         </article>
         <article>
           <span>Reference</span>
           <h3>Verification</h3>
           <p>Hashes, signatures, manifests, completeness, runtime conformity, audit scope, and release lineage.</p>
-          
+
         </article>
         <article>
           <span>Specification</span>
           <h3>Containment</h3>
           <p>Fail-closed behavior for missing, invalid, stale, drifted, revoked, or incomplete state.</p>
-          
+
         </article>
         <article>
           <span>Doctrine</span>
           <h3>Recovery</h3>
           <p>Revocation, quarantine, key rotation, rollback, evidence continuity, and controlled re-entry.</p>
-          
+
         </article></div>
       </section>
       <section class="section-shell split-section">
@@ -164,7 +262,7 @@
       <section class="section-shell split-section commercial-boundary" aria-labelledby="commercial-boundary-title">
         <div>
           <p class="eyebrow">ACCESS-ONLY SERVICES</p>
-          <h2 id="commercial-boundary-title">Fenrua Labs Pty Ltd — access-only services</h2>
+          <h2 id="commercial-boundary-title">Fenrua Labs Pty Ltd — Access-Only Services</h2>
         </div>
         <div class="constraint-list">
           <p>Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only.</p>
@@ -176,12 +274,15 @@
     </main>
     <footer class="site-footer">
       <div>
-        <strong>Fenrua Labs</strong>
+        <strong>FENRUA LABS PTY LTD</strong>
+        <span>ABN 62 700 182 663 · ACN 700 182 663</span>
         <span>Evidence-first, source-first, maturity-labelled infrastructure.</span>
       </div>
       <div class="footer-social">
         <p>Public claims are bounded by public evidence.</p>
         <div class="footer-links">
+          <a href="/legal">Legal &amp; company</a>
+          <a href="mailto:partnerships@fenrua.ai">Contact</a>
           <a href="/audit">Audit</a>
           <a href="/evidence">Evidence</a>
           <a href="/toolchain">Toolchain</a>

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { lstat, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,16 @@ const sourcePaths = Object.freeze({
   buildValidation: "tests/audit/final-build-validation.json",
   independentReview: "tests/audit/independent-review-report.json",
   auditLog: "SECURITY_AUDIT_LOG.md",
+});
+
+const sourceByteLimits = Object.freeze({
+  [sourcePaths.manifest]: 1_048_576,
+  [sourcePaths.report]: 5_242_880,
+  [sourcePaths.regression]: 1_048_576,
+  [sourcePaths.fixture]: 4_096,
+  [sourcePaths.buildValidation]: 2_097_152,
+  [sourcePaths.independentReview]: 2_097_152,
+  [sourcePaths.auditLog]: 1_048_576,
 });
 
 function fail(message) {
@@ -98,7 +108,22 @@ function safeKernelPath(kernelDir, relativePath) {
 }
 
 async function readKernelFile(kernelDir, relativePath) {
-  const payload = await readFile(safeKernelPath(kernelDir, relativePath));
+  const rootRealPath = await realpath(kernelDir);
+  const sourcePath = safeKernelPath(kernelDir, relativePath);
+  const metadata = await lstat(sourcePath);
+  assert(!metadata.isSymbolicLink(), `symbolic links are not accepted: ${relativePath}`);
+  assert(metadata.isFile(), `source must be a regular file: ${relativePath}`);
+
+  const sourceRealPath = await realpath(sourcePath);
+  const relation = path.relative(rootRealPath, sourceRealPath);
+  assert(relation && !relation.startsWith(`..${path.sep}`) && relation !== "..", `source resolves outside kernel checkout: ${relativePath}`);
+
+  const byteLimit = sourceByteLimits[relativePath];
+  assert(Number.isSafeInteger(byteLimit), `source byte limit is missing: ${relativePath}`);
+  assert(metadata.size <= byteLimit, `source exceeds ${byteLimit} bytes: ${relativePath}`);
+
+  const payload = await readFile(sourceRealPath);
+  assert(payload.length === metadata.size, `source changed while being read: ${relativePath}`);
   return {
     bytes: payload.length,
     sha256: sha256(payload),
@@ -297,8 +322,8 @@ function buildTelemetry({ snapshotCommit, manifest, report, regression, fixture,
     genesisIntegrity: `${reportRecord.passedCount}/${reportRecord.caseCount} Genesis Cases Verified`,
     ciOutput: `Differential: ${sanitizerDifferential.result.toUpperCase()}`,
     regressionCoverage: `${reportRecord.nonGenesisRegressionPassedCount} Permanent Regression: PASS`,
-    statusSource: `Verified kernel snapshot ${shortRevision(snapshotCommit)}`,
-    lastSynced: `Evidence report ${reportRecord.runMetadata.generatedAtUtc}`,
+    statusSource: `Validated public-artifact snapshot ${shortRevision(snapshotCommit)}`,
+    lastSynced: `Source report generated ${reportRecord.runMetadata.generatedAtUtc}`,
     snapshotCommitShort: shortRevision(snapshotCommit),
     differentialSummary: `${numberText(sanitizerDifferential.randomizedFieldPairs)} field pairs · ${numberText(sanitizerDifferential.byteEncodings)} encodings · ${numberText(sanitizerDifferential.digestRoundtrips)} digests`,
     evidence: [
@@ -440,4 +465,8 @@ async function main() {
   );
 }
 
-await main();
+export { readKernelFile, safeKernelPath, sourceByteLimits, sourcePaths };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}

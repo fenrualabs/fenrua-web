@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyReleaseManifest } from "./release-manifest-lib.mjs";
+import { publicArtifactFiles, publicRouteFor } from "./public-output-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = path.join(root, ".well-known", "fenrua-release.json");
@@ -13,12 +14,22 @@ verifyReleaseManifest(manifest);
 assert.equal(manifest.record.schema, "fenrua.web.release-evidence.v1");
 assert.equal(manifest.record.release.project, "fenrua-web");
 assert.match(manifest.record.release.sourceCommit, /^[0-9a-f]{40}$/);
+assert.deepEqual(manifest.record.release.publisher, {
+  legalName: "FENRUA LABS PTY LTD",
+  abn: "62 700 182 663",
+  acn: "700 182 663",
+});
 assert.ok(manifest.record.publicArtifactSet.artifacts.length > 0);
-assert.ok(!manifest.record.publicArtifactSet.artifacts.some((artifact) => artifact.route === "/" || artifact.route.includes("kernel-status") || artifact.route.includes("api/")));
 const routes = manifest.record.publicArtifactSet.artifacts.map((artifact) => artifact.route);
+assert.deepEqual(routes, publicArtifactFiles().map(publicRouteFor).sort((left, right) => left.localeCompare(right)), "Manifest must cover the complete deployed static output except itself.");
+assert.ok(!routes.some((route) => route.includes("/api/")));
 assert.deepEqual(routes, [...routes].sort((left, right) => left.localeCompare(right)), "Manifest artifacts must be sorted by public route.");
 assert.equal(new Set(routes).size, routes.length, "Manifest artifact routes must be unique.");
 assert.ok(routes.includes("/audit"));
+assert.ok(routes.includes("/"));
+assert.ok(routes.includes("/kernel-status.js"));
+assert.ok(routes.includes("/legal"));
+assert.ok(routes.includes("/data/company-identity.json"));
 assert.ok(routes.includes("/data/public-document-register.json"));
 assert.ok(routes.includes("/status-monitor.js"));
 for (const artifact of manifest.record.publicArtifactSet.artifacts) {

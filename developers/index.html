@@ -1,25 +1,125 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="Fenrua developer quick-start, schemas, compatibility, versioning, and local verification flow." />
     <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+    <meta name="bingbot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
     <meta name="theme-color" content="#0d0d0d" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:site_name" content="Fenrua" />
+    <meta property="og:title" content="Fenrua Developers" />
+    <meta property="og:description" content="Fenrua developer quick-start, schemas, compatibility, versioning, and local verification flow." />
+    <meta property="og:url" content="https://fenrua.ai/developers" />
+    <meta property="og:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta property="og:image:alt" content="Fenrua logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Fenrua Developers" />
+    <meta name="twitter:description" content="Fenrua developer quick-start, schemas, compatibility, versioning, and local verification flow." />
+    <meta name="twitter:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta name="twitter:image:alt" content="Fenrua logo" />
     <link rel="canonical" href="https://fenrua.ai/developers" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://fenrua.ai/#organization",
-        "name": "Fenrua Labs",
-        "alternateName": "Fenrua",
-        "url": "https://fenrua.ai/",
-        "description": "Fenrua is building open Layer 0 AI security infrastructure with public evidence, maturity-labelled primitives, and reproducible verification records.",
-        "sameAs": ["https://github.com/fenrualabs"]
+    <link rel="alternate" hreflang="en-AU" href="https://fenrua.ai/developers" />
+    <link rel="alternate" hreflang="x-default" href="https://fenrua.ai/developers" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://fenrua.ai/#organization",
+  "name": "FENRUA LABS PTY LTD",
+  "legalName": "FENRUA LABS PTY LTD",
+  "alternateName": [
+    "Fenrua Labs",
+    "Fenrua"
+  ],
+  "url": "https://fenrua.ai/",
+  "logo": "https://fenrua.ai/assets/fenrua-header-logo.jpg",
+  "foundingDate": "2026-07-13",
+  "taxID": "ABN 62 700 182 663",
+  "identifier": [
+    {
+      "@type": "PropertyValue",
+      "propertyID": "ABN",
+      "value": "62 700 182 663"
+    },
+    {
+      "@type": "PropertyValue",
+      "propertyID": "ACN",
+      "value": "700 182 663"
+    }
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Ultimo",
+    "addressRegion": "NSW",
+    "postalCode": "2007",
+    "addressCountry": "AU"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "business enquiries",
+    "email": "partnerships@fenrua.ai"
+  },
+  "description": "Fenrua Labs provides access-only AI security infrastructure software, technology services, and evidence-aware intelligence workflows.",
+  "sameAs": [
+    "https://github.com/fenrualabs"
+  ]
+}</script>
+    <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://fenrua.ai/#website",
+      "url": "https://fenrua.ai/",
+      "name": "Fenrua",
+      "inLanguage": "en-AU",
+      "publisher": {
+        "@id": "https://fenrua.ai/#organization"
       }
-    </script>
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://fenrua.ai/developers#webpage",
+      "url": "https://fenrua.ai/developers",
+      "name": "Fenrua Developers",
+      "description": "Fenrua developer quick-start, schemas, compatibility, versioning, and local verification flow.",
+      "inLanguage": "en-AU",
+      "dateModified": "2026-07-13",
+      "isPartOf": {
+        "@id": "https://fenrua.ai/#website"
+      },
+      "about": {
+        "@id": "https://fenrua.ai/#organization"
+      },
+      "breadcrumb": {
+        "@id": "https://fenrua.ai/developers#breadcrumb"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://fenrua.ai/developers#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://fenrua.ai/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Developers",
+          "item": "https://fenrua.ai/developers"
+        }
+      ]
+    }
+  ]
+}</script>
     <title>Fenrua Developers</title>
     <link rel="icon" href="/assets/fenrua-header-logo.jpg" type="image/jpeg" />
     <link rel="stylesheet" href="/styles.css" />
@@ -62,7 +162,6 @@
             <strong data-chain-field="978-block">Loading</strong>
             <small data-chain-field="978-checked">loading</small>
             <small data-chain-field="978-source">Evidence source: loading</small>
-            <small data-chain-field="978-confidence">Confidence: loading</small>
             <small data-chain-field="978-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -77,7 +176,6 @@
             <strong data-chain-field="521-block">Loading</strong>
             <small data-chain-field="521-checked">loading</small>
             <small data-chain-field="521-source">Evidence source: loading</small>
-            <small data-chain-field="521-confidence">Confidence: loading</small>
             <small data-chain-field="521-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -93,7 +191,7 @@
         <p class="eyebrow">TEN-MINUTE QUICK START</p>
         <h1 id="page-title">Developers</h1>
         <p>Start with the architecture, inspect schemas, run local validation, then map claims to evidence.</p>
-        
+
       </section>
       <section class="section-shell">
         <div class="section-heading"><p class="eyebrow">WORKFLOW</p><h2>Developer workflow</h2></div>
@@ -101,13 +199,13 @@
           <span>01</span>
           <h3>Install</h3>
           <p>Use Node 24 and the repository package manager. This website has no runtime package dependencies.</p>
-          
+
         </article>
         <article>
           <span>02</span>
           <h3>Validate</h3>
           <p>Run npm run validate to check static links, public discovery, chain API sanitization, kernel telemetry, and toolchain registry.</p>
-          
+
         </article>
         <article>
           <span>03</span>
@@ -125,13 +223,13 @@
           <span>05</span>
           <h3>Respect compatibility</h3>
           <p>Unsupported schema versions fail closed with UNSUPPORTED_SCHEMA rather than partial interpretation.</p>
-          
+
         </article>
         <article>
           <span>06</span>
           <h3>Respect the service boundary</h3>
           <p>No public token, investment, trading, or financial-return product is claimed.</p>
-          
+
         </article></div>
       </section>
       <section class="section-shell split-section">
@@ -160,7 +258,7 @@ node scripts/test-verify-examples.mjs</code></pre>
           <p>A clean checkout should complete validation with static route, chain API sanitization, kernel telemetry, toolchain registry, and verify-corpus checks passing. The failing fixture is intentionally represented as <code>FAIL_CLOSED</code>.</p>
         </div>
         <div class="doc-grid">
-          <a href="/docs/FENRUA_DEVELOPER_REPRODUCTION_REPORT.md">Developer reproduction report</a>
+          <a href="/verify">Verification schemas and examples</a>
           <a href="/examples/verification-results/pass.example.json">Passing fixture</a>
           <a href="/examples/verification-results/fail-closed.example.json">Failing fixture</a>
         </div>
@@ -168,7 +266,7 @@ node scripts/test-verify-examples.mjs</code></pre>
       <section class="section-shell split-section commercial-boundary" aria-labelledby="commercial-boundary-title">
         <div>
           <p class="eyebrow">ACCESS-ONLY SERVICES</p>
-          <h2 id="commercial-boundary-title">Fenrua Labs Pty Ltd — access-only services</h2>
+          <h2 id="commercial-boundary-title">Fenrua Labs Pty Ltd — Access-Only Services</h2>
         </div>
         <div class="constraint-list">
           <p>Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only.</p>
@@ -180,12 +278,15 @@ node scripts/test-verify-examples.mjs</code></pre>
     </main>
     <footer class="site-footer">
       <div>
-        <strong>Fenrua Labs</strong>
+        <strong>FENRUA LABS PTY LTD</strong>
+        <span>ABN 62 700 182 663 · ACN 700 182 663</span>
         <span>Evidence-first, source-first, maturity-labelled infrastructure.</span>
       </div>
       <div class="footer-social">
         <p>Public claims are bounded by public evidence.</p>
         <div class="footer-links">
+          <a href="/legal">Legal &amp; company</a>
+          <a href="mailto:partnerships@fenrua.ai">Contact</a>
           <a href="/audit">Audit</a>
           <a href="/evidence">Evidence</a>
           <a href="/toolchain">Toolchain</a>

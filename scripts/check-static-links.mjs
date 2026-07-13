@@ -5,11 +5,23 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const linkPattern = /\b(?:href|src)="([^"]+)"/g;
 const missing = [];
+const htmlIdCache = new Map();
+
+function htmlIds(path) {
+  if (htmlIdCache.has(path)) return htmlIdCache.get(path);
+  const ids = new Set();
+  if (extname(path) === ".html" && existsSync(path)) {
+    const source = readFileSync(path, "utf8");
+    for (const match of source.matchAll(/\b(?:id|name)="([^"]+)"/g)) ids.add(match[1]);
+  }
+  htmlIdCache.set(path, ids);
+  return ids;
+}
 
 function htmlFiles(dir = root) {
   const files = [];
   for (const entry of readdirSync(dir)) {
-    if (entry === ".git" || entry === "deliverables" || entry === "node_modules" || entry === "playwright-report" || entry === "test-results") continue;
+    if (entry === ".git" || entry === "deliverables" || entry === "node_modules" || entry === "playwright-report" || entry === "public" || entry === "test-results") continue;
     const full = resolve(dir, entry);
     const stat = statSync(full);
     if (stat.isDirectory()) files.push(...htmlFiles(full));
@@ -31,8 +43,6 @@ for (const htmlPath of htmlFiles()) {
     if (target === "/.well-known/fenrua-release.json") continue;
 
     if (
-      target === "/" ||
-      target.startsWith("#") ||
       target.startsWith("https://") ||
       target.startsWith("http://") ||
       target.startsWith("mailto:")
@@ -40,14 +50,33 @@ for (const htmlPath of htmlFiles()) {
       continue;
     }
 
-    const [path] = target.split("#");
-    const resolvedPath = path.endsWith("/") ? `${path}index.html` : path;
-    let resolved = resolvedPath.startsWith("/") ? resolve(root, `.${resolvedPath}`) : resolve(base, resolvedPath);
+    const [pathAndQuery, encodedFragment] = target.split("#", 2);
+    const path = pathAndQuery.split("?", 1)[0];
+    const resolvedPath = path === "" ? htmlPath : path.endsWith("/") ? `${path}index.html` : path;
+    let resolved = resolvedPath === htmlPath
+      ? htmlPath
+      : resolvedPath.startsWith("/")
+        ? resolve(root, `.${resolvedPath}`)
+        : resolve(base, resolvedPath);
     if (!existsSync(resolved) && resolvedPath.startsWith("/") && !extname(resolvedPath)) {
       resolved = resolve(root, `.${resolvedPath}`, "index.html");
     }
     if (!existsSync(resolved)) {
       missing.push(`${htmlFile}: ${target}`);
+      continue;
+    }
+
+    if (encodedFragment !== undefined && extname(resolved) === ".html") {
+      let fragment;
+      try {
+        fragment = decodeURIComponent(encodedFragment);
+      } catch {
+        missing.push(`${htmlFile}: ${target} (invalid fragment encoding)`);
+        continue;
+      }
+      if (fragment && !htmlIds(resolved).has(fragment)) {
+        missing.push(`${htmlFile}: ${target} (missing fragment target)`);
+      }
     }
   }
 }

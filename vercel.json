@@ -11,7 +11,11 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000"
         },
         {
           "key": "Referrer-Policy",
@@ -22,8 +26,20 @@
           "value": "nosniff"
         },
         {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        },
+        {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), payment=()"
+          "value": "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
         }
       ]
     },
@@ -32,7 +48,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "public, max-age=300, must-revalidate"
         }
       ]
     },
@@ -90,6 +106,11 @@
       "permanent": true
     },
     {
+      "source": "/nexus",
+      "destination": "/architecture",
+      "permanent": true
+    },
+    {
       "source": "/genesis",
       "destination": "/audit",
       "permanent": true
@@ -101,7 +122,7 @@
     },
     {
       "source": "/docs/SECURITY_AUDIT_LOG.md",
-      "destination": "/docs/archive/2026-07-13/SECURITY_AUDIT_LOG.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
@@ -116,7 +137,7 @@
     },
     {
       "source": "/docs/audit-report.json",
-      "destination": "/docs/archive/2026-07-13/audit-report.json",
+      "destination": "/audit",
       "permanent": true
     },
     {
@@ -136,53 +157,336 @@
     },
     {
       "source": "/docs/FENRUA_V2_EVIDENCE_RECONCILIATION.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_EVIDENCE_RECONCILIATION.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_LAYER0_WEBSITE_IMPLEMENTATION_REPORT.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_LAYER0_WEBSITE_IMPLEMENTATION_REPORT.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_CURRENT_LIVE_REAUDIT_2026-07-13.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_CURRENT_LIVE_REAUDIT_2026-07-13.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_FINAL_IMPLEMENTATION_REPORT.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_FINAL_IMPLEMENTATION_REPORT.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_FINAL_AUDIT_GATE.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_FINAL_AUDIT_GATE.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_REMAINING_LIMITATIONS.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_REMAINING_LIMITATIONS.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_ROADMAP_TO_TRUE_10.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_ROADMAP_TO_TRUE_10.md",
+      "destination": "/audit",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_ARCHITECTURE_REPORT.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_ARCHITECTURE_REPORT.md",
+      "destination": "/architecture",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_UX_REPORT.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_UX_REPORT.md",
+      "destination": "/accessibility",
       "permanent": true
     },
     {
       "source": "/docs/FENRUA_V2_ACCESSIBILITY_REPORT.md",
-      "destination": "/docs/archive/2026-07-13/FENRUA_V2_ACCESSIBILITY_REPORT.md",
+      "destination": "/accessibility",
       "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_ACCESSIBILITY_REPORT.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_DEVELOPER_REPRODUCTION_REPORT.md",
+      "destination": "/developers",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_EVIDENCE_PROVENANCE_REPORT.md",
+      "destination": "/evidence",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_PERFORMANCE_REPORT.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_V2_PERFORMANCE_REPORT.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_VISUAL_REGRESSION_REPORT.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_RESPONSIVE_VISUAL_AUDIT.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_9_8_CLOSURE_ACCEPTANCE_MATRIX.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_RESEARCH_RECORD_COMPLETION.md",
+      "destination": "/research",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_TOOLCHAIN_DELIVERY_CLOSURE.md",
+      "destination": "/toolchain",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_V2_SECURITY_REVIEW.md",
+      "destination": "/security",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_VIEWPORT_SCREENSHOT_MATRIX.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/docs/FENRUA_TELEMETRY_STATE_IMPLEMENTATION.md",
+      "destination": "/status",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/SECURITY_AUDIT_LOG.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/audit-report.json",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_CURRENT_LIVE_REAUDIT_2026-07-13.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_FINAL_IMPLEMENTATION_REPORT.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_LAYER0_WEBSITE_IMPLEMENTATION_REPORT.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_EVIDENCE_RECONCILIATION.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_FINAL_AUDIT_GATE.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_REMAINING_LIMITATIONS.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_ROADMAP_TO_TRUE_10.md",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_ARCHITECTURE_REPORT.md",
+      "destination": "/architecture",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_ACCESSIBILITY_REPORT.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/docs/archive/2026-07-13/FENRUA_V2_UX_REPORT.md",
+      "destination": "/accessibility",
+      "permanent": true
+    },
+    {
+      "source": "/about",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/brief",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/contact",
+      "destination": "/support",
+      "permanent": true
+    },
+    {
+      "source": "/security.txt",
+      "destination": "/.well-known/security.txt",
+      "permanent": true
+    },
+    {
+      "source": "/opengraph-image",
+      "destination": "/assets/fenrua-header-logo.jpg",
+      "permanent": true
+    },
+    {
+      "source": "/twitter-image",
+      "destination": "/assets/fenrua-header-logo.jpg",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/fenchain",
+      "destination": "/status",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/n521",
+      "destination": "/research/pn521-cross-limb-borrow",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/protocol",
+      "destination": "/architecture",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/trust",
+      "destination": "/evidence",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/release",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/audit",
+      "destination": "/audit",
+      "permanent": true
+    },
+    {
+      "source": "/nexus/monitoring",
+      "destination": "/status",
+      "permanent": true
+    },
+    {
+      "source": "/explorer",
+      "destination": "/status",
+      "permanent": true
+    },
+    {
+      "source": "/explorer/c978",
+      "destination": "/status",
+      "permanent": true
+    },
+    {
+      "source": "/explorer/n521",
+      "destination": "/status",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/nexus/:path*",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/explorer/:path*",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/fenpresale",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/fenswap",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/wallet",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/register",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/login",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/account",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/codex",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/labs",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/terms",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/cookies",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/v2",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/v2/:path*",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/api/nexus/:path*",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/api/explorer/:path*",
+      "destination": "/api/legacy-gone"
+    },
+    {
+      "source": "/api/internal/:path*",
+      "destination": "/api/legacy-gone"
     }
   ]
 }
