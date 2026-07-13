@@ -291,6 +291,65 @@ function normalizeGatewayObservation(payload, target) {
   return observation;
 }
 
+async function cancelGatewayResponse(upstream, controller, reason) {
+  controller.abort();
+  const body = upstream.body;
+  if (!body) return;
+
+  try {
+    if (typeof body.cancel === "function") {
+      await body.cancel(reason);
+      return;
+    }
+    const reader = body.getReader?.();
+    if (!reader) return;
+    try {
+      await reader.cancel(reason);
+    } finally {
+      reader.releaseLock?.();
+    }
+  } catch {
+    // Abort may error the response stream before explicit cancellation runs;
+    // both outcomes terminate the body without treating it as public data.
+  }
+}
+
+async function readBoundedGatewayResponse(upstream, controller) {
+  const reader = upstream.body?.getReader?.();
+  if (!reader) return null;
+
+  const chunks = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array)) return null;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > maxGatewayResponseBytes) {
+        // Abort the upstream transfer before awaiting stream cancellation so a
+        // chunked response cannot continue consuming bandwidth in the gap.
+        controller.abort();
+        try {
+          await reader.cancel("Gateway response exceeded the public byte limit");
+        } catch {
+          // The abort may already have errored the reader; either state is the
+          // required fail-closed outcome.
+        }
+        return null;
+      }
+
+      chunks.push(Buffer.from(value));
+    }
+
+    return Buffer.concat(chunks, totalBytes).toString("utf8");
+  } finally {
+    reader.releaseLock?.();
+  }
+}
+
 async function fetchGatewayObservation(target) {
   const config = readGatewayConfig(target);
   if (config.state !== "configured") return { observation: null, configuration: config.state };
@@ -310,15 +369,19 @@ async function fetchGatewayObservation(target) {
       signal: controller.signal,
     });
 
-    if (!upstream.ok) return { observation: null, configuration: "configured" };
-
-    const contentLength = upstream.headers?.get?.("content-length");
-    if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > maxGatewayResponseBytes)) {
+    if (!upstream.ok) {
+      await cancelGatewayResponse(upstream, controller, "Gateway returned a non-success response");
       return { observation: null, configuration: "configured" };
     }
 
-    const text = await upstream.text();
-    if (Buffer.byteLength(text, "utf8") > maxGatewayResponseBytes) {
+    const contentLength = upstream.headers?.get?.("content-length");
+    if (contentLength && (!/^\d+$/.test(contentLength) || Number(contentLength) > maxGatewayResponseBytes)) {
+      await cancelGatewayResponse(upstream, controller, "Gateway response exceeded the public byte limit");
+      return { observation: null, configuration: "configured" };
+    }
+
+    const text = await readBoundedGatewayResponse(upstream, controller);
+    if (text === null) {
       return { observation: null, configuration: "configured" };
     }
 
@@ -419,7 +482,12 @@ async function buildSnapshot() {
           freshnessSeconds: maxFreshObservationAgeSeconds,
           // Every entry is a verified bounded record. No synthetic N521 block,
           // sequence, or successful state is created when its gateway is absent.
-          observations: sources.flatMap(({ observation }) => (observation ? [observation] : [])),
+          // Only records that can support a current or partial public state are
+          // exposed here. A signed `unavailable` watcher statement remains a
+          // fail-closed source result; it is not a current chain observation.
+          observations: sources.flatMap(({ observation }) =>
+            observation && observation.status !== "unavailable" ? [observation] : []
+          ),
           chains: observationTargets.map((target, index) => mapObservation(target, sources[index], generatedAt)),
         };
       })

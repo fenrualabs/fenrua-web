@@ -14,8 +14,8 @@ const kernelStatus = {
   "genesisIntegrity": "10/10 Genesis Cases Verified",
   "ciOutput": "Differential: PASS",
   "regressionCoverage": "1 Permanent Regression: PASS",
-  "statusSource": "Verified kernel snapshot 390f7aee…",
-  "lastSynced": "Evidence report 2026-07-12T11:18:16.000Z",
+  "statusSource": "Validated public-artifact snapshot 390f7aee…",
+  "lastSynced": "Source report generated 2026-07-12T11:18:16.000Z",
   "snapshotCommitShort": "390f7aee…",
   "differentialSummary": "500,000 field pairs · 200,000 encodings · 100,000 digests",
   "evidence": [
@@ -127,142 +127,6 @@ function setHref(selector, value) {
   });
 }
 
-function makeCell(text) {
-  const cell = document.createElement("td");
-  cell.textContent = text;
-  return cell;
-}
-
-function copyHash(value, button) {
-  const setCopied = () => {
-    button.textContent = "Copied";
-    window.setTimeout(() => {
-      button.textContent = "Copy";
-    }, 1400);
-  };
-
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(value).then(setCopied).catch(() => fallbackCopy(value, button));
-    return;
-  }
-
-  fallbackCopy(value, button);
-}
-
-function fallbackCopy(value, button) {
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "readonly");
-  textarea.className = "copy-buffer";
-  document.body.append(textarea);
-  textarea.select();
-  document.execCommand("copy");
-  textarea.remove();
-  button.textContent = "Copied";
-  window.setTimeout(() => {
-    button.textContent = "Copy";
-  }, 1400);
-}
-
-function hydrateRegistry() {
-  const registry = document.querySelector("#evidence-registry");
-  if (!registry) return;
-
-  registry.replaceChildren(
-    ...kernelStatus.evidence.map((record) => {
-      const row = document.createElement("tr");
-      const hashCell = makeCell("");
-      const hash = document.createElement("code");
-      const sourceCell = makeCell("");
-      const source = document.createElement("a");
-      const copyCell = makeCell("");
-      const button = document.createElement("button");
-
-      row.dataset.search = `${record.artifact} ${record.hashReference} ${record.sourceLabel}`.toLowerCase();
-      hash.textContent = record.hashReference;
-      hashCell.append(hash);
-      source.href = record.sourceUrl;
-      source.textContent = record.sourceLabel;
-      sourceCell.append(source);
-      button.type = "button";
-      button.textContent = "Copy";
-      button.addEventListener("click", () => copyHash(record.copyValue, button));
-      copyCell.append(button);
-
-      row.append(makeCell(record.artifact), hashCell, sourceCell, copyCell);
-      return row;
-    })
-  );
-}
-
-function makeExternalLink(label, href) {
-  const link = document.createElement("a");
-  link.href = href;
-  link.textContent = label;
-  return link;
-}
-
-function makeCopyButton(value) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = "Copy";
-  button.addEventListener("click", () => copyHash(value, button));
-  return button;
-}
-
-function hydrateRegressionRegistry() {
-  const registry = document.querySelector("#regression-registry");
-  const regressions = kernelStatus.telemetry?.regressions;
-  if (!registry || !Array.isArray(regressions)) return;
-
-  registry.replaceChildren(
-    ...regressions.map((regression) => {
-      const row = document.createElement("tr");
-      const identity = makeCell(regression.id);
-      const classification = document.createElement("small");
-      const result = makeCell(regression.status.toUpperCase());
-      const fixture = makeCell("");
-      const fixtureHash = document.createElement("code");
-      const fixtureCopy = makeCopyButton(regression.fixture.sha256);
-      const evidence = makeCell("");
-
-      classification.textContent = regression.classification;
-      identity.append(document.createElement("br"), classification);
-      result.classList.add(regression.status === "pass" ? "result-pass" : "result-fail");
-      fixture.append(`${regression.fixture.name} · ${regression.fixture.bytes} bytes`, document.createElement("br"));
-      fixtureHash.textContent = regression.fixture.sha256;
-      fixture.append(fixtureHash, document.createTextNode(" "), fixtureCopy);
-      evidence.append(
-        makeExternalLink("Fixture", regression.fixture.url),
-        document.createTextNode(" · "),
-        makeExternalLink("Regression report", regression.report.url)
-      );
-
-      row.append(
-        identity,
-        makeCell(`${regression.domain} · ${regression.operation}`),
-        result,
-        fixture,
-        evidence
-      );
-      return row;
-    })
-  );
-}
-
-function bindRegistrySearch() {
-  const input = document.querySelector("#registry-search");
-  const registry = document.querySelector("#evidence-registry");
-  if (!input || !registry) return;
-
-  input.addEventListener("input", () => {
-    const query = input.value.trim().toLowerCase();
-    registry.querySelectorAll("tr").forEach((row) => {
-      row.hidden = query.length > 0 && !row.dataset.search.includes(query);
-    });
-  });
-}
-
 function hydrateKernelStatus() {
   Object.entries(kernelStatus).forEach(([key, value]) => {
     if (typeof value === "string") {
@@ -277,10 +141,6 @@ function hydrateKernelStatus() {
   setHref('[data-link="regression"]', kernelStatus.regressionUrl);
   setHref('[data-link="version"]', kernelStatus.versionCommitUrl);
   setHref('[data-link="evidence-revision"]', kernelStatus.evidenceRevisionUrl);
-
-  hydrateRegistry();
-  hydrateRegressionRegistry();
-  bindRegistrySearch();
 }
 
 const chainFieldMap = {
@@ -328,8 +188,29 @@ const chainProbe = {
   retryMs: chainRefreshMs,
   freshnessSeconds: defaultFreshnessSeconds,
   hasSnapshot: false,
-  sequences: new Map(),
+  highWater: new Map(),
 };
+const allowedChainStates = new Set(["live", "delayed", "partial", "waiting", "unavailable"]);
+const monitoredChainIds = new Set(Object.values(chainFieldMap).map((fields) => fields.chainKey));
+const confirmationByState = {
+  live: ["signed-observation", "confirmed"],
+  delayed: ["stale-observation", "stale"],
+  partial: ["partial-observation", "partial"],
+  waiting: ["awaiting-signed-observation", "unavailable"],
+  unavailable: ["unavailable", "unavailable"],
+};
+
+function isObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isIsoTimestamp(value) {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function isSafeNonNegativeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
 
 function formatNumber(value) {
   return Number.isSafeInteger(value) ? new Intl.NumberFormat("en-US").format(value) : "Observation unavailable";
@@ -399,7 +280,11 @@ function cardStatus(chain) {
     return { label: "Partial", state: "partial" };
   }
 
-  return { label: "Live", state: "confirmed" };
+  if (chain.status === "live") {
+    return { label: "Live", state: "confirmed" };
+  }
+
+  return { label: "Failure", state: "unavailable" };
 }
 
 function progressLabel(state) {
@@ -443,6 +328,7 @@ function formatSourceValue(value) {
   if (value === "confirmed") return "live observation confirmed";
   if (value === "stale") return "stale observation";
   if (value === "mismatch") return "chain mismatch";
+  if (value === "rejected-observation") return "signed observation rejected";
   return "unavailable";
 }
 
@@ -450,36 +336,166 @@ function formatSource(value) {
   return `Evidence source: ${formatSourceValue(value)}`;
 }
 
-function describeSignedActivity(chain) {
+function signedObservationForChain(chain, payload) {
+  if (!Array.isArray(payload.observations)) return null;
+  const matches = payload.observations.filter(
+    (candidate) => isObject(candidate) && String(candidate.chain) === String(chain.expectedChainId)
+  );
+  if (matches.length !== 1) return null;
+
+  const observation = matches[0];
+  if (typeof observation.key_id !== "string" || observation.key_id.length === 0) return null;
+  if (typeof observation.signature !== "string" || observation.signature.length === 0) return null;
+  if (!isIsoTimestamp(observation.observed_at) || observation.observed_at !== chain.checkedAt) return null;
+  if (!Number.isSafeInteger(observation.sequence) || observation.sequence < 1) return null;
+  if (chain.observationSequence !== observation.sequence) return null;
+
+  if (chain.status === "live" || chain.status === "delayed") {
+    if (
+      observation.status !== "confirmed" ||
+      observation.source_quorum !== 2 ||
+      !isSafeNonNegativeInteger(observation.observed_block) ||
+      chain.blockNumber !== observation.observed_block ||
+      chain.chainId !== chain.expectedChainId
+    ) {
+      return null;
+    }
+  }
+
+  if (
+    chain.status === "partial" &&
+    (observation.status !== "partial" ||
+      !Number.isSafeInteger(observation.source_quorum) ||
+      observation.source_quorum < 1 ||
+      observation.source_quorum >= 2 ||
+      observation.observed_block !== null ||
+      chain.blockNumber !== null ||
+      chain.chainId !== null)
+  ) {
+    return null;
+  }
+
+  return observation;
+}
+
+function isValidChainRecord(chain, payload) {
+  if (!isObject(chain) || !monitoredChainIds.has(chain.expectedChainId) || !allowedChainStates.has(chain.status)) {
+    return false;
+  }
+  if (!isIsoTimestamp(chain.checkedAt) || !isObject(chain.confirmation)) return false;
+
+  const expectedConfirmation = confirmationByState[chain.status];
+  if (
+    chain.confirmation.evidenceSource !== expectedConfirmation[0] ||
+    chain.confirmation.confidence !== expectedConfirmation[1]
+  ) {
+    return false;
+  }
+
+  if (chain.status === "live" || chain.status === "delayed" || chain.status === "partial") {
+    if (!Number.isSafeInteger(chain.observationSequence) || chain.observationSequence < 1) return false;
+    if (chain.status === "partial") {
+      if (chain.blockAgeSeconds !== null) return false;
+    } else if (!isSafeNonNegativeInteger(chain.blockAgeSeconds)) {
+      return false;
+    }
+    return signedObservationForChain(chain, payload) !== null;
+  }
+
+  if (
+    chain.chainId !== null ||
+    chain.blockNumber !== null ||
+    chain.blockAgeSeconds !== null ||
+    chain.observationSequence !== null
+  ) {
+    return false;
+  }
+  return !payload.observations.some(
+    (observation) => isObject(observation) && String(observation.chain) === String(chain.expectedChainId)
+  );
+}
+
+function assessSignedActivity(chain, payload) {
   const sequence = chain.observationSequence;
   if (!Number.isSafeInteger(sequence)) {
     return chain.status === "waiting"
-      ? { label: "Awaiting signed observation", state: "waiting" }
-      : { label: "No verified sequence", state: "unavailable" };
+      ? { accepted: true, label: "Awaiting signed observation", state: "waiting" }
+      : { accepted: true, label: "No verified sequence", state: "unavailable" };
   }
 
-  const previous = chainProbe.sequences.get(chain.expectedChainId);
-  chainProbe.sequences.set(chain.expectedChainId, sequence);
+  const observation = signedObservationForChain(chain, payload);
+  const previous = chainProbe.highWater.get(chain.expectedChainId);
+  if (!observation) {
+    return {
+      accepted: false,
+      reason: "signed observation binding rejected",
+      highWater: previous,
+    };
+  }
 
-  if (!Number.isSafeInteger(previous)) {
-    return { label: `Signed sequence ${formatNumber(sequence)} · current`, state: "steady" };
+  const candidate = {
+    keyId: observation.key_id,
+    sequence: observation.sequence,
+    confirmedBlock: isSafeNonNegativeInteger(observation.observed_block)
+      ? observation.observed_block
+      : previous?.confirmedBlock ?? null,
+    observedAt: observation.observed_at,
+    signature: observation.signature,
+  };
+
+  if (!previous) {
+    chainProbe.highWater.set(chain.expectedChainId, candidate);
+    return {
+      accepted: true,
+      label: `Signed sequence ${formatNumber(sequence)} · current`,
+      state: "steady",
+    };
   }
-  if (sequence > previous) {
-    return { label: `Signed sequence ${formatNumber(sequence)} · advanced`, state: "advanced" };
+  if (candidate.keyId !== previous.keyId) {
+    return { accepted: false, reason: "verification-key change rejected", highWater: previous };
   }
-  if (sequence < previous) {
-    return { label: `Signed sequence ${formatNumber(sequence)} · reset`, state: "reset" };
+  if (candidate.sequence < previous.sequence) {
+    return { accepted: false, reason: "signed sequence rollback rejected", highWater: previous };
   }
-  return { label: `Signed sequence ${formatNumber(sequence)} · current`, state: "steady" };
+  if (candidate.sequence === previous.sequence) {
+    const isIdentical =
+      candidate.signature === previous.signature &&
+      candidate.observedAt === previous.observedAt &&
+      candidate.confirmedBlock === previous.confirmedBlock;
+    return isIdentical
+      ? {
+          accepted: true,
+          label: `Signed sequence ${formatNumber(sequence)} · current`,
+          state: "steady",
+        }
+      : { accepted: false, reason: "same-sequence equivocation rejected", highWater: previous };
+  }
+  if (Date.parse(candidate.observedAt) < Date.parse(previous.observedAt)) {
+    return { accepted: false, reason: "observation-time rollback rejected", highWater: previous };
+  }
+  if (
+    isSafeNonNegativeInteger(observation.observed_block) &&
+    isSafeNonNegativeInteger(previous.confirmedBlock) &&
+    observation.observed_block < previous.confirmedBlock
+  ) {
+    return { accepted: false, reason: "confirmed-block rollback rejected", highWater: previous };
+  }
+
+  chainProbe.highWater.set(chain.expectedChainId, candidate);
+  return {
+    accepted: true,
+    label: `Signed sequence ${formatNumber(sequence)} · advanced`,
+    state: "advanced",
+  };
 }
 
 function formatConfidence(value) {
-  if (value === "confirmed") return "Confidence: confirmed";
-  if (value === "partial") return "Confidence: scoped";
-  if (value === "stale") return "Confidence: stale";
-  if (value === "failure") return "Confidence: failure";
-  if (value === "success") return "Confidence: confirmed";
-  return "Confidence: unavailable";
+  if (value === "confirmed") return "Confirmed";
+  if (value === "partial") return "Scoped";
+  if (value === "stale") return "Stale";
+  if (value === "failure") return "Failure";
+  if (value === "success") return "Confirmed";
+  return "Unavailable";
 }
 
 function formatCountdown() {
@@ -505,7 +521,9 @@ function updateChainMeta(payload, cardStates) {
   chainProbe.nextAt = Date.now() + refreshMs;
 
   const healthy = cardStates.filter((state) => state === "confirmed" || state === "partial" || state === "waiting");
-  const feedStatus = healthy.length
+  const feedStatus = cardStates.includes("rollback")
+    ? "failure"
+    : healthy.length
     ? cardStates.every((state) => state === "confirmed")
       ? "success"
       : "partial"
@@ -541,7 +559,30 @@ function updateChainCard(chain, payload) {
   const hasCurrentBlock = Number.isSafeInteger(chain.blockNumber);
   const status = cardStatus(displayChain);
   const confirmation = displayChain.confirmation ?? {};
-  const activity = describeSignedActivity(displayChain);
+  const activity = assessSignedActivity(displayChain, payload);
+
+  if (!activity.accepted) {
+    const previous = activity.highWater;
+    setText(fields.status, "Failure");
+    setText(fields.progress, "failure");
+    setText(fields.chainId, formatChainIdentity(chain));
+    setText(
+      fields.block,
+      isSafeNonNegativeInteger(previous?.confirmedBlock)
+        ? `Last accepted ${formatNumber(previous.confirmedBlock)} · not current`
+        : "Observation unavailable"
+    );
+    setText(fields.checked, "no current observation");
+    setText(fields.sourceHeader, formatSource("rejected-observation"));
+    setText(fields.sourceResult, formatSourceValue("rejected-observation"));
+    setText(fields.confidence, formatConfidence("failure"));
+    setText(fields.activity, `Failure · ${activity.reason}; browser-session high-water preserved`);
+    document.querySelectorAll(fields.card).forEach((card) => {
+      card.dataset.status = "wrong-chain";
+      card.dataset.activity = "rollback";
+    });
+    return "rollback";
+  }
 
   setText(fields.status, status.label);
   setText(fields.progress, progressLabel(status.state));
@@ -574,26 +615,47 @@ function scheduleChainRead(delay) {
 function showFeedFailure() {
   chainProbe.nextAt = Date.now() + chainProbe.retryMs;
   setText('[data-chain-meta="feed-status"]', "retrying");
+  setText('[data-chain-meta="announcer"]', "Chain feed is retrying. No current observation is asserted.");
   updateChainCountdown();
 
-  if (!chainProbe.hasSnapshot) {
-    Object.values(chainFieldMap).forEach((fields) => {
-      const awaiting = fields.chainKey === 521;
-      setText(fields.status, awaiting ? "Awaiting signed observation" : "Failure");
-      setText(fields.block, "Observation unavailable");
-      setText(fields.checked, "not observed");
-      const evidenceSource = awaiting ? "awaiting-signed-observation" : undefined;
-      setText(fields.sourceHeader, formatSource(evidenceSource));
-      setText(fields.sourceResult, formatSourceValue(evidenceSource));
-      setText(fields.confidence, "Confidence: unavailable");
-      setText(fields.activity, awaiting ? "Awaiting signed observation" : "No verified sequence");
-      setText(fields.progress, awaiting ? "loading" : "retrying");
+  Object.values(chainFieldMap).forEach((fields) => {
+    const previous = chainProbe.highWater.get(fields.chainKey);
+    if (chainProbe.hasSnapshot) {
+      setText(fields.status, "Failure");
+      setText(
+        fields.block,
+        isSafeNonNegativeInteger(previous?.confirmedBlock)
+          ? `Last accepted ${formatNumber(previous.confirmedBlock)} · not current`
+          : "Observation unavailable"
+      );
+      setText(fields.checked, "no current observation");
+      setText(fields.sourceHeader, formatSource());
+      setText(fields.sourceResult, formatSourceValue());
+      setText(fields.confidence, "Unavailable");
+      setText(fields.activity, "Feed failure; browser-session high-water preserved");
+      setText(fields.progress, "failure");
       document.querySelectorAll(fields.card).forEach((card) => {
-        card.dataset.status = awaiting ? "waiting" : "unavailable";
-        card.dataset.activity = awaiting ? "waiting" : "unavailable";
+        card.dataset.status = "unavailable";
+        card.dataset.activity = "failure";
       });
+      return;
+    }
+
+    const awaiting = fields.chainKey === 521;
+    setText(fields.status, awaiting ? "Awaiting signed observation" : "Failure");
+    setText(fields.block, "Observation unavailable");
+    setText(fields.checked, "not observed");
+    const evidenceSource = awaiting ? "awaiting-signed-observation" : undefined;
+    setText(fields.sourceHeader, formatSource(evidenceSource));
+    setText(fields.sourceResult, formatSourceValue(evidenceSource));
+    setText(fields.confidence, "Unavailable");
+    setText(fields.activity, awaiting ? "Awaiting signed observation" : "No verified sequence");
+    setText(fields.progress, awaiting ? "loading" : "retrying");
+    document.querySelectorAll(fields.card).forEach((card) => {
+      card.dataset.status = awaiting ? "waiting" : "unavailable";
+      card.dataset.activity = awaiting ? "waiting" : "unavailable";
     });
-  }
+  });
 }
 
 async function fetchChainProgress() {
@@ -610,7 +672,32 @@ async function fetchChainProgress() {
     if (!response.ok) throw new Error("Chain feed unavailable");
 
     const payload = await response.json();
-    if (!Array.isArray(payload.chains)) throw new Error("Missing chain progress");
+    if (!isObject(payload) || payload.version !== 1 || !isIsoTimestamp(payload.generatedAt)) {
+      throw new Error("Invalid chain progress");
+    }
+    if (!Array.isArray(payload.chains) || !Array.isArray(payload.observations)) throw new Error("Missing chain progress");
+    if (payload.chains.length !== monitoredChainIds.size || payload.observations.length > monitoredChainIds.size) {
+      throw new Error("Unexpected chain progress cardinality");
+    }
+    if (!Number.isSafeInteger(payload.refreshMs) || !Number.isSafeInteger(payload.freshnessSeconds)) {
+      throw new Error("Invalid chain progress policy");
+    }
+
+    const observationChains = new Set();
+    for (const observation of payload.observations) {
+      if (!isObject(observation) || typeof observation.chain !== "string") throw new Error("Invalid signed observation");
+      const chainId = Number(observation.chain);
+      if (!monitoredChainIds.has(chainId) || String(chainId) !== observation.chain || observationChains.has(chainId)) {
+        throw new Error("Unexpected signed observation");
+      }
+      observationChains.add(chainId);
+    }
+
+    const supported = payload.chains.filter((chain) => isValidChainRecord(chain, payload));
+    if (supported.length !== monitoredChainIds.size) throw new Error("Invalid monitored chain");
+    if (new Set(supported.map((chain) => chain.expectedChainId)).size !== supported.length) {
+      throw new Error("Duplicate monitored chain");
+    }
     return payload;
   } finally {
     window.clearTimeout(timeout);

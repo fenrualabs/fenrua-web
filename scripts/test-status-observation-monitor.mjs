@@ -24,6 +24,34 @@ assert.match(monitor, /observation\.observed_at !== chain\.checkedAt/, "The moni
 assert.match(monitor, /chain\.observationSequence !== observation\.sequence/, "The monitor must bind the displayed sequence to the signed observation.");
 assert.match(monitor, /No current state is asserted/, "Unavailable monitor responses must fail closed.");
 assert.match(monitor, /advanced in this browser session/, "Sequence progress must be scoped to the current browser session.");
+assert.match(monitor, /highWater: new Map\(\)/, "The monitor must retain a browser-session high-water record per chain.");
+assert.match(monitor, /candidate\.keyId !== previous\.keyId/, "An unannounced verification-key change must be rejected.");
+assert.match(monitor, /candidate\.sequence < previous\.sequence/, "A lower signed sequence must be rejected.");
+assert.match(monitor, /candidate\.signature !== previous\.signature/, "Same-sequence equivocation must be rejected.");
+assert.match(
+  monitor,
+  /candidate\.sequence === previous\.sequence[\s\S]{0,500}candidate\.observedAt !== previous\.observedAt/,
+  "Same-sequence acceptance must require an identical signed observation time."
+);
+assert.match(
+  monitor,
+  /candidate\.sequence === previous\.sequence[\s\S]{0,500}candidate\.confirmedBlock !== previous\.confirmedBlock/,
+  "Same-sequence acceptance must require an identical signed block payload."
+);
+assert.match(monitor, /Date\.parse\(candidate\.observedAt\) < Date\.parse\(previous\.observedAt\)/, "Observation-time rollback must be rejected.");
+assert.match(monitor, /observation\.observed_block < previous\.confirmedBlock/, "Confirmed-block rollback must be rejected.");
+for (const reason of [
+  "verification-key change rejected",
+  "signed sequence rollback rejected",
+  "same-sequence equivocation rejected",
+  "observation-time rollback rejected",
+  "confirmed-block rollback rejected",
+]) {
+  assert.match(monitor, new RegExp(reason), `The monitor must expose the fail-closed reason: ${reason}.`);
+}
+assert.match(monitor, /browser-session high-water preserved/, "A rejected candidate must preserve the last accepted high-water record.");
+assert.match(monitor, /state: "failure", sequence: null/, "A rejected candidate must be represented as a failure, never live or current.");
+assert.doesNotMatch(monitor, /signed sequence[^\n]*reset/i, "Sequence rollback must never be presented as a benign reset.");
 assert.doesNotMatch(monitor, /FENRUA_[A-Z_]+/, "The browser monitor must not read protected configuration.");
 assert.doesNotMatch(monitor, /https?:\/\//, "The browser monitor must not contact an external or protected endpoint.");
 

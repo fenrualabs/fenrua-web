@@ -19,3 +19,16 @@ deliverables/
 .well-known/fenrua-release.json
 playwright-report/
 test-results/
+
+# Audit, review, test-output, and builder reports belong outside this repository.
+reports/
+audit-reports/
+**/*_REPORT.*
+**/*_AUDIT.*
+**/*_REAUDIT.*
+**/*_REVIEW.*
+**/*_CLOSURE.*
+**/*_ACCEPTANCE_MATRIX.*
+**/*_SCREENSHOT_MATRIX.*
+**/*.sarif
+**/junit*.xml

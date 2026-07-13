@@ -1,5 +1,5 @@
-import { cpSync, existsSync, mkdirSync, rmSync, statSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -18,15 +18,12 @@ export const publicEntries = [
   "docs",
   "evidence",
   "examples",
-  "fenpresale",
-  "fenswap",
   "index.html",
   "kernel",
   "kernel-status.js",
   "legal",
+  "llms.txt",
   "mobile-chain-status.js",
-  "nexus",
-  "privacy",
   "research",
   "robots.txt",
   "security",
@@ -36,12 +33,39 @@ export const publicEntries = [
   "styles.css",
   "support",
   "technical-data.js",
-  "terms",
   "toolchain",
   "utilities",
   "verify",
-  "wallet",
 ];
+
+const releaseManifestPath = ".well-known/fenrua-release.json";
+
+function walkFiles(source) {
+  if (!statSync(source).isDirectory()) return [source];
+  return readdirSync(source, { withFileTypes: true }).flatMap((entry) => {
+    const child = resolve(source, entry.name);
+    return entry.isDirectory() ? walkFiles(child) : [child];
+  });
+}
+
+export function publicArtifactFiles() {
+  return publicEntries
+    .flatMap((entry) => {
+      const source = resolve(root, entry);
+      if (!existsSync(source) && entry === ".well-known") return [];
+      if (!existsSync(source)) throw new Error(`Public build input is missing: ${entry}`);
+      return walkFiles(source);
+    })
+    .map((file) => relative(root, file).split(sep).join("/"))
+    .filter((file) => file !== releaseManifestPath && !file.endsWith("/.gitkeep"))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+export function publicRouteFor(relativePath) {
+  if (relativePath === "index.html") return "/";
+  if (relativePath.endsWith("/index.html")) return `/${relativePath.slice(0, -"/index.html".length)}`;
+  return `/${relativePath}`;
+}
 
 export function stagePublicOutput() {
   for (const entry of publicEntries) {

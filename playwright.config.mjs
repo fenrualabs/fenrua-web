@@ -1,20 +1,29 @@
 import { defineConfig } from "@playwright/test";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const testHost = process.env.FENRUA_TEST_HOST || "127.0.0.2";
+const testPort = process.env.FENRUA_TEST_PORT || "4173";
+const testOrigin = `http://${testHost}:${testPort}`;
+const testOutputDir = process.env.FENRUA_TEST_OUTPUT_DIR || join(tmpdir(), "fenrua-web-playwright-results");
 
 export default defineConfig({
   testDir: "./tests/browser",
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,
+  outputDir: testOutputDir,
   reporter: "line",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: testOrigin,
     browserName: "chromium",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
   webServer: {
     command: "node scripts/serve-browser-test.mjs",
-    url: "http://127.0.0.1:4173/__fenrua_browser_test_health",
+    url: `${testOrigin}/__fenrua_browser_test_health`,
+    env: { FENRUA_TEST_HOST: testHost, PORT: testPort },
     reuseExistingServer: false,
     timeout: 30_000,
   },

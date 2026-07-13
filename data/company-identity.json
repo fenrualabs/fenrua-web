@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "fenrua.company-identity.v1",
+  "legalName": "FENRUA LABS PTY LTD",
+  "displayName": "Fenrua Labs",
+  "abn": "62 700 182 663",
+  "acn": "700 182 663",
+  "registrationDate": "2026-07-13",
+  "companyStatus": "Registered",
+  "abnStatus": "Active from 2026-07-13",
+  "companyType": "Australian Proprietary Company, Limited By Shares",
+  "entityType": "Australian Private Company",
+  "gstStatus": "Registered from 2026-07-13",
+  "registeredOffice": {
+    "locality": "Ultimo",
+    "region": "NSW",
+    "postalCode": "2007",
+    "country": "AU"
+  },
+  "mainBusinessLocation": {
+    "region": "NSW",
+    "postalCode": "2007",
+    "country": "AU"
+  },
+  "regulator": "Australian Securities & Investments Commission",
+  "nextReviewDate": "2027-07-13",
+  "publicContact": "partnerships@fenrua.ai",
+  "registrySources": [
+    {
+      "authority": "Australian Business Register",
+      "url": "https://abr.business.gov.au/ABN/View?id=62700182663",
+      "scope": "Legal name, ABN status, entity type, GST registration, and main business location"
+    },
+    {
+      "authority": "Australian Securities & Investments Commission",
+      "url": "https://asic.gov.au/online-services/search-asics-registers/companies-and-organisations/",
+      "lookup": "700 182 663",
+      "scope": "Company status, type, registration date, next review date, and registered-office locality"
+    }
+  ],
+  "lastVerified": "2026-07-13"
+}

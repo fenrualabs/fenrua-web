@@ -1,20 +1,23 @@
 import { expect, test } from "@playwright/test";
 
-const allowedPaths = new Set(["/evidence", "/status", "/toolchain", "/verify"]);
+const allowedPaths = new Set(["/", "/evidence", "/legal", "/status", "/toolchain", "/verify"]);
+const testHost = process.env.FENRUA_TEST_HOST || "127.0.0.2";
+const testPort = process.env.FENRUA_TEST_PORT || "4173";
+const testOrigin = `http://${testHost}:${testPort}`;
 
 function protectLiveBoundary(page) {
   const failures = [];
   const liveRequests = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:4173") failures.push(`external request: ${request.url()}`);
+    if (url.origin !== testOrigin) failures.push(`external request: ${request.url()}`);
     if (url.pathname.startsWith("/api/") && url.pathname !== "/api/chain-progress") failures.push(`unexpected API request: ${url.pathname}`);
     if (url.pathname === "/kernel-status.js" || url.pathname === "/api/chain-progress") liveRequests.push(url.pathname);
   });
   page.on("framenavigated", (frame) => {
     if (frame !== page.mainFrame()) return;
     const url = new URL(frame.url());
-    if (url.origin === "http://127.0.0.1:4173" && !allowedPaths.has(url.pathname)) failures.push(`unexpected navigation: ${url.pathname}`);
+    if (url.origin === testOrigin && !allowedPaths.has(url.pathname)) failures.push(`unexpected navigation: ${url.pathname}`);
   });
   const assertBoundary = () => {
     expect(failures, failures.join("\n")).toEqual([]);
@@ -63,39 +66,52 @@ async function gotoPublic(page, pathname) {
   await page.waitForLoadState("networkidle");
 }
 
-function monitorPayload({ sequence978 = 2113, sequence521 = 2052 } = {}) {
+function monitorPayload({
+  sequence978 = 2113,
+  sequence521 = 2052,
+  block978 = 333682,
+  block521 = 272007,
+  observed978 = new Date(Date.now() - 7_000).toISOString(),
+  observed521 = new Date(Date.now() - 41_000).toISOString(),
+  signature978 = "signed-978",
+  signature521 = "signed-521",
+  keyId978 = "fenchain-978-observation-v1",
+  keyId521 = "fenchain-521-observation-v1",
+  refreshMs = 20_000,
+} = {}) {
   const generatedAt = new Date().toISOString();
-  const observed978 = new Date(Date.now() - 7_000).toISOString();
-  const observed521 = new Date(Date.now() - 41_000).toISOString();
   const observations = [
     {
       chain: "978",
-      observed_block: 333682,
+      observed_block: block978,
       observed_at: observed978,
       sequence: sequence978,
       source_quorum: 2,
       status: "confirmed",
-      signature: "signed-978",
+      signature: signature978,
+      key_id: keyId978,
     },
     {
       chain: "521",
-      observed_block: 272007,
+      observed_block: block521,
       observed_at: observed521,
       sequence: sequence521,
       source_quorum: 2,
       status: "confirmed",
-      signature: "signed-521",
+      signature: signature521,
+      key_id: keyId521,
     },
   ];
   return {
     version: 1,
     generatedAt,
-    refreshMs: 20_000,
+    refreshMs,
     freshnessSeconds: 90,
     observations,
     chains: [
       {
         expectedChainId: 978,
+        chainId: 978,
         status: "live",
         blockNumber: observations[0].observed_block,
         blockAgeSeconds: 7,
@@ -105,6 +121,7 @@ function monitorPayload({ sequence978 = 2113, sequence521 = 2052 } = {}) {
       },
       {
         expectedChainId: 521,
+        chainId: 521,
         status: "live",
         blockNumber: observations[1].observed_block,
         blockAgeSeconds: 41,
@@ -126,6 +143,95 @@ async function mockPublicMonitor(page, response) {
   });
 }
 
+async function mockSequentialPublicMonitor(page, responses) {
+  let requestCount = 0;
+  await page.route("**/api/chain-progress", async (route) => {
+    const response = responses[Math.min(requestCount, responses.length - 1)];
+    requestCount += 1;
+    if (response instanceof Error) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"unavailable"}' });
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify(response) });
+  });
+  return () => requestCount;
+}
+
+for (const [label, mutate] of [
+  ["unknown schema version", (payload) => { payload.version = 999; }],
+  ["unknown chain state", (payload) => { payload.chains[0].status = "untrusted"; }],
+]) {
+  test(`Overview fails closed on ${label}`, async ({ page }) => {
+    const assertBoundary = protectLiveBoundary(page);
+    const payload = monitorPayload();
+    mutate(payload);
+    await mockPublicMonitor(page, payload);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await gotoPublic(page, "/");
+
+    const card = page.locator('.desktop-chain-progress [data-chain-card="978"]');
+    await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Failure");
+    await expect(card.locator('[data-chain-field="978-block"]')).toHaveText("Observation unavailable");
+    await expect(card).toHaveAttribute("data-status", "unavailable");
+    await expect(page.locator('[data-chain-meta="feed-status"]').first()).toHaveText("retrying");
+    await expect(card).not.toContainText("333,682");
+    assertBoundary();
+  });
+}
+
+test("Overview removes current-state claims after a successful snapshot is followed by feed failure", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const requestCount = await mockSequentialPublicMonitor(page, [monitorPayload({ refreshMs: 60_000 }), new Error("unavailable")]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/");
+
+  const card = page.locator('.desktop-chain-progress [data-chain-card="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Live");
+  await expect(card.locator('[data-chain-field="978-block"]')).toHaveText("333,682");
+  await expect(card).toHaveAttribute("data-status", "confirmed");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Failure");
+  await expect(card.locator('[data-chain-field="978-block"]')).toHaveText(/Last accepted 333,682 · not current/);
+  await expect(card.locator('[data-chain-field="978-checked"]')).toHaveText("no current observation");
+  await expect(card.locator('[data-chain-field="978-confidence"]')).toHaveText("Unavailable");
+  await expect(card).toHaveAttribute("data-status", "unavailable");
+  await expect(page.locator('[data-chain-meta="feed-status"]').first()).toHaveText("retrying");
+  assertBoundary();
+});
+
+test("Overview accepts a fail-closed unavailable chain without asserting a current observation", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const payload = monitorPayload({ refreshMs: 60_000 });
+  payload.observations = payload.observations.filter((observation) => observation.chain !== "978");
+  payload.chains[0] = {
+    expectedChainId: 978,
+    chainId: null,
+    status: "unavailable",
+    blockNumber: null,
+    blockAgeSeconds: null,
+    checkedAt: payload.generatedAt,
+    observationSequence: null,
+    confirmation: { evidenceSource: "unavailable", confidence: "unavailable" },
+  };
+  await mockPublicMonitor(page, payload);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/");
+
+  const unavailableCard = page.locator('.desktop-chain-progress [data-chain-card="978"]');
+  await expect(unavailableCard.locator('[data-chain-field="978-status"]')).toHaveText("Unavailable");
+  await expect(unavailableCard.locator('[data-chain-field="978-block"]')).toHaveText("Observation unavailable");
+  await expect(unavailableCard.locator('[data-chain-field="978-confidence"]')).toHaveText("Unavailable");
+  await expect(unavailableCard).toHaveAttribute("data-status", "unavailable");
+
+  const liveCard = page.locator('.desktop-chain-progress [data-chain-card="521"]');
+  await expect(liveCard.locator('[data-chain-field="521-status"]')).toHaveText("Live");
+  await expect(liveCard.locator('[data-chain-field="521-block"]')).toHaveText("272,007");
+  assertBoundary();
+});
+
 test("Evidence keeps the Overview mobile live blocks without extra API access", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   await page.setViewportSize({ width: 320, height: 900 });
@@ -135,6 +241,20 @@ test("Evidence keeps the Overview mobile live blocks without extra API access", 
   await noHorizontalOverflow(page);
   await page.setViewportSize({ width: 390, height: 900 });
   await expectOverviewMobileHeaderPlacement(page);
+  assertBoundary();
+});
+
+test("Legal Centre publishes the verified company identity without a transaction surface", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await gotoPublic(page, "/legal");
+  await expect(page.getByRole("heading", { name: "Legal and Company Centre" })).toBeVisible();
+  const companyFacts = page.locator(".company-facts");
+  await expect(companyFacts.getByText("ABN 62 700 182 663", { exact: true })).toBeVisible();
+  await expect(companyFacts.getByText("ACN 700 182 663", { exact: true })).toBeVisible();
+  await expect(page.locator("form, [data-wallet-connect], [data-checkout], [data-payment-receiver]")).toHaveCount(0);
+  await expectMobileLiveBlocks(page);
+  await noHorizontalOverflow(page);
   assertBoundary();
 });
 
@@ -166,6 +286,19 @@ test("Status uses the permitted external relative-time script and responsive gri
   const stateGrid = page.locator(".state-grid");
   await expect.poll(() => stateGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length)).toBeGreaterThanOrEqual(3);
   await expect(page.locator(".status-monitor-timestamp").first()).toHaveCSS("display", "grid");
+  const releaseTable = page.getByRole("region", { name: "Static public release records" });
+  await expect.poll(() => releaseTable.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+  const longArtifact = releaseTable.locator('.status-artifact-value[title="/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md"]');
+  await expect(longArtifact).toHaveCSS("-webkit-line-clamp", "2");
+  await expect.poll(() => longArtifact.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return element.getBoundingClientRect().height <= Number.parseFloat(style.lineHeight) * 2 + 1;
+  })).toBe(true);
+  await expect.poll(() => releaseTable.locator('td[data-label="Current limitation"]').first().evaluate((cell) => {
+    const cellBox = cell.getBoundingClientRect();
+    const tableBox = cell.closest(".status-table").getBoundingClientRect();
+    return cellBox.left >= tableBox.left - 1 && cellBox.right <= tableBox.right + 1;
+  })).toBe(true);
   await expect(page.locator("[data-chain-card]")).toHaveCount(2);
   assertBoundary();
 });
@@ -196,6 +329,55 @@ test("Status fails closed when the public monitor is unavailable", async ({ page
   assertBoundary();
 });
 
+test("Status rejects a signed rollback, preserves high-water, and recovers only on a later advance", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const initialObservedAt = new Date(Date.now() - 9_000).toISOString();
+  const recoveredObservedAt = new Date(Date.parse(initialObservedAt) + 2_000).toISOString();
+  const initial = monitorPayload({ observed978: initialObservedAt, refreshMs: 60_000 });
+  const rollback = structuredClone(initial);
+  rollback.generatedAt = new Date().toISOString();
+  rollback.observations[0].sequence -= 1;
+  rollback.observations[0].observed_block -= 1;
+  rollback.observations[0].signature = "signed-978-rollback";
+  rollback.chains[0].observationSequence = rollback.observations[0].sequence;
+  rollback.chains[0].blockNumber = rollback.observations[0].observed_block;
+  const recovered = structuredClone(initial);
+  recovered.generatedAt = new Date().toISOString();
+  recovered.observations[0].sequence += 1;
+  recovered.observations[0].observed_block += 1;
+  recovered.observations[0].observed_at = recoveredObservedAt;
+  recovered.observations[0].signature = "signed-978-recovered";
+  recovered.chains[0].observationSequence = recovered.observations[0].sequence;
+  recovered.chains[0].blockNumber = recovered.observations[0].observed_block;
+  recovered.chains[0].checkedAt = recoveredObservedAt;
+
+  const requestCount = await mockSequentialPublicMonitor(page, [initial, rollback, recovered]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/status");
+  const row = page.locator('[data-status-monitor-row="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+  await expect(row.locator("[data-status-monitor-sequence]")).toContainText("2,113");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Failure");
+  await expect(row.locator("[data-status-monitor-source]")).toContainText("signed sequence rollback rejected");
+  await expect(row.locator("[data-status-monitor-sequence]")).toHaveText(/Rejected signed sequence 2,112.*last accepted 2,113/);
+  await expect(row.locator("[data-status-monitor-block]")).toHaveText(/Last accepted 333,682.*not current/);
+  await expect(row.locator("[data-status-monitor-time]")).toContainText("no current state is asserted");
+  await expect(row.locator("[data-status-monitor-time] time")).toHaveCount(0);
+  await expect(row).not.toContainText(/reset/i);
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(3);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+  await expect(row.locator("[data-status-monitor-sequence]")).toHaveText(/2,114.*advanced in this browser session/);
+  await expect(row.locator("[data-status-monitor-block]")).toHaveText("333,683");
+  await expect(row.locator("[data-status-monitor-time] time")).toHaveAttribute("datetime", recoveredObservedAt);
+  assertBoundary();
+});
+
 for (const width of [768, 820]) {
   test(`Toolchain keeps two summary columns at ${width}px`, async ({ page }) => {
     const assertBoundary = protectLiveBoundary(page);
@@ -212,7 +394,7 @@ for (const width of [768, 820]) {
 
 test("Verify table supports keyboard scrolling and forced-colors focus", async ({ browser }) => {
   const context = await browser.newContext({
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: testOrigin,
     forcedColors: "active",
     viewport: { width: 720, height: 900 },
   });

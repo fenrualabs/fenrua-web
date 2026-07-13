@@ -20,8 +20,7 @@
     refreshMs: initialRefreshMs,
     retryMs: initialRefreshMs,
     snapshot: null,
-    sequences: new Map(),
-    sequenceLabels: new Map(),
+    highWater: new Map(),
     announcementKey: "",
   };
 
@@ -57,6 +56,7 @@
     if (state === "delayed") return { label: "Stale", className: "status-stale" };
     if (state === "partial") return { label: "Partial", className: "status-partial" };
     if (state === "waiting") return { label: "Awaiting signed observation", className: "status-stale" };
+    if (state === "failure") return { label: "Failure", className: "status-failure" };
     return { label: "Unavailable", className: "status-failure" };
   }
 
@@ -97,8 +97,11 @@
 
   function signedObservation(snapshot, chain) {
     if (!isObject(chain) || !monitoredChains.includes(chain.expectedChainId) || !validStates.has(chain.status)) return null;
-    const observation = snapshot.observations.find((candidate) => String(candidate?.chain) === String(chain.expectedChainId));
-    if (!isObject(observation) || typeof observation.signature !== "string" || observation.signature.length === 0) return null;
+    const matches = snapshot.observations.filter((candidate) => String(candidate?.chain) === String(chain.expectedChainId));
+    if (matches.length !== 1) return null;
+    const [observation] = matches;
+    if (!isObject(observation) || typeof observation.key_id !== "string" || observation.key_id.length === 0) return null;
+    if (typeof observation.signature !== "string" || observation.signature.length === 0) return null;
     if (!isIsoTimestamp(observation.observed_at) || observation.observed_at !== chain.checkedAt) return null;
     if (!Number.isSafeInteger(observation.sequence) || observation.sequence < 1 || chain.observationSequence !== observation.sequence) return null;
 
@@ -130,19 +133,49 @@
     return age === null || age > freshnessSeconds ? "delayed" : "live";
   }
 
-  function sequenceLabel(chain, sequence) {
-    const previous = monitor.sequences.get(chain);
-    if (!Number.isSafeInteger(previous)) {
-      monitor.sequences.set(chain, sequence);
-      monitor.sequenceLabels.set(chain, "current");
-    } else if (sequence > previous) {
-      monitor.sequences.set(chain, sequence);
-      monitor.sequenceLabels.set(chain, "advanced in this browser session");
-    } else if (sequence < previous) {
-      monitor.sequences.set(chain, sequence);
-      monitor.sequenceLabels.set(chain, "reset in this browser session");
+  function assessMonotonicity(chain, observation) {
+    const previous = monitor.highWater.get(chain);
+    const candidate = {
+      keyId: observation.key_id,
+      sequence: observation.sequence,
+      confirmedBlock: isSafeNonNegativeInteger(observation.observed_block) ? observation.observed_block : previous?.confirmedBlock ?? null,
+      observedAt: observation.observed_at,
+      signature: observation.signature,
+    };
+
+    if (!previous) {
+      monitor.highWater.set(chain, candidate);
+      return { accepted: true, label: "current", highWater: candidate };
     }
-    return `Signed sequence ${formatNumber(sequence)} · ${monitor.sequenceLabels.get(chain) || "current"}`;
+    if (candidate.keyId !== previous.keyId) {
+      return { accepted: false, reason: "verification-key change rejected", highWater: previous };
+    }
+    if (candidate.sequence < previous.sequence) {
+      return { accepted: false, reason: "signed sequence rollback rejected", highWater: previous };
+    }
+    if (candidate.sequence === previous.sequence) {
+      if (
+        candidate.signature !== previous.signature ||
+        candidate.observedAt !== previous.observedAt ||
+        candidate.confirmedBlock !== previous.confirmedBlock
+      ) {
+        return { accepted: false, reason: "same-sequence equivocation rejected", highWater: previous };
+      }
+      return { accepted: true, label: "current", highWater: previous };
+    }
+    if (Date.parse(candidate.observedAt) < Date.parse(previous.observedAt)) {
+      return { accepted: false, reason: "observation-time rollback rejected", highWater: previous };
+    }
+    if (
+      isSafeNonNegativeInteger(observation.observed_block) &&
+      isSafeNonNegativeInteger(previous.confirmedBlock) &&
+      observation.observed_block < previous.confirmedBlock
+    ) {
+      return { accepted: false, reason: "confirmed-block rollback rejected", highWater: previous };
+    }
+
+    monitor.highWater.set(chain, candidate);
+    return { accepted: true, label: "advanced in this browser session", highWater: candidate };
   }
 
   function setObservationTime(row, observedAt) {
@@ -178,6 +211,25 @@
     setText(row, "[data-status-monitor-freshness]", "No current freshness claim");
   }
 
+  function renderRejected(row, observation, assessment) {
+    setState(row, "failure");
+    clearObservation(row, "Signed observation rejected; no current state is asserted.");
+    setText(
+      row,
+      "[data-status-monitor-sequence]",
+      `Rejected signed sequence ${formatNumber(observation.sequence)} · last accepted ${formatNumber(assessment.highWater.sequence)}`
+    );
+    setText(
+      row,
+      "[data-status-monitor-block]",
+      isSafeNonNegativeInteger(assessment.highWater.confirmedBlock)
+        ? `Last accepted ${formatNumber(assessment.highWater.confirmedBlock)} in this browser session; not current`
+        : "No current confirmed block"
+    );
+    setText(row, "[data-status-monitor-source]", `Failure — ${assessment.reason}`);
+    setText(row, "[data-status-monitor-freshness]", "No current freshness claim; browser-session high-water preserved");
+  }
+
   function renderChain(snapshot, chain) {
     const chainId = chain?.expectedChainId;
     const row = rows.get(chainId);
@@ -186,13 +238,25 @@
     const observation = signedObservation(snapshot, chain);
     const state = effectiveState(chain, observation, snapshot.freshnessSeconds);
     if (!observation) {
-      renderUnavailable(row, state, state === "waiting" ? "Awaiting a signed public observation." : "No current signed observation.");
-      return { chain: chainId, state, sequence: null };
+      const assertedSignedState = chain?.status === "live" || chain?.status === "delayed" || chain?.status === "partial";
+      const renderedState = assertedSignedState ? "failure" : state;
+      renderUnavailable(
+        row,
+        renderedState,
+        state === "waiting" ? "Awaiting a signed public observation." : "Signed observation binding failed; no current state is asserted."
+      );
+      return { chain: chainId, state: renderedState, sequence: null };
+    }
+
+    const monotonicity = assessMonotonicity(chainId, observation);
+    if (!monotonicity.accepted) {
+      renderRejected(row, observation, monotonicity);
+      return { chain: chainId, state: "failure", sequence: null };
     }
 
     setState(row, state);
     setObservationTime(row, observation.observed_at);
-    setText(row, "[data-status-monitor-sequence]", sequenceLabel(chainId, observation.sequence));
+    setText(row, "[data-status-monitor-sequence]", `Signed sequence ${formatNumber(observation.sequence)} · ${monotonicity.label}`);
     setText(
       row,
       "[data-status-monitor-block]",
@@ -238,7 +302,8 @@
     if (!Array.isArray(payload.chains) || !Array.isArray(payload.observations)) throw new Error("Incomplete public monitor response");
     const chains = new Map();
     for (const chain of payload.chains) {
-      if (!isObject(chain) || !monitoredChains.includes(chain.expectedChainId) || chains.has(chain.expectedChainId)) continue;
+      if (!isObject(chain) || !monitoredChains.includes(chain.expectedChainId)) continue;
+      if (chains.has(chain.expectedChainId)) throw new Error("Duplicate monitored chain");
       chains.set(chain.expectedChainId, chain);
     }
     if (chains.size !== monitoredChains.length) throw new Error("Missing monitored chain");

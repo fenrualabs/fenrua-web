@@ -3,6 +3,7 @@ import { generateKeyPairSync, sign as signObservation } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 const originalFetch = globalThis.fetch;
+const maxGatewayResponseBytesForTest = 2_048;
 const environmentKeys = [
   "FENRUA_OBSERVATION_GATEWAY_URL",
   "FENRUA_OBSERVATION_READ_TOKEN",
@@ -64,20 +65,58 @@ async function callKeyHandler(handlerToCall, route, { method = "GET", url = rout
   return response;
 }
 
-function gatewayResponse(payload, { ok = true, contentLength } = {}) {
+function gatewayResponse(payload, { ok = true, contentLength, omitContentLength = false, chunks } = {}) {
   const text = typeof payload === "string" ? payload : JSON.stringify(payload);
   const length = contentLength ?? Buffer.byteLength(text, "utf8");
-  return {
+  const bodyChunks = (chunks ?? [Buffer.from(text, "utf8")]).map((chunk) => Buffer.from(chunk));
+  const metrics = {
+    canceled: 0,
+    getReaderCalls: 0,
+    reads: 0,
+    released: 0,
+    textCalls: 0,
+  };
+  const response = {
     ok,
     headers: {
       get(name) {
-        return name.toLowerCase() === "content-length" ? String(length) : null;
+        if (name.toLowerCase() !== "content-length" || omitContentLength) return null;
+        return String(length);
+      },
+    },
+    body: {
+      async cancel() {
+        metrics.canceled += 1;
+      },
+      getReader() {
+        metrics.getReaderCalls += 1;
+        let chunkIndex = 0;
+        let canceled = false;
+        return {
+          async read() {
+            metrics.reads += 1;
+            if (canceled || chunkIndex >= bodyChunks.length) return { done: true, value: undefined };
+            const value = bodyChunks[chunkIndex];
+            chunkIndex += 1;
+            return { done: false, value };
+          },
+          async cancel() {
+            metrics.canceled += 1;
+            canceled = true;
+          },
+          releaseLock() {
+            metrics.released += 1;
+          },
+        };
       },
     },
     async text() {
+      metrics.textCalls += 1;
       return text;
     },
   };
+  response.metrics = metrics;
+  return response;
 }
 
 function observation(chain, overrides = {}) {
@@ -134,9 +173,31 @@ function assertSanitized(snapshot) {
     "customer",
     "block_hash",
   ];
-  const encoded = JSON.stringify(snapshot).toLowerCase();
+  const publicKeys = new Set();
+  const collectPublicKeys = (value) => {
+    if (Array.isArray(value)) {
+      for (const item of value) collectPublicKeys(item);
+      return;
+    }
+    if (value === null || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      publicKeys.add(key.toLowerCase());
+      collectPublicKeys(child);
+    }
+  };
+  collectPublicKeys(snapshot);
   for (const field of forbidden) {
-    assert.ok(!encoded.includes(field), `Public chain payload must not include ${field}.`);
+    assert.ok(!publicKeys.has(field), `Public chain payload must not include the ${field} field.`);
+  }
+
+  const encoded = JSON.stringify(snapshot);
+  for (const secret of [
+    "observation-978.example.test",
+    "observation-521.example.test",
+    "test-978-read-token",
+    "test-521-read-token",
+  ]) {
+    assert.ok(!encoded.includes(secret), `Public chain payload must not disclose ${secret}.`);
   }
 
   assert.equal(snapshot.chains.length, 2);
@@ -205,7 +266,39 @@ try {
   assert.doesNotMatch(chainClient, /"0 blocks"|lastChainBlocks|lastChainCheckedAt|Private telemetry not published/);
   assert.match(chainClient, /secondsSince\(payload\.generatedAt\)/);
   assert.match(chainClient, /const chainRefreshMs = 20_000/);
+  assert.match(chainClient, /highWater:\s*new Map\(\)/, "Overview cards must retain a browser-session high-water record per chain.");
+  assert.doesNotMatch(chainClient, /sequences:\s*new Map\(\)/, "Overview cards must not track sequence alone.");
+  for (const reason of [
+    "verification-key change rejected",
+    "signed sequence rollback rejected",
+    "same-sequence equivocation rejected",
+    "observation-time rollback rejected",
+    "confirmed-block rollback rejected",
+  ]) {
+    assert.match(chainClient, new RegExp(reason), `Overview cards must expose the fail-closed reason: ${reason}.`);
+  }
+  for (const signedField of ["key_id", "sequence", "observed_at", "observed_block", "signature"]) {
+    assert.match(chainClient, new RegExp(`observation\\.${signedField}`), `Overview high-water logic must bind ${signedField}.`);
+  }
+  assert.match(
+    chainClient,
+    /candidate\.sequence === previous\.sequence[\s\S]{0,500}candidate\.observedAt === previous\.observedAt/,
+    "Overview same-sequence acceptance must require an identical signed observation time."
+  );
+  assert.match(
+    chainClient,
+    /candidate\.sequence === previous\.sequence[\s\S]{0,500}candidate\.confirmedBlock === previous\.confirmedBlock/,
+    "Overview same-sequence acceptance must require an identical signed block payload."
+  );
+  assert.match(chainClient, /browser-session high-water preserved/, "A rejected Overview candidate must preserve the last accepted high-water record.");
+  assert.match(chainClient, /no current observation/i, "A rejected Overview candidate must not be rendered as current.");
+  assert.match(chainClient, /Last accepted[^\n]*not current/, "Overview may show the preserved high-water block only when explicitly marked non-current.");
+  assert.doesNotMatch(chainClient, /signed sequence[^\n]*reset/i, "Overview sequence rollback must never be presented as a benign reset.");
   assert.match(chainApi, /const refreshMs = 20_000/);
+  assert.match(chainApi, /upstream\.body\?\.getReader\?\.\(\)/);
+  assert.match(chainApi, /totalBytes > maxGatewayResponseBytes/);
+  assert.match(chainApi, /controller\.abort\(\)[\s\S]{0,200}reader\.cancel/);
+  assert.doesNotMatch(chainApi, /upstream\.text\(/, "The gateway must never buffer an unbounded response with Response.text().");
   assert.doesNotMatch(chainApi, /FENCHAIN_(?:N521_)?RPC_URL|eth_getBlockByNumber|eth_chainId|jsonrpc/);
 
   configureGateways();
@@ -285,6 +378,21 @@ try {
 
   globalThis.fetch = twoGatewayFetch({
     "978": {
+      status: "unavailable",
+      observed_block: null,
+      source_quorum: 0,
+    },
+  });
+  const signedUnavailable = await callHandler({ headers: { "x-forwarded-for": "198.51.100.8" } });
+  assert.equal(signedUnavailable.statusCode, 200);
+  assert.equal(signedUnavailable.body.chains[0].status, "unavailable");
+  assert.equal(signedUnavailable.body.chains[0].observationSequence, null);
+  assert.equal(signedUnavailable.body.observations.some((record) => record.chain === "978"), false);
+  assert.equal(signedUnavailable.body.observations.some((record) => record.chain === "521"), true);
+  assertSanitized(signedUnavailable.body);
+
+  globalThis.fetch = twoGatewayFetch({
+    "978": {
       observed_block: null,
       source_quorum: 1,
       status: "partial",
@@ -297,23 +405,105 @@ try {
   assert.equal(partial.body.chains[0].observationSequence, 41);
   assertSanitized(partial.body);
 
-  globalThis.fetch = async () => gatewayResponse("x".repeat(2_049), { contentLength: 2_049 });
-  const oversized = await callHandler({ headers: { "x-forwarded-for": "198.51.100.9" } });
-  assert.equal(oversized.statusCode, 200);
-  assert.ok(oversized.body.chains.every((chain) => chain.status === "unavailable"));
-  assert.deepEqual(oversized.body.observations, []);
-  assertSanitized(oversized.body);
+  const nonSuccessResponses = [];
+  globalThis.fetch = async () => {
+    const response = gatewayResponse("x".repeat(4_096), {
+      ok: false,
+      omitContentLength: true,
+      chunks: [Buffer.alloc(1_024, 0x78), Buffer.alloc(3_072, 0x78)],
+    });
+    nonSuccessResponses.push(response);
+    return response;
+  };
+  const nonSuccess = await callHandler({ headers: { "x-forwarded-for": "198.51.100.12" } });
+  assert.equal(nonSuccess.statusCode, 200);
+  assert.ok(nonSuccess.body.chains.every((chain) => chain.status === "unavailable"));
+  assert.deepEqual(nonSuccess.body.observations, []);
+  assert.equal(nonSuccessResponses.length, 2);
+  for (const response of nonSuccessResponses) {
+    assert.equal(response.metrics.canceled, 1, "A non-success gateway body must be canceled immediately.");
+    assert.equal(response.metrics.getReaderCalls, 0, "A non-success gateway body must not be read.");
+    assert.equal(response.metrics.reads, 0);
+    assert.equal(response.metrics.textCalls, 0);
+  }
+  assertSanitized(nonSuccess.body);
+
+  const declaredOversizeResponses = [];
+  globalThis.fetch = async () => {
+    const response = gatewayResponse("x".repeat(2_049), { contentLength: 2_049 });
+    declaredOversizeResponses.push(response);
+    return response;
+  };
+  const declaredOversize = await callHandler({ headers: { "x-forwarded-for": "198.51.100.9" } });
+  assert.equal(declaredOversize.statusCode, 200);
+  assert.ok(declaredOversize.body.chains.every((chain) => chain.status === "unavailable"));
+  assert.deepEqual(declaredOversize.body.observations, []);
+  assert.equal(declaredOversizeResponses.length, 2);
+  for (const response of declaredOversizeResponses) {
+    assert.equal(response.metrics.getReaderCalls, 0, "A declared oversized response must be rejected before reading its body.");
+    assert.equal(response.metrics.canceled, 1, "A declared oversized response body must be canceled.");
+    assert.equal(response.metrics.reads, 0);
+    assert.equal(response.metrics.textCalls, 0);
+  }
+  assertSanitized(declaredOversize.body);
+
+  const chunkedOversizeResponses = [];
+  globalThis.fetch = async () => {
+    const response = gatewayResponse("unused", {
+      omitContentLength: true,
+      chunks: [Buffer.alloc(1_024, 0x78), Buffer.alloc(1_024, 0x78), Buffer.alloc(1, 0x78), Buffer.alloc(512, 0x78)],
+    });
+    chunkedOversizeResponses.push(response);
+    return response;
+  };
+  const chunkedOversize = await callHandler({ headers: { "x-forwarded-for": "198.51.100.10" } });
+  assert.equal(chunkedOversize.statusCode, 200);
+  assert.ok(chunkedOversize.body.chains.every((chain) => chain.status === "unavailable"));
+  assert.deepEqual(chunkedOversize.body.observations, []);
+  assert.equal(chunkedOversizeResponses.length, 2);
+  for (const response of chunkedOversizeResponses) {
+    assert.equal(response.metrics.reads, 3, "The reader must stop at the first byte above the 2,048-byte cap.");
+    assert.equal(response.metrics.canceled, 1, "An oversized chunked stream must be canceled.");
+    assert.equal(response.metrics.textCalls, 0);
+  }
+  assertSanitized(chunkedOversize.body);
+
+  const exactBoundaryResponses = [];
+  globalThis.fetch = async (endpoint) => {
+    const chain = endpoint === "https://observation-978.example.test/status" ? "978" : "521";
+    const serialized = JSON.stringify(observation(chain));
+    const paddingLength = maxGatewayResponseBytesForTest - Buffer.byteLength(serialized, "utf8");
+    assert.ok(paddingLength >= 0);
+    const encoded = Buffer.from(`${serialized}${" ".repeat(paddingLength)}`, "utf8");
+    assert.equal(encoded.byteLength, maxGatewayResponseBytesForTest);
+    const response = gatewayResponse("unused", {
+      omitContentLength: true,
+      chunks: [encoded.subarray(0, 1_024), encoded.subarray(1_024)],
+    });
+    exactBoundaryResponses.push(response);
+    return response;
+  };
+  const exactBoundary = await callHandler({ headers: { "x-forwarded-for": "198.51.100.11" } });
+  assert.equal(exactBoundary.statusCode, 200);
+  assert.ok(exactBoundary.body.chains.every((chain) => chain.status === "live"));
+  assert.equal(exactBoundary.body.observations.length, 2);
+  for (const response of exactBoundaryResponses) {
+    assert.equal(response.metrics.reads, 3, "The exact boundary must be read through the terminal stream record.");
+    assert.equal(response.metrics.canceled, 0);
+    assert.equal(response.metrics.textCalls, 0);
+  }
+  assertSanitized(exactBoundary.body);
 
   configureGateways();
-  const key978 = await callKeyHandler(chain978KeyHandler, "/api/chain-observation-key", {
+  const metadata978 = await callKeyHandler(chain978KeyHandler, "/api/chain-observation-key", {
     headers: { "x-forwarded-for": "203.0.113.1" },
   });
-  const key521 = await callKeyHandler(chain521KeyHandler, "/api/chain-n521-observation-key", {
+  const metadata521 = await callKeyHandler(chain521KeyHandler, "/api/chain-n521-observation-key", {
     headers: { "x-forwarded-for": "203.0.113.2" },
   });
   for (const [metadata, expectedKeyId, expectedPublicKey] of [
-    [key978, "fenchain-978-observation-v1", publicKeys["978"]],
-    [key521, "fenchain-521-observation-v1", publicKeys["521"]],
+    [metadata978, "fenchain-978-observation-v1", publicKeys["978"]],
+    [metadata521, "fenchain-521-observation-v1", publicKeys["521"]],
   ]) {
     assert.equal(metadata.statusCode, 200);
     assert.deepEqual(Object.keys(metadata.body).sort(), [
@@ -348,7 +538,7 @@ try {
     JSON.stringify({
       status: "ok",
       scope: "dual-public-observation-gateway",
-      cases: 12,
+      cases: 15,
       rawRpcForwarding: false,
       fakeN521Telemetry: false,
     })

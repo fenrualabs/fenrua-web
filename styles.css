@@ -115,6 +115,7 @@ main > section:not(#chain-progress) {
 }
 
 .site-header {
+  --dim: #a7aca9;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -342,6 +343,7 @@ main > section:not(#chain-progress) {
 }
 
 .desktop-chain-progress {
+  --dim: #7f8984;
   display: none;
 }
 
@@ -1903,6 +1905,8 @@ td {
   max-width: 100%;
   color: var(--green);
   white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .evidence-table table {
@@ -1925,6 +1929,39 @@ td {
 
 .toolchain-table td:nth-child(8) {
   min-width: 18rem;
+}
+
+.static-release-table table {
+  table-layout: fixed;
+  min-width: 68rem;
+}
+
+.static-release-table th:nth-child(4),
+.static-release-table td:nth-child(4) {
+  width: 12rem;
+}
+
+.static-release-table th:nth-child(7),
+.static-release-table td:nth-child(7) {
+  width: 15rem;
+}
+
+.static-release-table th,
+.static-release-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.status-artifact-value {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .timestamp-stack time,
@@ -2338,6 +2375,14 @@ tr:last-child td {
   .evidence-table table,
   .status-table table {
     background: transparent;
+    table-layout: auto;
+  }
+
+  .static-release-table th:nth-child(4),
+  .static-release-table td:nth-child(4),
+  .static-release-table th:nth-child(7),
+  .static-release-table td:nth-child(7) {
+    width: 100%;
   }
 
   .evidence-table thead,
@@ -2499,6 +2544,12 @@ tr:last-child td {
   }
 }
 
+/* A consistent high-area keyboard indicator overrides component hover styling. */
+body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--blue) !important;
+  outline-offset: 3px;
+}
+
 @media (forced-colors: active) {
   .registry,
   .utility-table,
@@ -2531,6 +2582,10 @@ tr:last-child td {
   }
 
   .registry[tabindex]:focus-visible {
-    outline-color: Highlight;
+    outline-color: Highlight !important;
+  }
+
+  body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: Highlight !important;
   }
 }

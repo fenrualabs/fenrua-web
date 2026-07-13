@@ -6,13 +6,22 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const registryPath = path.join(root, "data", "toolchain-registry.json");
 const siteEvidencePath = path.join(root, "data", "site-evidence.json");
+const companyIdentityPath = path.join(root, "data", "company-identity.json");
 const documentRegisterPath = path.join(root, "data", "public-document-register.json");
+const kernelStatusPath = path.join(root, "kernel-status.js");
 const registryRaw = readFileSync(registryPath, "utf8");
 const registry = JSON.parse(registryRaw);
 const registryHash = createHash("sha256").update(registryRaw).digest("hex");
 const siteEvidenceRaw = readFileSync(siteEvidencePath, "utf8");
 const siteEvidence = JSON.parse(siteEvidenceRaw);
+const company = JSON.parse(readFileSync(companyIdentityPath, "utf8"));
 const documentRegister = JSON.parse(readFileSync(documentRegisterPath, "utf8"));
+const kernelStatusSource = readFileSync(kernelStatusPath, "utf8");
+const kernelStatusMatch = kernelStatusSource.match(/\/\* KERNEL_STATUS_START \*\/\s*const kernelStatus = (\{[\s\S]*?\});\s*\/\* KERNEL_STATUS_END \*\//);
+if (!kernelStatusMatch) throw new Error("kernel-status.js does not contain a parseable generated snapshot.");
+const kernelStatus = JSON.parse(kernelStatusMatch[1]);
+const kernelTelemetry = kernelStatus.telemetry;
+if (!kernelTelemetry || !Array.isArray(kernelTelemetry.regressions)) throw new Error("kernel-status.js does not contain public regression metadata.");
 const siteEvidenceHash = createHash("sha256").update(siteEvidenceRaw).digest("hex");
 const generatedIso = siteEvidence.generatedAt;
 if (typeof generatedIso !== "string" || !Number.isFinite(Date.parse(generatedIso))) {
@@ -21,6 +30,40 @@ if (typeof generatedIso !== "string" || !Number.isFinite(Date.parse(generatedIso
 const generatedDate = generatedIso.slice(0, 10);
 const checkMode = process.argv.includes("--check");
 const staleGeneratedFiles = [];
+
+function compactIdentifier(value) {
+  return String(value).replaceAll(/\s/g, "");
+}
+
+function validAbn(value) {
+  const digits = compactIdentifier(value).split("").map(Number);
+  if (digits.length !== 11 || digits.some((digit) => !Number.isInteger(digit))) return false;
+  digits[0] -= 1;
+  const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+  return digits.reduce((sum, digit, index) => sum + digit * weights[index], 0) % 89 === 0;
+}
+
+function validAcn(value) {
+  const digits = compactIdentifier(value).split("").map(Number);
+  if (digits.length !== 9 || digits.some((digit) => !Number.isInteger(digit))) return false;
+  const weighted = digits.slice(0, 8).reduce((sum, digit, index) => sum + digit * (8 - index), 0);
+  return (10 - (weighted % 10)) % 10 === digits[8];
+}
+
+if (company.schemaVersion !== "fenrua.company-identity.v1" || !validAbn(company.abn) || !validAcn(company.acn)) {
+  throw new Error("data/company-identity.json contains an invalid schema, ABN, or ACN.");
+}
+
+const kernelSnapshotDate = kernelTelemetry.sourceReport.reportGeneratedAtUtc.slice(0, 10);
+const snapshotCommit = kernelTelemetry.snapshotCommit;
+const evidenceRevision = kernelTelemetry.frozenEvidenceRevision;
+const kernelEvidenceRecord = (artifact) => {
+  const record = kernelStatus.evidence.find((item) => item.artifact === artifact);
+  if (!record) throw new Error(`kernel-status.js is missing ${artifact}.`);
+  return record;
+};
+const manifestRecord = kernelEvidenceRecord("Genesis Manifest Record");
+const differentialRecord = kernelEvidenceRecord("Differential Validation");
 
 const nav = [
   ["Overview", "/"],
@@ -64,24 +107,24 @@ const evidenceRecords = [
     id: "repository-sync-snapshot",
     artifact: "Repository Sync Snapshot",
     type: "kernel snapshot",
-    claim: "Public kernel telemetry is pinned to an immutable source commit.",
+    claim: "Published kernel evidence metadata is a point-in-time snapshot pinned to an immutable repository commit.",
     status: "active",
     maturity: "Historical public evidence",
     source: "kernel-status.js",
-    hash: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/commit/390f7aeef778ce93db12e16028bc3a788b643c2d",
-    created: "2026-07-12",
-    verified: "2026-07-12",
+    hash: snapshotCommit,
+    sourceUrl: kernelStatus.versionCommitUrl,
+    created: kernelSnapshotDate,
+    verified: kernelSnapshotDate,
     environment: "public Git repository",
-    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    sourceCommit: snapshotCommit,
+    evidenceCommit: evidenceRevision,
     producer: "sync-kernel-status.mjs",
     toolchainSubset: "git, Node.js",
     command: "node scripts/test-kernel-telemetry.mjs",
     supersedes: "none",
     supersededBy: "none",
     revocationState: "historical",
-    limitation: "Historical source evidence; current public release proof is published at /audit.",
+    limitation: "Point-in-time kernel artifact evidence for the named revisions. /audit covers the current website release artifact set only; it does not supersede, reproduce, or re-attest this kernel evidence.",
   },
   {
     id: "frozen-evidence-revision",
@@ -91,20 +134,20 @@ const evidenceRecords = [
     status: "active",
     maturity: "Historical public evidence",
     source: "kernel-status.js",
-    hash: "85ecc97c026b01b576d735501795951dd293b3ca",
-    sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/commit/85ecc97c026b01b576d735501795951dd293b3ca",
-    created: "2026-07-12",
-    verified: "2026-07-12",
+    hash: evidenceRevision,
+    sourceUrl: kernelStatus.evidenceRevisionUrl,
+    created: kernelSnapshotDate,
+    verified: kernelSnapshotDate,
     environment: "public Git repository",
-    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    sourceCommit: snapshotCommit,
+    evidenceCommit: evidenceRevision,
     producer: "sync-kernel-status.mjs",
     toolchainSubset: "git, Node.js",
     command: "node scripts/test-kernel-telemetry.mjs",
     supersedes: "none",
     supersededBy: "none",
     revocationState: "historical",
-    limitation: "Historical source evidence; current public release proof is published at /audit.",
+    limitation: "Point-in-time kernel artifact evidence for the named revisions. /audit covers the current website release artifact set only; it does not supersede, reproduce, or re-attest this kernel evidence.",
   },
   {
     id: "genesis-manifest-record",
@@ -114,20 +157,20 @@ const evidenceRecords = [
     status: "active",
     maturity: "Historical public evidence",
     source: "kernel-status.js",
-    hash: "bd9ec111888ec32e87a5b60776f0118973848e5c096bbed8f25246e7fd3008cd",
-    sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/genesis/reports/manifest.json",
-    created: "2026-07-12",
-    verified: "2026-07-12",
+    hash: manifestRecord.copyValue,
+    sourceUrl: manifestRecord.sourceUrl,
+    created: kernelSnapshotDate,
+    verified: kernelSnapshotDate,
     environment: "public Git repository",
-    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    sourceCommit: snapshotCommit,
+    evidenceCommit: evidenceRevision,
     producer: "fenrua-kernel genesis report",
     toolchainSubset: "Node.js, native P/N521 tests",
     command: "node scripts/test-kernel-telemetry.mjs",
     supersedes: "none",
     supersededBy: "none",
     revocationState: "historical",
-    limitation: "Historical source evidence; current public release proof is published at /audit.",
+    limitation: "Point-in-time kernel artifact evidence for the named revisions. /audit covers the current website release artifact set only; it does not supersede, reproduce, or re-attest this kernel evidence.",
   },
   {
     id: "differential-validation",
@@ -137,20 +180,20 @@ const evidenceRecords = [
     status: "active",
     maturity: "Historical public evidence",
     source: "kernel-status.js",
-    hash: "e74a0ad32730f5129f3f691eb3c9caab31a98596212594d218056e50a1a26c93",
-    sourceUrl: "https://github.com/fenrualabs/fenrua-kernel/blob/390f7aeef778ce93db12e16028bc3a788b643c2d/tests/audit/final-build-validation.json",
-    created: "2026-07-12",
-    verified: "2026-07-12",
+    hash: differentialRecord.copyValue,
+    sourceUrl: differentialRecord.sourceUrl,
+    created: kernelSnapshotDate,
+    verified: kernelSnapshotDate,
     environment: "fenrua-kernel public audit artifact",
-    sourceCommit: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    evidenceCommit: "85ecc97c026b01b576d735501795951dd293b3ca",
+    sourceCommit: snapshotCommit,
+    evidenceCommit: evidenceRevision,
     producer: "fenrua-kernel audit suite",
     toolchainSubset: "CMake, native tests, sanitizer differential tests",
     command: "node scripts/test-kernel-telemetry.mjs",
     supersedes: "none",
     supersededBy: "none",
     revocationState: "historical",
-    limitation: "Historical source evidence; current public release proof is published at /audit.",
+    limitation: "Point-in-time kernel artifact evidence for the named revisions. /audit covers the current website release artifact set only; it does not supersede, reproduce, or re-attest this kernel evidence.",
   },
   {
     id: "toolchain-evidence-lock",
@@ -211,7 +254,7 @@ const researchItems = [
     evidence: `Registry SHA-256 ${registryHash}`,
     regression: "Toolchain registry test prevents Semgrep and SnarkJS drift.",
     supersession: "Active; future updates require a new frozen evidence bundle.",
-    maturity: "Read-only live",
+    maturity: "Frozen point-in-time evidence",
     limitations: "Version capture does not prove security findings.",
   },
   {
@@ -257,19 +300,6 @@ const verificationResults = [
   ["FAIL_CLOSED", "Verifier reached an unsafe or unsupported state.", "fail-closed.example.json"],
   ["UNSUPPORTED_SCHEMA", "Schema version is not supported.", "unsupported-schema.example.json"],
   ["ERROR", "Verifier failed unexpectedly.", "error.example.json"],
-];
-
-const legacyRoutes = [
-  "nexus",
-  "fenswap",
-  "fenpresale",
-  "wallet",
-  "support",
-  "legal",
-  "privacy",
-  "terms",
-  "accessibility",
-  "security",
 ];
 
 function esc(value) {
@@ -366,7 +396,7 @@ Verified: ${record.verified}
 Scope: ${record.limitation}`;
 }
 
-function chainRail(className, label = "Live block updates") {
+function chainRail(className, label = "Live block updates", announce = true) {
   return `<div class="${attr(className)}" aria-label="${attr(label)}">
         <article class="header-chain-card" data-chain-card="978">
           <div class="chain-card-top">
@@ -378,7 +408,6 @@ function chainRail(className, label = "Live block updates") {
             <strong data-chain-field="978-block">Loading</strong>
             <small data-chain-field="978-checked">loading</small>
             <small data-chain-field="978-source">Evidence source: loading</small>
-            <small data-chain-field="978-confidence">Confidence: loading</small>
             <small data-chain-field="978-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -393,7 +422,6 @@ function chainRail(className, label = "Live block updates") {
             <strong data-chain-field="521-block">Loading</strong>
             <small data-chain-field="521-checked">loading</small>
             <small data-chain-field="521-source">Evidence source: loading</small>
-            <small data-chain-field="521-confidence">Confidence: loading</small>
             <small data-chain-field="521-activity">Signed activity: loading</small>
           </div>
           <div class="chain-progress-rail" aria-hidden="true"><i></i></div>
@@ -401,7 +429,7 @@ function chainRail(className, label = "Live block updates") {
         <span class="sr-only" data-chain-meta="feed-status">loading</span>
         <span class="sr-only" data-chain-meta="generated">loading</span>
         <span class="sr-only" data-chain-meta="countdown">loading</span>
-        <span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>
+        ${announce ? '<span class="sr-only" data-chain-meta="announcer" role="status" aria-live="polite" aria-atomic="true"></span>' : ""}
       </div>`;
 }
 
@@ -420,40 +448,134 @@ function commercialBoundarySection() {
       </section>`;
 }
 
+const organizationJsonLd = JSON.stringify(
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://fenrua.ai/#organization",
+    name: company.legalName,
+    legalName: company.legalName,
+    alternateName: [company.displayName, "Fenrua"],
+    url: "https://fenrua.ai/",
+    logo: "https://fenrua.ai/assets/fenrua-header-logo.jpg",
+    foundingDate: company.registrationDate,
+    taxID: `ABN ${company.abn}`,
+    identifier: [
+      { "@type": "PropertyValue", propertyID: "ABN", value: company.abn },
+      { "@type": "PropertyValue", propertyID: "ACN", value: company.acn },
+    ],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: company.registeredOffice.locality,
+      addressRegion: company.registeredOffice.region,
+      postalCode: company.registeredOffice.postalCode,
+      addressCountry: company.registeredOffice.country,
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "business enquiries",
+      email: company.publicContact,
+    },
+    description: "Fenrua Labs provides access-only AI security infrastructure software, technology services, and evidence-aware intelligence workflows.",
+    sameAs: ["https://github.com/fenrualabs"],
+  },
+  null,
+  2
+).replaceAll("<", "\\u003c");
+
+function pageDiscoveryJsonLd({ title, description, canonical, current }) {
+  const pageUrl = `https://fenrua.ai${canonical}`;
+  const segments = canonical.split("/").filter(Boolean);
+  const breadcrumbs = [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://fenrua.ai/" },
+    ...segments.map((segment, index) => ({
+      "@type": "ListItem",
+      position: index + 2,
+      name:
+        index === segments.length - 1
+          ? current
+          : segment.replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()),
+      item: `https://fenrua.ai/${segments.slice(0, index + 1).join("/")}`,
+    })),
+  ];
+  const graph = [
+    {
+      "@type": "WebSite",
+      "@id": "https://fenrua.ai/#website",
+      url: "https://fenrua.ai/",
+      name: "Fenrua",
+      inLanguage: "en-AU",
+      publisher: { "@id": "https://fenrua.ai/#organization" },
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${pageUrl}#webpage`,
+      url: pageUrl,
+      name: title,
+      description,
+      inLanguage: "en-AU",
+      dateModified: siteEvidence.generatedAt.slice(0, 10),
+      isPartOf: { "@id": "https://fenrua.ai/#website" },
+      about: { "@id": "https://fenrua.ai/#organization" },
+      breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${pageUrl}#breadcrumb`,
+      itemListElement: breadcrumbs,
+    },
+  ];
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }, null, 2).replaceAll("<", "\\u003c");
+}
+
 function layout({ title, description, current, body, scripts = "", canonicalPath, headerLive = false, mobileLive = true, robots = "index,follow", includeCommercialBoundary = !headerLive }) {
   const canonical = canonicalPath ?? (current === "Overview" ? "/" : `/${current.toLowerCase()}`);
+  const canonicalUrl = `https://fenrua.ai${canonical}`;
+  const searchDirectives = robots.includes("noindex")
+    ? robots
+    : `${robots},max-snippet:-1,max-image-preview:large,max-video-preview:-1`;
   const navHtml = nav
     .map(([label, href]) => `<a href="${href}"${current === label ? ' aria-current="page"' : ""}>${label}</a>`)
     .join("\n        ");
   const headerClass = headerLive ? "site-header site-header-live" : mobileLive ? "site-header site-header-mobile-live" : "site-header";
-  const headerRail = headerLive || mobileLive ? `\n      ${chainRail("header-chain-rail mobile-chain-rail")}` : "";
+  const headerRail = headerLive || mobileLive
+    ? `\n      ${chainRail("header-chain-rail mobile-chain-rail", "Live block updates", !headerLive && current !== "Status")}`
+    : "";
   const pageScripts = [
     headerLive ? '<script src="/kernel-status.js" defer></script>' : "",
     scripts,
     mobileLive && !headerLive ? '<script src="/mobile-chain-status.js" defer></script>' : "",
   ].filter(Boolean).join("\n    ");
   return `<!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="${attr(description)}" />
     <meta name="robots" content="${attr(robots)}" />
+    <meta name="googlebot" content="${attr(searchDirectives)}" />
+    <meta name="bingbot" content="${attr(searchDirectives)}" />
     <meta name="theme-color" content="#0d0d0d" />
-    <link rel="canonical" href="https://fenrua.ai${canonical}" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://fenrua.ai/#organization",
-        "name": "Fenrua Labs",
-        "alternateName": "Fenrua",
-        "url": "https://fenrua.ai/",
-        "description": "Fenrua is building open Layer 0 AI security infrastructure with public evidence, maturity-labelled primitives, and reproducible verification records.",
-        "sameAs": ["https://github.com/fenrualabs"]
-      }
-    </script>
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:site_name" content="Fenrua" />
+    <meta property="og:title" content="${attr(title)}" />
+    <meta property="og:description" content="${attr(description)}" />
+    <meta property="og:url" content="${attr(canonicalUrl)}" />
+    <meta property="og:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta property="og:image:alt" content="Fenrua logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="${attr(title)}" />
+    <meta name="twitter:description" content="${attr(description)}" />
+    <meta name="twitter:image" content="https://fenrua.ai/assets/fenrua-header-logo.jpg" />
+    <meta name="twitter:image:alt" content="Fenrua logo" />
+    <link rel="canonical" href="${attr(canonicalUrl)}" />
+    <link rel="alternate" hreflang="en-AU" href="${attr(canonicalUrl)}" />
+    <link rel="alternate" hreflang="x-default" href="${attr(canonicalUrl)}" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <script type="application/ld+json">${organizationJsonLd}</script>
+    <script type="application/ld+json">${pageDiscoveryJsonLd({ title, description, canonical, current })}</script>
     <title>${esc(title)}</title>
     <link rel="icon" href="/assets/fenrua-header-logo.jpg" type="image/jpeg" />
     <link rel="stylesheet" href="/styles.css" />
@@ -480,12 +602,15 @@ ${body}${includeCommercialBoundary ? `\n${commercialBoundarySection()}` : ""}
     </main>
     <footer class="site-footer">
       <div>
-        <strong>Fenrua Labs</strong>
+        <strong>${esc(company.legalName)}</strong>
+        <span>ABN ${esc(company.abn)} · ACN ${esc(company.acn)}</span>
         <span>Evidence-first, source-first, maturity-labelled infrastructure.</span>
       </div>
       <div class="footer-social">
         <p>Public claims are bounded by public evidence.</p>
         <div class="footer-links">
+          <a href="/legal">Legal &amp; company</a>
+          <a href="mailto:${attr(company.publicContact)}">Contact</a>
           <a href="/audit">Audit</a>
           <a href="/evidence">Evidence</a>
           <a href="/toolchain">Toolchain</a>
@@ -508,13 +633,20 @@ function routeHero(eyebrow, title, text, cta = "") {
       </section>`;
 }
 
+function displayDate(value) {
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(`${value}T00:00:00Z`)
+  );
+}
+
 function writeGenerated(file, contents) {
+  const normalized = contents.replace(/[ \t]+$/gm, "");
   if (checkMode) {
-    if (!existsSync(file) || readFileSync(file, "utf8") !== contents) staleGeneratedFiles.push(path.relative(root, file));
+    if (!existsSync(file) || readFileSync(file, "utf8") !== normalized) staleGeneratedFiles.push(path.relative(root, file));
     return;
   }
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, contents);
+  writeFileSync(file, normalized);
 }
 
 function writeRoute(route, html) {
@@ -627,7 +759,7 @@ function home() {
     description: "Fenrua is the public evidence surface for the open security kernel beneath autonomous AI systems.",
     current: "Overview",
     headerLive: true,
-    includeCommercialBoundary: false,
+    includeCommercialBoundary: true,
     body: `${routeHero(
       "LAYER 0 AI SECURITY UTILITY INFRASTRUCTURE",
       "The security kernel beneath autonomous AI.",
@@ -658,7 +790,7 @@ function home() {
         <div class="constraint-list">
           <p><strong>Semgrep:</strong> detected <code>1.169.0</code>.</p>
           <p><strong>SnarkJS:</strong> detected <code>0.7.6</code>; <code>1.13.8</code> is <code>underscore</code>.</p>
-          <p><strong>Commercial boundary:</strong> Fenrua provides access-only services through tiers and client-specific agreements; no public financial product or offering is made.</p>
+          <p><strong>Commercial boundary:</strong> Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only. <a href="/legal">Read the Legal and Company Centre</a>.</p>
         </div>
       </section>`,
   });
@@ -788,8 +920,8 @@ function researchPage(item) {
   const recordId = `fenrua-research:${item.slug}`;
   const defaults = {
     date: researchDate(item),
-    sourceRevision: "390f7aeef778ce93db12e16028bc3a788b643c2d",
-    evidenceRevision: item.slug === "toolchain-evidence-lock" ? registryHash : "85ecc97c026b01b576d735501795951dd293b3ca",
+    sourceRevision: snapshotCommit,
+    evidenceRevision: item.slug === "toolchain-evidence-lock" ? registryHash : evidenceRevision,
     severity: item.slug === "pn521-cross-limb-borrow" ? "High regression severity; evidence surface only" : "Public-trust boundary",
     problem: item.threat,
     assumptions: "Public page exposes only sanitized, source-linked evidence. Private endpoints, secrets, and raw witness material remain out of scope.",
@@ -807,7 +939,7 @@ function researchPage(item) {
       ? "Browser payload states sanitized read-only observation only; it does not claim contract, bytecode, reserve, or deployment assurance."
       : "Review confidence is represented only where linked public evidence exists.",
     evidenceHash: item.slug === "toolchain-evidence-lock" ? registryHash : "See linked evidence artifact.",
-    fixRevision: item.slug === "pn521-cross-limb-borrow" ? "390f7aeef778ce93db12e16028bc3a788b643c2d" : "Current website route generation.",
+    fixRevision: item.slug === "pn521-cross-limb-borrow" ? snapshotCommit : "Current website route generation.",
     regressionFixture: item.slug === "pn521-cross-limb-borrow" ? "regression_001_p521_sub_overflow.bin" : item.regression,
     kernelImpact: `${item.primitive} primitive boundary clarified.`,
     utilityImpact: "Public interface remains maturity-labelled and limitation-adjacent.",
@@ -1010,7 +1142,7 @@ node scripts/test-verify-examples.mjs`, "bash")}
           <p>A clean checkout should complete validation with static route, chain API sanitization, kernel telemetry, toolchain registry, and verify-corpus checks passing. The failing fixture is intentionally represented as <code>FAIL_CLOSED</code>.</p>
         </div>
         <div class="doc-grid">
-          <a href="/docs/FENRUA_DEVELOPER_REPRODUCTION_REPORT.md">Developer reproduction report</a>
+          <a href="/verify">Verification schemas and examples</a>
           <a href="/examples/verification-results/pass.example.json">Passing fixture</a>
           <a href="/examples/verification-results/fail-closed.example.json">Failing fixture</a>
         </div>
@@ -1033,6 +1165,15 @@ function evidence() {
       <td data-label="Limitation">${esc(record.limitation)}<button type="button" data-copy="${copyAttr(evidenceCitation(record))}" data-copy-label="Evidence citation copied">Copy citation</button></td>
     </tr>`
   );
+  const regressionRows = kernelTelemetry.regressions.map(
+    (regression) => `<tr>
+      <td data-label="Regression"><code>${esc(regression.id)}</code><br><small>${esc(regression.classification)}</small></td>
+      <td data-label="Scope">${esc(regression.domain)} · ${esc(regression.operation)}</td>
+      <td data-label="Result">${statusBadge(regression.status, regression.status.toUpperCase())}</td>
+      <td data-label="Fixture">${esc(regression.fixture.name)} · ${esc(regression.fixture.bytes)} bytes<br><code class="hash-value">${esc(regression.fixture.sha256)}</code><button type="button" data-copy="${copyAttr(regression.fixture.sha256)}" data-copy-label="Fixture SHA copied">Copy hash</button></td>
+      <td data-label="Evidence"><a href="${attr(regression.fixture.url)}">Fixture</a> · <a href="${attr(regression.report.url)}">Regression report</a><br><small>Record SHA-256 <code class="hash-value">${esc(regression.report.recordSha256)}</code><br>File SHA-256 <code class="hash-value">${esc(regression.report.fileSha256)}</code></small></td>
+    </tr>`
+  );
   return layout({
     title: "Fenrua Evidence Registry",
     description: "Fenrua public evidence registry with claims, hashes, provenance, supersession, maturity, and limitations.",
@@ -1041,6 +1182,165 @@ function evidence() {
     body: `${routeHero("PUBLIC EVIDENCE", "Evidence Registry", "Current public release evidence is separated from historical source evidence and every record states its limitation.", `<div class="cta-row"><a class="button button-primary" href="/audit">Read current audit</a><a class="button button-secondary" href="/.well-known/fenrua-release.json">Release manifest</a></div>`)}
       <section class="section-shell">
         ${table(["Artifact", "Claim", "Hash", "Source", "Revisions", "Producer", "Command", "Verified / Revocation", "Supersession", "Limitation"], rows, "evidence-table", "Public evidence registry")}
+      </section>
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">PERMANENT REGRESSION</p>
+          <h2>Published kernel regression snapshot</h2>
+          <p>This table is generated from the validated, point-in-time kernel snapshot pinned to <code class="hash-value">${esc(snapshotCommit)}</code>. The scheduled synchronization updates this rendered table only after the public records and their internal hashes pass validation. It does not expose operands, witness material, raw fixture bytes, proving artifacts, private paths, or secrets.</p>
+        </div>
+        ${table(["Regression", "Scope", "Result", "Fixture", "Pinned evidence"], regressionRows, "regression-table", "Published permanent kernel regressions")}
+      </section>`,
+  });
+}
+
+function legal() {
+  const boundary = siteEvidence.commercialBoundary;
+  const registryLinks = company.registrySources
+    .map(
+      (source) => `<p><strong>${esc(source.authority)}:</strong> <a href="${attr(source.url)}">Official registry source</a>${source.lookup ? ` · Lookup <code>${esc(source.lookup)}</code>` : ""}<br><small>${esc(source.scope)}</small></p>`
+    )
+    .join("\n          ");
+  return layout({
+    title: "Legal and Company Centre | Fenrua Labs",
+    description: "Verified Fenrua Labs company identity, access-only service boundary, evidence scope, and public activation limits.",
+    current: "Legal",
+    canonicalPath: "/legal",
+    includeCommercialBoundary: false,
+    body: `${routeHero("REGISTERED OPERATOR", "Legal and Company Centre", "Verified company identity and the public boundaries for services, evidence, payments, and community activity.")}
+      <section class="section-shell" aria-labelledby="company-identity-title">
+        <div class="section-heading">
+          <p class="eyebrow">COMPANY IDENTITY</p>
+          <h2 id="company-identity-title">${esc(company.legalName)}</h2>
+          <p>Registry details last verified ${esc(displayDate(company.lastVerified))}. No street address, director details, private contact data, or non-public registry material is published here.</p>
+        </div>
+        <dl class="record-facts company-facts">
+          <div><dt>Australian Business Number</dt><dd><strong>ABN ${esc(company.abn)}</strong></dd></div>
+          <div><dt>Australian Company Number</dt><dd><strong>ACN ${esc(company.acn)}</strong></dd></div>
+          <div><dt>Company status</dt><dd>${esc(company.companyStatus)}</dd></div>
+          <div><dt>Company type</dt><dd>${esc(company.companyType)}</dd></div>
+          <div><dt>ABR entity type</dt><dd>${esc(company.entityType)}</dd></div>
+          <div><dt>Registered</dt><dd>${esc(displayDate(company.registrationDate))}</dd></div>
+          <div><dt>ABN status</dt><dd>${esc(company.abnStatus)}</dd></div>
+          <div><dt>GST status</dt><dd>${esc(company.gstStatus)}</dd></div>
+          <div><dt>Registered-office locality</dt><dd>${esc(company.registeredOffice.locality)} ${esc(company.registeredOffice.region)} ${esc(company.registeredOffice.postalCode)}, Australia</dd></div>
+          <div><dt>Main business location</dt><dd>${esc(company.mainBusinessLocation.region)} ${esc(company.mainBusinessLocation.postalCode)}, Australia</dd></div>
+          <div><dt>Regulator</dt><dd>${esc(company.regulator)}</dd></div>
+          <div><dt>Next ASIC review</dt><dd>${esc(displayDate(company.nextReviewDate))} <small>(point-in-time registry record)</small></dd></div>
+        </dl>
+        <div class="constraint-list registry-source-list">
+          ${registryLinks}
+          <p><a href="/data/company-identity.json">Download the machine-readable company identity record</a>.</p>
+        </div>
+      </section>
+      ${commercialBoundarySection()}
+      <section class="section-shell split-section" aria-labelledby="agreement-status-title">
+        <div>
+          <p class="eyebrow">FORMATION BOUNDARY</p>
+          <h2 id="agreement-status-title">How service access is formed</h2>
+        </div>
+        <div class="constraint-list">
+          ${boundary.serviceAgreementBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}
+          <p><strong>Current website state:</strong> no public account activation, checkout, wallet connection, payment receiver, or reward-settlement action is exposed by this technical evidence site.</p>
+          <p><strong>Compliance-owned gate:</strong> public subscription terms and a privacy notice must be approved and presented before any self-service account, billing, or personal-data flow is activated.</p>
+        </div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="payment-boundary-title">
+        <div><p class="eyebrow">PAYMENT AND SETTLEMENT</p><h2 id="payment-boundary-title">Payment rails are not financial products</h2></div>
+        <div class="constraint-list">${boundary.paymentBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="community-boundary-title">
+        <div><p class="eyebrow">COMMUNITY ACTIVITY</p><h2 id="community-boundary-title">Reputation and bounded rewards</h2></div>
+        <div class="constraint-list">${boundary.communityBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="evidence-boundary-title">
+        <div><p class="eyebrow">EVIDENCE SCOPE</p><h2 id="evidence-boundary-title">Point-in-time public records</h2></div>
+        <div class="constraint-list">
+          <p>Each public evidence record is limited to its named artifacts, revisions, timestamps, hashes, validation steps, maturity, and stated limitations.</p>
+          <p>Periodic synchronization validates published records and internal bindings; it does not rerun the underlying research campaign or attest live services, protected systems, private client environments, signing keys, private gateways, validators, private meshes, or production security beyond the record's stated scope.</p>
+        </div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="contact-title">
+        <div><p class="eyebrow">CONTACT</p><h2 id="contact-title">Public business contact</h2></div>
+        <div class="constraint-list">
+          <p>Business and collaboration enquiries: <a href="mailto:${attr(company.publicContact)}">${esc(company.publicContact)}</a>.</p>
+          <p>Do not send private keys, credentials, witness material, client-confidential data, or unredacted vulnerability details through public channels.</p>
+          <p>This centre is a factual identity and scope record. It does not replace compliance-approved terms, privacy notices, or client-specific agreements.</p>
+        </div>
+      </section>`,
+  });
+}
+
+function support() {
+  return layout({
+    title: "Fenrua Support and Contact",
+    description: "Public Fenrua Labs contact routes and safe information-handling boundaries.",
+    current: "Support",
+    canonicalPath: "/support",
+    body: `${routeHero("PUBLIC CONTACT", "Support and Contact", "Use the channel that matches the request and keep protected material out of public messages.")}
+      <section class="section-shell">
+        ${cardGrid([
+          { kicker: "BUSINESS", title: "Partnerships and service enquiries", text: company.publicContact, href: `mailto:${company.publicContact}`, link: "Email Fenrua Labs" },
+          { kicker: "WEBSITE SECURITY", title: "Private vulnerability report", text: "Use GitHub private vulnerability reporting for fenrua-web. Do not place exploit details in a public issue.", href: "https://github.com/fenrualabs/fenrua-web/security/advisories/new", link: "Open private report" },
+          { kicker: "KERNEL SECURITY", title: "Kernel vulnerability report", text: "Use the kernel repository's private reporting channel for P/N521 or kernel findings.", href: "https://github.com/fenrualabs/fenrua-kernel/security/advisories/new", link: "Open private report" },
+        ])}
+      </section>
+      <section class="section-shell split-section">
+        <div><p class="eyebrow">HANDLING BOUNDARY</p><h2>What not to send</h2></div>
+        <div class="constraint-list">
+          <p>Do not email or publish private keys, credentials, access tokens, raw witness material, protected topology, personal information, or client-confidential data.</p>
+          <p>Public repositories and evidence pages are not client-support systems. Service-specific support, response commitments, and data handling are governed only by the applicable subscription terms or client agreement.</p>
+        </div>
+      </section>`,
+  });
+}
+
+function security() {
+  return layout({
+    title: "Fenrua Security Reporting",
+    description: "Private vulnerability reporting channels and public evidence limitations for Fenrua Labs repositories.",
+    current: "Security",
+    canonicalPath: "/security",
+    body: `${routeHero("RESPONSIBLE REPORTING", "Security Reporting", "Report vulnerabilities privately so they can be reproduced, contained, and documented without exposing users or protected systems.")}
+      <section class="section-shell split-section">
+        <div><p class="eyebrow">PRIVATE CHANNELS</p><h2>Repository-specific reporting</h2></div>
+        <div class="constraint-list">
+          <p><strong>Website and observation gateway:</strong> <a href="https://github.com/fenrualabs/fenrua-web/security/advisories/new">fenrua-web private vulnerability report</a>.</p>
+          <p><strong>Kernel and P/N521 research artifacts:</strong> <a href="https://github.com/fenrualabs/fenrua-kernel/security/advisories/new">fenrua-kernel private vulnerability report</a>.</p>
+          <p>Include the affected revision, exact reproduction steps, observed impact, and the minimum evidence required to validate the issue. Redact secrets and personal or client-confidential information.</p>
+        </div>
+      </section>
+      <section class="section-shell split-section">
+        <div><p class="eyebrow">ASSURANCE BOUNDARY</p><h2>Public evidence is scoped</h2></div>
+        <div class="constraint-list">
+          <p>A passing public artifact, test, hash, workflow, or audit record is evidence only for its stated revision and scope. It is not a perpetual security guarantee, external certification, or attestation of protected runtime systems.</p>
+          <p>No response time, remediation deadline, bounty, safe-harbour term, or reward is promised by this page. Any such commitment must be separately published or agreed.</p>
+        </div>
+      </section>`,
+  });
+}
+
+function accessibility() {
+  return layout({
+    title: "Fenrua Accessibility",
+    description: "Fenrua public website accessibility features, testing scope, and contact route.",
+    current: "Accessibility",
+    canonicalPath: "/accessibility",
+    body: `${routeHero("PUBLIC ACCESS", "Accessibility", "The public technical estate is designed for keyboard access, responsive inspection, readable contrast, and explicit status language.")}
+      <section class="section-shell">
+        ${cardGrid([
+          { kicker: "NAVIGATION", title: "Keyboard-first structure", text: "Skip links, landmarks, focus-visible controls, and keyboard-scrollable technical tables are part of the tested interface." },
+          { kicker: "VIEWPORTS", title: "Responsive evidence", text: "Technical records preserve labels and limitations on narrow screens instead of hiding evidence columns." },
+          { kicker: "CONTRAST", title: "System-aware presentation", text: "Dark-mode tokens, forced-colours support, and visible focus states are covered by repository checks." },
+        ])}
+      </section>
+      <section class="section-shell split-section">
+        <div><p class="eyebrow">LIMITATIONS AND CONTACT</p><h2>Report an access barrier</h2></div>
+        <div class="constraint-list">
+          <p>Automated and browser checks do not establish conformance for every assistive technology, browser, document, or user need.</p>
+          <p>Report a reproducible public-site barrier to <a href="mailto:${attr(company.publicContact)}">${esc(company.publicContact)}</a>, including the route, browser or assistive technology, and the action that could not be completed.</p>
+          <p>Audit and test-output reports are retained outside this source repository under the <a href="/docs/EXTERNAL_ARTIFACT_POLICY.md">external audit-artifact policy</a>.</p>
+        </div>
       </section>`,
   });
 }
@@ -1061,7 +1361,8 @@ function audit() {
       <td data-label="Current / archive">${archive}</td>
       <td data-label="Replacement">${replacement}</td>
       <td data-label="Archived">${esc(record.archivedAt ?? "Current")}</td>
-      <td data-label="Content hash"><code class="hash-value">${esc(record.contentSha256 ?? "Included in release manifest")}</code></td>
+      <td data-label="Current artifact SHA-256"><code class="hash-value">${esc(record.artifactSha256 ?? record.hashBinding ?? "Included in release manifest")}</code></td>
+      <td data-label="Original superseded SHA-256"><code class="hash-value">${esc(record.originalContentSha256 ?? "—")}</code></td>
     </tr>`;
   });
   const scope = siteEvidence.scope ?? {};
@@ -1099,7 +1400,7 @@ function audit() {
           <h2>Current, archived, and superseded public records</h2>
           <p>Archived records are retained only for continuity and are not current release evidence.</p>
         </div>
-        ${table(["Record", "Status", "Current / archive", "Replacement", "Archived", "Content hash"], rows, "evidence-table", "Public document register")}
+        ${table(["Record", "Status", "Current / archive", "Replacement", "Archived", "Current artifact SHA-256", "Original superseded SHA-256"], rows, "evidence-table", "Public document register")}
       </section>`,
   });
 }
@@ -1115,7 +1416,7 @@ function status() {
     ["Developer quick start", "success", "Published", "Reproducibility guide", "/developers", "Static release artifact", "clean checkout report", "Node 24 required.", "Tagged release reproduction"],
     ["Toolchain registry", "success", "Published", "Read-only release evidence", "data/toolchain-registry.json", "Frozen registry input", "registry validation", "Version capture is not security proof.", "New frozen evidence bundle"],
     ["Evidence registry", "success", "Published", "Evidence surface", "/evidence", "Static release artifact", "static route validation", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
-    ["Commercial access", "success", "Published", "Access-only services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", "Public boundary statement", "public boundary review", "Subscriptions and client-specific agreements do not create a financial product, token entitlement, or return expectation.", "Designated business-owner review"],
+    ["Commercial boundary statement", "success", "Published", "Access-only services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", "Public boundary statement", "public boundary and company-identity validation", "No public account activation, checkout, wallet connection, payment receiver, or settlement action is asserted by this site.", "Compliance-approved terms and privacy notice before self-service activation"],
     ["Public repository", "success", "Published", "Source surface", "https://github.com/fenrualabs/fenrua-web", "Release provenance", "git provenance", "Repository state changes after each deployment.", "Tagged release"],
     ["Schema set", "success", "Published", "Specification", "/docs/", "Static specification set", "example corpus validation", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
   ].map(
@@ -1123,7 +1424,7 @@ function status() {
       <td data-label="Release record">${esc(r[0])}</td>
       <td data-label="Publication state">${statusBadge(r[1], r[2])}</td>
       <td data-label="Maturity">${esc(r[3])}</td>
-      <td data-label="Public artifact">${esc(r[4])}</td>
+      <td data-label="Public artifact"><span class="status-artifact-value" title="${attr(r[4])}">${esc(r[4])}</span></td>
       <td data-label="Evidence basis">${esc(r[5])}</td>
       <td data-label="Validation scope">${esc(r[6])}</td>
       <td data-label="Current limitation">${esc(r[7])}</td>
@@ -1184,7 +1485,7 @@ function status() {
           <p>These are static publication records, not runtime monitors. They intentionally have no per-row event timestamp; use the <a href="/.well-known/fenrua-release.json">current release manifest</a> for source-commit and artifact-hash evidence.</p>
         </div>
         <p class="mobile-data-notice"><strong>Static release records are not live checks.</strong> Their validation scope and limitations remain visible without implying a current event.</p>
-        ${table(["Release record", "Publication state", "Maturity", "Public artifact", "Evidence basis", "Validation scope", "Current limitation", "Next evidence gate"], staticRows, "status-table", "Static public release records")}
+        ${table(["Release record", "Publication state", "Maturity", "Public artifact", "Evidence basis", "Validation scope", "Current limitation", "Next evidence gate"], staticRows, "status-table static-release-table", "Static public release records")}
       </section>`,
   });
 }
@@ -1339,31 +1640,6 @@ function toolchain() {
   });
 }
 
-function legacyPage(route) {
-  return layout({
-    title: `Legacy Fenrua ${route} Route`,
-    description: "Superseded Fenrua public route archive notice.",
-    current: "Overview",
-    canonicalPath: `/${route}`,
-    robots: "noindex,nofollow",
-    body: `${routeHero("LEGACY / SUPERSEDED", "Legacy route", "This route belongs to a superseded Fenrua public estate and has no current applicability. The canonical current site is the Layer 0 AI Security Utility Infrastructure interface.")}
-      <section class="section-shell split-section">
-        <div>
-          <p class="eyebrow">ROUTE CLASSIFICATION</p>
-          <h2>${esc(route)}</h2>
-          <p>This archive notice avoids silently presenting old Nexus, FENswap, presale, wallet, legal, support, accessibility, or security language as current.</p>
-        </div>
-        <div class="constraint-list">
-          <p><strong>Classification:</strong> Legacy archive.</p>
-          <p><strong>Superseded by:</strong> <a href="/">Current Fenrua Layer 0 overview</a>.</p>
-          <p><strong>Current applicability:</strong> None.</p>
-          <p><strong>Indexing:</strong> noindex, nofollow.</p>
-          <p><strong>Legal boundary:</strong> This page does not create or replace final legal terms.</p>
-        </div>
-      </section>`,
-  });
-}
-
 writeRoute("", home());
 writeRoute("architecture", architecture());
 writeRoute("kernel", kernel());
@@ -1376,9 +1652,12 @@ writeRoute("evidence", evidence());
 writeRoute("audit", audit());
 writeRoute("status", status());
 writeRoute("toolchain", toolchain());
-for (const route of legacyRoutes) writeRoute(route, legacyPage(route));
+writeRoute("legal", legal());
+writeRoute("support", support());
+writeRoute("security", security());
+writeRoute("accessibility", accessibility());
 
-const sitemapRoutes = ["", "architecture", "kernel", "utilities", "research", ...researchItems.map((item) => `research/${item.slug}`), "verify", "developers", "toolchain", "evidence", "audit", "status"];
+const sitemapRoutes = ["", "architecture", "kernel", "utilities", "research", ...researchItems.map((item) => `research/${item.slug}`), "verify", "developers", "toolchain", "evidence", "audit", "status", "legal", "support", "security", "accessibility"];
 writeGenerated(
   path.join(root, "sitemap.xml"),
   `<?xml version="1.0" encoding="UTF-8"?>

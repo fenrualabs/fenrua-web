@@ -9,12 +9,8 @@ const routes = [
   "audit/index.html",
   "developers/index.html",
   "evidence/index.html",
-  "fenpresale/index.html",
-  "fenswap/index.html",
   "kernel/index.html",
   "legal/index.html",
-  "nexus/index.html",
-  "privacy/index.html",
   "research/index.html",
   "research/pn521-cross-limb-borrow/index.html",
   "research/read-only-chain-observation/index.html",
@@ -22,23 +18,31 @@ const routes = [
   "security/index.html",
   "status/index.html",
   "support/index.html",
-  "terms/index.html",
   "toolchain/index.html",
   "utilities/index.html",
   "verify/index.html",
-  "wallet/index.html",
 ];
-const mobileRailSha256 = "79a569fb745a18fc29fe8bb55451e46afcda285a4347724f28449741748d3fb7";
+const mobileRailSha256 = {
+  withoutAnnouncer: "9bfc88ca41ebd4e5e07163eda320c7f3fa3ce0e904c8f4778029d269ac260d78",
+  withAnnouncer: "a42178d905ac7f21db729e23a7f0dd8f2dce5b314175911e4503f14113eaeed7",
+};
 
 for (const route of routes) {
   const html = await readFile(new URL(`../${route}`, import.meta.url), "utf8");
   const railStart = html.indexOf('<div class="header-chain-rail mobile-chain-rail"');
   const headerEnd = html.indexOf("    </header>", railStart);
   assert.ok(railStart >= 0 && headerEnd > railStart, `${route} must include the mobile live-block rail.`);
+  const rail = html.slice(railStart, headerEnd);
+  const ownsAnnouncer = route !== "index.html" && route !== "status/index.html";
   assert.equal(
-    createHash("sha256").update(html.slice(railStart, headerEnd)).digest("hex"),
-    mobileRailSha256,
+    createHash("sha256").update(rail).digest("hex"),
+    ownsAnnouncer ? mobileRailSha256.withAnnouncer : mobileRailSha256.withoutAnnouncer,
     `${route} must reuse the frozen Overview mobile live-block markup.`,
+  );
+  assert.doesNotMatch(
+    rail,
+    /data-chain-field="(?:978|521)-confidence"/,
+    `${route} compact live-block cards must not duplicate the detailed Confidence field.`,
   );
   const isOverview = route === "index.html";
   assert.match(

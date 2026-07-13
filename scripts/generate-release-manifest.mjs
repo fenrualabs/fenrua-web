@@ -2,11 +2,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { publicArtifactFiles, publicRouteFor } from "./public-output-lib.mjs";
 import { canonicalJson, sha256, verifyReleaseManifest } from "./release-manifest-lib.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputPath = path.join(root, ".well-known", "fenrua-release.json");
 const evidencePath = path.join(root, "data", "site-evidence.json");
+const companyPath = path.join(root, "data", "company-identity.json");
 const commitPattern = /^[0-9a-f]{40}$/;
 
 function sourceCommit() {
@@ -48,32 +50,15 @@ function artifact(route, relativePath) {
 }
 
 const evidence = readJson(evidencePath);
+const company = readJson(companyPath);
 if (typeof evidence.generatedAt !== "string" || !Number.isFinite(Date.parse(evidence.generatedAt))) {
   throw new Error("data/site-evidence.json must contain a valid generatedAt timestamp.");
 }
 
-// Dynamic observations, API responses, and live-card data are deliberately
-// excluded from this public static artifact set.
-const artifacts = [
-  ["/audit", "audit/index.html"],
-  ["/architecture", "architecture/index.html"],
-  ["/developers", "developers/index.html"],
-  ["/evidence", "evidence/index.html"],
-  ["/kernel", "kernel/index.html"],
-  ["/mobile-chain-status.js", "mobile-chain-status.js"],
-  ["/research", "research/index.html"],
-  ["/status", "status/index.html"],
-  ["/status-monitor.js", "status-monitor.js"],
-  ["/toolchain", "toolchain/index.html"],
-  ["/utilities", "utilities/index.html"],
-  ["/verify", "verify/index.html"],
-  ["/styles.css", "styles.css"],
-  ["/technical-data.js", "technical-data.js"],
-  ["/data/public-document-register.json", "data/public-document-register.json"],
-  ["/data/site-evidence.json", "data/site-evidence.json"],
-  ["/robots.txt", "robots.txt"],
-  ["/sitemap.xml", "sitemap.xml"],
-]
+// Every deployed static file except this manifest is included. Dynamic API
+// responses and protected operational systems remain outside this artifact set.
+const artifacts = publicArtifactFiles()
+  .map((relativePath) => [publicRouteFor(relativePath), relativePath])
   .map(([route, relativePath]) => artifact(route, relativePath))
   .sort((left, right) => left.route.localeCompare(right.route));
 
@@ -85,6 +70,11 @@ const record = {
     project: "fenrua-web",
     sourceCommit: sourceCommit(),
     sourceEvidenceGeneratedAt: evidence.generatedAt,
+    publisher: {
+      legalName: company.legalName,
+      abn: company.abn,
+      acn: company.acn,
+    },
   },
   publicArtifactSet: {
     algorithm: "sha256",
@@ -92,8 +82,8 @@ const record = {
     artifacts,
   },
   validation: {
-    requiredCommand: "npm run validate",
-    scope: "public static website artifacts only",
+    requiredCommand: "npm run build:release",
+    scope: "complete deployed static website artifacts except this self-referential manifest",
   },
   limitations: [
     "This file is not a signature, deployment attestation, or statement about live runtime state.",

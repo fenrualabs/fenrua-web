@@ -13,25 +13,19 @@ This repo is a standalone website for Fenrua Labs and the `fenrua-kernel`
 evidence surface. It uses plain HTML, one CSS file, a local SVG asset, and one
 local JavaScript manifest for status hydration.
 
+Audit, review, scan-output, test-output, visual-capture, and builder reports are
+stored outside this source repository. The enforced boundary is defined in
+[External audit-artifact policy](docs/EXTERNAL_ARTIFACT_POLICY.md).
+
 ## Commercial Boundary
 
-Fenrua Labs Pty Ltd provides access to AI security infrastructure software,
-related technology services, and evidence-aware intelligence workflows through
-tiered service subscriptions and client-specific business agreements only.
-
-Fenrua Labs Pty Ltd does not offer investments, token crowdfunding, securities,
-bonds, equity, debt, managed investment interests, profit-sharing arrangements,
-revenue-sharing arrangements, yield products, exchange products, trading
-products, or any financial-return scheme. Neither a subscription nor a
-client-specific business agreement gives, promises, expects, entitles, or
-represents profit, return, token appreciation, token allocation, liquidity,
-resale value, dividends, buyback rights, or ownership in Fenrua Labs Pty Ltd.
-
-Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading
-venue, or public swap product. It does not provide financial, investment, legal,
-tax, professional, or other advice, or any recommendation to buy, sell, hold,
-trade, or rely on an asset for financial gain. See the full
-[access-only commercial boundary](docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md).
+The registered operator is **FENRUA LABS PTY LTD** (ABN 62 700 182 663;
+ACN 700 182 663). The canonical service, agreement, payment, community, and
+evidence boundaries are generated from `data/site-evidence.json`; read the
+[access-only commercial boundary](docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md) and
+the [Legal and Company Centre](https://fenrua.ai/legal). This repository does
+not publish an investment, token-crowdfunding, exchange, trading, or
+financial-return product.
 
 The public site now exposes Fenrua's Layer 0 AI security architecture,
 security-kernel model, standalone route system, toolchain registry, claim
@@ -86,30 +80,35 @@ and verifies the release manifest, then runs browser checks only for Evidence,
 Status, Toolchain, and Verify, including their mobile header rail. It does not
 exercise the Overview desktop live-card surface or live production APIs.
 
-## Owner-only Release
+## Owner-approved Git Release
 
-An owner approves the validated `main` commit, confirms that Vercel exposes
-`VERCEL_GIT_COMMIT_SHA`, and runs the pinned production command from a clean
-checkout. The production command refuses any branch other than `main`, and the
-manifest generator refuses a dirty checkout except for explicit local,
-non-deployment validation.
+An owner approves and merges a validated `main` commit. The existing Vercel Git
+integration builds that exact commit and exposes `VERCEL_GIT_COMMIT_SHA`; the
+manifest generator refuses an unbound production build. The repository does not
+install the Vercel CLI, keeping its unrelated deployment dependency tree out of
+the audited development environment.
 
-After deployment, run the read-only public observation:
+Before deployment, retain the record digest from the independently built,
+trusted release checkout. After deployment, bind the read-only observation to
+both that digest and the exact commit:
 
 ```bash
-npm run audit:live-release -- --url https://fenrua.ai --expected-commit <40-character-commit>
+RECORD_SHA256=$(node -p "require('./.well-known/fenrua-release.json').integrity.recordSha256")
+npm run audit:live-release -- --url https://fenrua.ai --expected-commit <40-character-commit> --expected-record-sha256 "$RECORD_SHA256"
 ```
 
-The receipt proves only the observed public static artifact set at that time;
-it is not evidence for live cards, APIs, private systems, or a perpetual
-production assertion.
+The expected record digest is the independent trust anchor; a live manifest's
+self-hash alone cannot detect origin compromise. The receipt proves only the
+observed public static artifact set at that time; it is not evidence for live
+cards, APIs, private systems, or a perpetual production assertion.
 
 ## Files
 
-- `index.html` - protocol explorer
+- `index.html` - canonical public website and evidence interface
 - `styles.css` - terminal-grade dark-mode reset and interface styling
 - `kernel-status.js` - local telemetry and registry manifest
-- `data/site-evidence.json` - deterministic non-live commercial and evidence input
+- `data/company-identity.json` - canonical registered operator record
+- `data/site-evidence.json` - deterministic commercial and point-in-time evidence input
 - `data/public-document-register.json` - public active/archive document register
 - `data/toolchain-registry.json` - public machine-readable toolchain registry
 - `scripts/generate-release-manifest.mjs` - release-only public static artifact manifest
@@ -130,6 +129,7 @@ production assertion.
 - `api/chain-n521-observation-key.js` - Chain N521 public Ed25519 verification metadata endpoint
 - `assets/fenrua-header-logo.jpg` - shared Fenrua header and favicon mark
 - `docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md` - access-only service statement
+- `docs/EXTERNAL_ARTIFACT_POLICY.md` - enforced outside-repository report boundary
 - `docs/archive/2026-07-13/` - superseded, noindex public-document records
 - `docs/VERCEL.md` - Vercel publishing notes for `fenrua.ai`
 - `docs/UTILITY_STANDARD.md` - repository operating standard
@@ -142,18 +142,14 @@ tracking scripts. If traffic data is needed, use raw server logs from the host.
 
 ## Production Domain
 
-Publish only after the owner-only release checks pass and the source checkout is
-clean. The pinned command targets the canonical `fenrua-web` Vercel project:
+Before merging to `main`, run the owner production gate from a clean checkout:
 
 ```bash
-npm run deploy:production:node24
+npm run release:production-check
 ```
 
-The typo-safe alias remains available for compatibility:
-
-```bash
-npm run deploy:prodction:node24
-```
+Production publishing is performed by the existing Vercel Git integration, not
+by a repository-local deployment CLI.
 
 See [Vercel Publishing](docs/VERCEL.md) and the
 [access-only commercial boundary](docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md).
