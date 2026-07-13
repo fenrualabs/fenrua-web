@@ -51,6 +51,45 @@
     if (element) element.textContent = value;
   }
 
+  function setCompactText(chain, field, value) {
+    document.querySelectorAll(`[data-chain-field="${chain}-${field}"]`).forEach((element) => {
+      element.textContent = value;
+    });
+  }
+
+  function hydrateCompactCard(chain, state) {
+    const row = rows.get(chain);
+    if (!row) return;
+    const compactState = {
+      live: "confirmed",
+      delayed: "delayed",
+      partial: "partial",
+      waiting: "waiting",
+      failure: "wrong-chain",
+      unavailable: "unavailable",
+    }[state] ?? "unavailable";
+    const rowText = (selector, fallback) => row.querySelector(selector)?.textContent?.trim() || fallback;
+    const relativeTime = row.querySelector("[data-status-monitor-relative]")?.textContent?.trim();
+
+    setCompactText(chain, "status", stateDisplay(state).label);
+    setCompactText(chain, "block", rowText("[data-status-monitor-block]", "Observation unavailable"));
+    setCompactText(
+      chain,
+      "checked",
+      relativeTime || rowText("[data-status-monitor-time]", "not observed")
+    );
+    setCompactText(
+      chain,
+      "source",
+      `Evidence source: ${rowText("[data-status-monitor-source]", "unavailable")}`
+    );
+    setCompactText(chain, "activity", rowText("[data-status-monitor-sequence]", "No verified sequence"));
+    document.querySelectorAll(`[data-chain-card="${chain}"]`).forEach((card) => {
+      card.dataset.status = compactState;
+      card.dataset.activity = state;
+    });
+  }
+
   function stateDisplay(state) {
     if (state === "live") return { label: "Live", className: "status-success" };
     if (state === "delayed") return { label: "Stale", className: "status-stale" };
@@ -133,6 +172,32 @@
     return age === null || age > freshnessSeconds ? "delayed" : "live";
   }
 
+  function isAcceptedKeyRotation(observation, previous, candidate) {
+    const rotation = observation.key_rotation;
+    if (!isObject(rotation)) return false;
+    const fields = Object.keys(rotation).sort();
+    const expectedFields = [
+      "certificate_sha256",
+      "from_key_id",
+      "from_payload_sha256",
+      "from_sequence",
+      "to_key_id",
+      "version",
+    ];
+    return (
+      fields.length === expectedFields.length &&
+      fields.every((field, index) => field === expectedFields[index]) &&
+      rotation.version === 1 &&
+      /^[a-f0-9]{64}$/.test(rotation.certificate_sha256) &&
+      /^[a-f0-9]{64}$/.test(rotation.from_payload_sha256) &&
+      rotation.from_key_id === previous.keyId &&
+      Number.isSafeInteger(rotation.from_sequence) &&
+      rotation.from_sequence >= previous.sequence &&
+      rotation.to_key_id === candidate.keyId &&
+      candidate.sequence > rotation.from_sequence
+    );
+  }
+
   function assessMonotonicity(chain, observation) {
     const previous = monitor.highWater.get(chain);
     const candidate = {
@@ -147,7 +212,9 @@
       monitor.highWater.set(chain, candidate);
       return { accepted: true, label: "current", highWater: candidate };
     }
-    if (candidate.keyId !== previous.keyId) {
+    const acceptedKeyRotation =
+      candidate.keyId !== previous.keyId && isAcceptedKeyRotation(observation, previous, candidate);
+    if (candidate.keyId !== previous.keyId && !acceptedKeyRotation) {
       return { accepted: false, reason: "verification-key change rejected", highWater: previous };
     }
     if (candidate.sequence < previous.sequence) {
@@ -175,7 +242,13 @@
     }
 
     monitor.highWater.set(chain, candidate);
-    return { accepted: true, label: "advanced in this browser session", highWater: candidate };
+    return {
+      accepted: true,
+      label: acceptedKeyRotation
+        ? "authenticated key rotation accepted"
+        : "advanced in this browser session",
+      highWater: candidate,
+    };
   }
 
   function setObservationTime(row, observedAt) {
@@ -282,6 +355,7 @@
 
   function renderSnapshot(snapshot) {
     const states = monitoredChains.map((chain) => renderChain(snapshot, snapshot.chains.get(chain)));
+    states.forEach(({ chain, state }) => hydrateCompactCard(chain, state));
     if (meta) {
       meta.textContent = `Public monitor snapshot generated ${formatUtc(snapshot.generatedAt)}. Each row uses its own signed observation time; the snapshot time is not an activation event. Refresh target: ${Math.round(snapshot.refreshMs / 1_000)} seconds.`;
     }
@@ -291,7 +365,10 @@
   function renderFailure() {
     monitoredChains.forEach((chain) => {
       const row = rows.get(chain);
-      if (row) renderUnavailable(row, "unavailable", "Public monitor unavailable; no current observation is asserted.");
+      if (row) {
+        renderUnavailable(row, "unavailable", "Public monitor unavailable; no current observation is asserted.");
+        hydrateCompactCard(chain, "unavailable");
+      }
     });
     if (meta) meta.textContent = `The public monitor did not return a valid current observation. No current state is asserted; retrying in ${Math.round(monitor.retryMs / 1_000)} seconds.`;
     announce(monitoredChains.map((chain) => ({ chain, state: "unavailable", sequence: null })));

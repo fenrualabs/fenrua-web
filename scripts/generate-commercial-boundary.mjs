@@ -13,7 +13,7 @@ if (!boundary || !Array.isArray(boundary.paragraphs) || boundary.paragraphs.leng
   throw new Error("data/site-evidence.json must define the three-paragraph commercial boundary.");
 }
 
-for (const key of ["serviceAgreementBoundary", "paymentBoundary", "communityBoundary"]) {
+for (const key of ["serviceAgreementBoundary", "businessOperationsBoundary"]) {
   if (!Array.isArray(boundary[key]) || boundary[key].length === 0) {
     throw new Error(`data/site-evidence.json must define commercialBoundary.${key}.`);
   }
@@ -28,7 +28,7 @@ const evidenceBoundary = [
   "Each public record is limited to its named artifacts, revisions, timestamps, hashes, validation steps, maturity, and stated limitations. Public evidence does not attest to live services, protected systems, private client environments, signing keys, private gateways, validators, private meshes, or production security beyond the record's stated scope.",
 ];
 
-const rendered = `# ${boundary.title}\n\nStatus: ${boundary.status}  \nLast reviewed: ${boundary.lastReviewed}\n\n${boundary.paragraphs.join("\n\n")}\n\n${section("Service and agreement boundary", boundary.serviceAgreementBoundary)}\n${section("Payment and settlement boundary", boundary.paymentBoundary)}\n${section("Community activity boundary", boundary.communityBoundary)}\n${section("Evidence boundary", evidenceBoundary)}\n## Company record\n\nThe canonical operator identity and official registry links are published in the [Legal and Company Centre](/legal) and the machine-readable [company identity record](/data/company-identity.json).\n\nThis statement is a public description of service scope. It is not financial product, investment, legal, or tax advice and does not replace applicable subscription terms, a client-specific agreement, or a compliance-approved privacy notice.\n`;
+const rendered = `# ${boundary.title}\n\nStatus: ${boundary.status}  \nLast reviewed: ${boundary.lastReviewed}\n\n${boundary.paragraphs.join("\n\n")}\n\n${section("Service and agreement boundary", boundary.serviceAgreementBoundary)}\n${section("Commercial operations", boundary.businessOperationsBoundary)}\n${section("Evidence boundary", evidenceBoundary)}\n## Company record\n\nThe canonical operator identity and official registry links are published in the [Legal and Company Centre](/legal) and the machine-readable [company identity record](/data/company-identity.json).\n\nThis statement describes the public service scope. It does not amend any terms, privacy notice, or client-specific agreement that applies to a particular service.\n`;
 
 if (checkMode) {
   if (!existsSync(outputPath) || readFileSync(outputPath, "utf8") !== rendered) {

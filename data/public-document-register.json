@@ -8,21 +8,21 @@
       "status": "active",
       "path": "data/site-evidence.json",
       "replacementPath": "/audit",
-      "artifactSha256": "8b68590a75f68cd42600cb3eb04d626217750232df5f4978644a34c916c05a4e"
+      "artifactSha256": "3219b1237c23afb37397ea74ecf350e67e1a100e1edc686919a771f305ab9a82"
     },
     {
       "id": "access-only-commercial-boundary",
       "status": "active",
       "path": "docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md",
       "replacementPath": "/audit",
-      "artifactSha256": "6b12771fbba68969d25a2684f6e57102b2a6daa724378b60206296e7acd193a6"
+      "artifactSha256": "d5bb691cb29a527952ea1c90752761d390a6043156b4e270b258559940b1e5ef"
     },
     {
       "id": "company-identity",
       "status": "active",
       "path": "data/company-identity.json",
       "replacementPath": "/legal",
-      "artifactSha256": "d6c9d8eaadb2281083fd95d71b46086a06efa7fb95a4682d205bb99d5238fa7f"
+      "artifactSha256": "c186f5fa10d6f3b19442bf2818db855170ee246572955c1b50fc483325425745"
     },
     {
       "id": "external-artifact-policy",
@@ -89,5 +89,5 @@
       "artifactSha256": "0cce9e0dc7f7712642431b7819877e0b079081b4cb444f114997fdd5bb3d1d9d"
     }
   ],
-  "artifactsVerifiedAt": "2026-07-13T10:17:13Z"
+  "artifactsVerifiedAt": "2026-07-13T19:27:37Z"
 }

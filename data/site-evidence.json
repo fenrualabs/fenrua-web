@@ -1,27 +1,80 @@
 {
   "schemaVersion": "fenrua.site-evidence.v1",
-  "generatedAt": "2026-07-13T10:17:13Z",
+  "generatedAt": "2026-07-13T19:27:37Z",
+  "contentModifiedDate": "2026-07-14",
   "canonicalDomain": "https://fenrua.ai",
   "commercialBoundary": {
     "status": "active public commercial boundary",
-    "lastReviewed": "2026-07-13",
-    "title": "Fenrua Labs Pty Ltd — Access-Only Services",
+    "lastReviewed": "2026-07-14",
+    "title": "Fenrua Labs Pty Ltd — Research and Technology Services",
     "paragraphs": [
-      "Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only.",
+      "Fenrua Labs Pty Ltd researches, develops, and provides AI efficiency infrastructure software and related technology services through service subscriptions and client-specific business agreements. Its work may include software, infrastructure access, hosting, research, development, integration, technical support, and evidence-aware workflows within the scope of the relevant service or agreement.",
       "Fenrua Labs Pty Ltd does not offer investments, token crowdfunding, securities, bonds, equity, debt, managed investment interests, profit-sharing arrangements, revenue-sharing arrangements, yield products, exchange products, trading products, or any financial-return scheme. Neither a subscription nor a client-specific business agreement gives, promises, expects, entitles, or represents profit, return, token appreciation, token allocation, liquidity, resale value, dividends, buyback rights, or ownership in Fenrua Labs Pty Ltd.",
-      "Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, tax, professional, or other advice, or any recommendation to buy, sell, hold, trade, or rely on an asset for financial gain."
+      "Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, or tax advice, or recommend that a person buy, sell, hold, trade, or rely on an asset for financial gain."
     ],
     "serviceAgreementBoundary": [
-      "This public technical website does not itself activate an account, accept payment, connect a wallet, settle a reward, or form a subscription or client agreement.",
-      "A service subscription is formed only where its applicable terms are presented and accepted. Client-specific business agreements are private, separately negotiated, and are not published or replaced by this public statement."
+      "Fenrua Labs Pty Ltd may enter into service subscriptions and client-specific business agreements, issue invoices, receive payment, and carry out the research, development, software, infrastructure, hosting, integration, support, and related technology activities covered by those arrangements.",
+      "Browsing this public website does not itself form a paid service agreement. The service description, price, scope, and terms presented or agreed for a particular service govern that service."
     ],
-    "paymentBoundary": [
-      "Any supported asset or wallet is a payment or bounded-settlement rail only. It is not custody, an exchange service, a public swap, an investment, a token allocation, or a promise of financial return.",
-      "Before any public payment flow is activated, it must identify the seller, service, price and currency, GST treatment, billing term, renewal and cancellation rules, refund route, receiver control, and applicable terms and privacy notice."
+    "businessOperationsBoundary": [
+      "Fenrua Labs Pty Ltd may receive payment for its lawful business activities through the commercial method agreed for the relevant service. The current public website is an information, evidence, and service-discovery surface and does not presently provide self-service account creation or checkout.",
+      "A payment settles the price of the relevant service. It does not by itself give a customer equity, ownership, profit-sharing, investment returns, token allocation, or rights outside the applicable service terms or client agreement."
+    ]
+  },
+  "legalOperatingRecord": {
+    "status": "current public operating record",
+    "lastReviewed": "2026-07-14",
+    "offerings": [
+      {
+        "category": "Company and public website",
+        "status": "CURRENT PUBLIC",
+        "badgeState": "success",
+        "description": "Company information, service information, technical documentation, research, evidence records, status information, and bounded read-only observations."
+      },
+      {
+        "category": "Research and technical artifacts",
+        "status": "RESEARCH / EVIDENCE",
+        "badgeState": "partial",
+        "description": "Published within each artifact's stated revision, maturity, validation method, evidence, and limitations. Publication is not a universal certification or guarantee."
+      },
+      {
+        "category": "Signed read-only observations",
+        "status": "CURRENT PUBLIC",
+        "badgeState": "success",
+        "description": "Bounded, signed, state-dependent public observations. They do not accept transactions or establish claims outside their stated evidence."
+      },
+      {
+        "category": "AI efficiency infrastructure software and related technology services",
+        "status": "AVAILABLE BY OFFER",
+        "badgeState": "success",
+        "description": "A service is offered with its own description, price, scope, and applicable terms."
+      },
+      {
+        "category": "Client-specific software, infrastructure access, hosting, integration, support, and related work",
+        "status": "AVAILABLE BY AGREEMENT",
+        "badgeState": "success",
+        "description": "The relevant agreement, order, or statement of work defines the client-specific service."
+      },
+      {
+        "category": "Public self-service account, checkout, client upload, or interactive AI interface",
+        "status": "NOT PART OF THE CURRENT PUBLIC SITE",
+        "badgeState": "paused",
+        "description": "These controls are not exposed by the current public release. This does not restrict separately offered or agreed services."
+      },
+      {
+        "category": "Investment, financial-return, exchange, trading, custody, or public-swap product",
+        "status": "NOT OFFERED",
+        "badgeState": "maintenance",
+        "description": "Outside the current service model and not created by a subscription, payment, agreement, or technical artifact."
+      }
     ],
-    "communityBoundary": [
-      "XP is non-transferable community reputation metadata only and has no cash, redemption, resale, token, investment, or financial-return value.",
-      "Any Fortnight League is a Fenrua Labs-hosted community activity with company-funded, predeclared and bounded rewards. Any Picker campaign is a host-bounded community activity whose eligibility, timing, reward and settlement terms must be disclosed before participation. Neither activity is an investment, wagering product, yield product, membership return, or token entitlement."
+    "technologyScope": [
+      "Fenrua's business and technical direction includes research, development, software, infrastructure access, hosting, integration, technical support, evidence-aware workflows, operational efficiency, protocol design, and related technology services.",
+      "Identity, authority, integrity, policy, verification, containment, recovery, secret handling, and vulnerability reporting remain important technical functions where relevant. They are not the complete definition of Fenrua Labs' business or future direction."
+    ],
+    "requestHandling": [
+      "The public observation endpoints derive a short-lived, per-instance salted abuse-control identifier from request network metadata. The application code does not retain or log the raw network address for that purpose.",
+      "Business email, private vulnerability reporting, and external provider logs are separate operational channels. Their public descriptions must reflect verified current handling rather than hypothetical future systems."
     ]
   },
   "scope": {

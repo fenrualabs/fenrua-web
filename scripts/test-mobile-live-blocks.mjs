@@ -45,17 +45,24 @@ for (const route of routes) {
     `${route} compact live-block cards must not duplicate the detailed Confidence field.`,
   );
   const isOverview = route === "index.html";
+  const isStatus = route === "status/index.html";
   assert.match(
     html,
     isOverview ? /<header class="site-header site-header-live"/ : /<header class="site-header site-header-mobile-live"/,
     `${route} must use the Overview mobile-header layout without changing desktop headers.`,
   );
   assert.equal([...html.matchAll(/<script src="\/kernel-status\.js" defer><\/script>/g)].length, isOverview ? 1 : 0);
-  assert.equal([...html.matchAll(/<script src="\/mobile-chain-status\.js" defer><\/script>/g)].length, isOverview ? 0 : 1);
+  assert.equal(
+    [...html.matchAll(/<script src="\/mobile-chain-status\.js" defer><\/script>/g)].length,
+    isOverview || isStatus ? 0 : 1,
+  );
 
   const cardCount = [...html.matchAll(/data-chain-card="/g)].length;
-  assert.equal(cardCount, isOverview ? 4 : 2, `${route} must not add desktop live cards outside Overview.`);
-  if (!isOverview) assert.doesNotMatch(html, /desktop-chain-progress/, `${route} must keep desktop live cards exclusive to Overview.`);
+  assert.equal(cardCount, 4, `${route} must expose exactly one responsive pair and one desktop pair.`);
+  if (!isOverview) {
+    assert.match(html, /class="route-hero-chain-rail"/, `${route} must place the compact desktop pair in its intro card.`);
+    assert.doesNotMatch(html, /desktop-chain-progress/, `${route} must use compact rather than detailed cards in its intro.`);
+  }
 }
 
 console.log(JSON.stringify({ status: "ok", scope: "mobile-live-block-extension", routes: routes.length }));

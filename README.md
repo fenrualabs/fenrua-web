@@ -16,6 +16,8 @@ local JavaScript manifest for status hydration.
 Audit, review, scan-output, test-output, visual-capture, and builder reports are
 stored outside this source repository. The enforced boundary is defined in
 [External audit-artifact policy](docs/EXTERNAL_ARTIFACT_POLICY.md).
+Credentials and encrypted recovery bundles are also prohibited from this
+repository; see the [public repository secret boundary](docs/PUBLIC_SECRET_BOUNDARY.md).
 
 ## Commercial Boundary
 
@@ -27,7 +29,8 @@ the [Legal and Company Centre](https://fenrua.ai/legal). This repository does
 not publish an investment, token-crowdfunding, exchange, trading, or
 financial-return product.
 
-The public site now exposes Fenrua's Layer 0 AI security architecture,
+The public site now exposes Fenrua's AI efficiency infrastructure research and
+related technology services, including its Layer 0 AI security architecture,
 security-kernel model, standalone route system, toolchain registry, claim
 register, maturity register, verifier foundation, and evidence registry. Its
 current non-live commercial and document boundaries are recorded separately from
@@ -39,11 +42,16 @@ Each chain is published only through a **Public Observation Gateway over
 Encrypted Private-Mesh Transport**. `/api/chain-progress` reads fixed,
 per-chain signed schema-validated observations through server-only Vercel
 credentials, verifies their Ed25519 signatures, and never probes or forwards
-JSON-RPC. `/api/chain-observation-key` and
+JSON-RPC. Before publication, a durable atomic per-chain checkpoint rejects
+rollback, equivocation, unannounced key changes, and retired-key reuse across
+requests and serverless instances. `/api/chain-observation-key` and
 `/api/chain-n521-observation-key` expose the matching public verification
-metadata. Until Chain N521 has its own independently signed gateway and key,
-the UI truthfully shows that evidence is awaiting rather than simulating a live
-head.
+metadata plus an authenticated rotation certificate when a key transition is
+active; the progress adapter emits a rotation binding only after the durable
+checkpoint accepts its exact anchor. Production fails closed unless its
+explicitly namespaced checkpoint store is configured. Until Chain N521 has its
+own independently signed gateway and key, the UI truthfully shows that evidence
+is awaiting rather than simulating a live head.
 
 See [Public Observation Gateway](docs/PUBLIC_OBSERVATION_GATEWAY.md) and copy
 the server-only variable names from `.env.example`; never commit their values.
@@ -127,9 +135,13 @@ cards, APIs, private systems, or a perpetual production assertion.
 - `api/chain-progress.js` - bounded signed Chain 978 and Chain N521 observation adapter
 - `api/chain-observation-key.js` - Chain 978 public Ed25519 verification metadata endpoint
 - `api/chain-n521-observation-key.js` - Chain N521 public Ed25519 verification metadata endpoint
+- `server/observation-continuity.js` - atomic durable replay, equivocation, and key-rotation checkpoint
+- `scripts/test-observation-continuity.mjs` - deterministic continuity and rotation regression suite
+- `scripts/check-secret-boundary.mjs` - fail-closed public source credential and vault gate
 - `assets/fenrua-header-logo.jpg` - shared Fenrua header and favicon mark
 - `docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md` - access-only service statement
 - `docs/EXTERNAL_ARTIFACT_POLICY.md` - enforced outside-repository report boundary
+- `docs/PUBLIC_SECRET_BOUNDARY.md` - public source and external-vault separation policy
 - `docs/archive/2026-07-13/` - superseded, noindex public-document records
 - `docs/VERCEL.md` - Vercel publishing notes for `fenrua.ai`
 - `docs/UTILITY_STANDARD.md` - repository operating standard

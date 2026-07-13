@@ -29,28 +29,36 @@ function protectLiveBoundary(page) {
 async function expectMobileLiveBlocks(page) {
   await expect(page.locator(".mobile-chain-rail")).toBeVisible();
   await expect(page.locator(".mobile-chain-rail [data-chain-card]")).toHaveCount(2);
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeHidden();
+  await expect(page.locator(".route-hero-chain-rail [data-chain-card]")).toHaveCount(2);
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
 }
 
-async function expectOverviewMobileHeaderPlacement(page) {
+async function expectUnifiedMobileHeaderPlacement(page) {
   const placement = await page.locator(".site-header-mobile-live").evaluate((header) => {
     const box = (selector) => header.querySelector(selector).getBoundingClientRect();
     const brand = box(".brand");
     const nav = box(".site-nav");
     const rail = box(".mobile-chain-rail");
+    const navStyle = getComputedStyle(header.querySelector(".site-nav"));
+    const navLinkHeights = [...header.querySelectorAll(".site-nav a")].map(
+      (link) => link.getBoundingClientRect().height
+    );
     return {
-      brandAboveNav: brand.bottom <= nav.top,
       brandAboveRail: brand.bottom <= rail.top,
-      navLeftOfRail: nav.left < rail.left,
-      navAndRailShareRow: Math.abs(nav.top - rail.top) <= 1,
+      railAboveNav: rail.bottom <= nav.top,
+      horizontalNav: navStyle.display === "flex" && navStyle.flexWrap === "nowrap",
+      scrollableNav: ["auto", "scroll"].includes(navStyle.overflowX),
+      minimumTargetHeight: Math.min(...navLinkHeights),
+      headerHeight: header.getBoundingClientRect().height,
     };
   });
-  expect(placement).toEqual({
-    brandAboveNav: true,
-    brandAboveRail: true,
-    navLeftOfRail: true,
-    navAndRailShareRow: true,
-  });
+  expect(placement.brandAboveRail).toBe(true);
+  expect(placement.railAboveNav).toBe(true);
+  expect(placement.horizontalNav).toBe(true);
+  expect(placement.scrollableNav).toBe(true);
+  expect(placement.minimumTargetHeight).toBeGreaterThanOrEqual(44);
+  expect(placement.headerHeight).toBeLessThanOrEqual(430);
 }
 
 async function noHorizontalOverflow(page) {
@@ -77,6 +85,7 @@ function monitorPayload({
   signature521 = "signed-521",
   keyId978 = "fenchain-978-observation-v1",
   keyId521 = "fenchain-521-observation-v1",
+  keyRotation978: rotation978 = null,
   refreshMs = 20_000,
 } = {}) {
   const generatedAt = new Date().toISOString();
@@ -102,6 +111,7 @@ function monitorPayload({
       key_id: keyId521,
     },
   ];
+  if (rotation978) observations[0].key_rotation = rotation978;
   return {
     version: 1,
     generatedAt,
@@ -130,6 +140,17 @@ function monitorPayload({
         confirmation: { evidenceSource: "signed-observation", confidence: "confirmed" },
       },
     ],
+  };
+}
+
+function rotationBinding(fromSequence, toKeyId = "fenchain-978-observation-v2") {
+  return {
+    version: 1,
+    certificate_sha256: "a".repeat(64),
+    from_key_id: "fenchain-978-observation-v1",
+    from_payload_sha256: "b".repeat(64),
+    from_sequence: fromSequence,
+    to_key_id: toKeyId,
   };
 }
 
@@ -202,6 +223,37 @@ test("Overview removes current-state claims after a successful snapshot is follo
   assertBoundary();
 });
 
+test("Overview accepts an authenticated key rotation in an open browser session", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const initialObservedAt = new Date(Date.now() - 9_000).toISOString();
+  const rotatedObservedAt = new Date(Date.parse(initialObservedAt) + 2_000).toISOString();
+  const initial = monitorPayload({ observed978: initialObservedAt, refreshMs: 60_000 });
+  const rotated = monitorPayload({
+    sequence978: initial.observations[0].sequence + 3,
+    block978: initial.observations[0].observed_block + 3,
+    observed978: rotatedObservedAt,
+    signature978: "signed-978-rotated",
+    keyId978: "fenchain-978-observation-v2",
+    keyRotation978: rotationBinding(initial.observations[0].sequence + 2),
+    refreshMs: 60_000,
+  });
+  const requestCount = await mockSequentialPublicMonitor(page, [initial, rotated]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/");
+
+  const card = page.locator('.desktop-chain-progress [data-chain-card="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Live");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(card.locator('[data-chain-field="978-status"]')).toHaveText("Live");
+  await expect(card.locator('[data-chain-field="978-activity"]')).toContainText(
+    "authenticated key rotation accepted"
+  );
+  await expect(card.locator('[data-chain-field="978-block"]')).toHaveText("333,685");
+  assertBoundary();
+});
+
 test("Overview accepts a fail-closed unavailable chain without asserting a current observation", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   const payload = monitorPayload({ refreshMs: 60_000 });
@@ -240,20 +292,98 @@ test("Evidence keeps the Overview mobile live blocks without extra API access", 
   await expectMobileLiveBlocks(page);
   await noHorizontalOverflow(page);
   await page.setViewportSize({ width: 390, height: 900 });
-  await expectOverviewMobileHeaderPlacement(page);
+  await expectUnifiedMobileHeaderPlacement(page);
+  assertBoundary();
+});
+
+test("Public intro and mobile header stay within the unified geometry contract", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  await mockPublicMonitor(page, monitorPayload());
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await gotoPublic(page, "/");
+  const desktop = await page.evaluate(() => {
+    const hero = document.querySelector(".route-hero");
+    const heading = hero.querySelector("h1");
+    const headingStyle = getComputedStyle(heading);
+    return {
+      heroHeight: hero.getBoundingClientRect().height,
+      headingLines: heading.getBoundingClientRect().height / Number.parseFloat(headingStyle.lineHeight),
+    };
+  });
+  expect(desktop.heroHeight).toBeLessThanOrEqual(430);
+  expect(desktop.headingLines).toBeLessThanOrEqual(2.05);
+  await noHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobile = await page.locator(".site-header-live").evaluate((header) => ({
+    headerHeight: header.getBoundingClientRect().height,
+    minimumNavTarget: Math.min(
+      ...[...header.querySelectorAll(".site-nav a")].map((link) => link.getBoundingClientRect().height)
+    ),
+    navOverflow: getComputedStyle(header.querySelector(".site-nav")).overflowX,
+  }));
+  expect(mobile.headerHeight).toBeLessThanOrEqual(430);
+  expect(mobile.minimumNavTarget).toBeGreaterThanOrEqual(44);
+  expect(["auto", "scroll"]).toContain(mobile.navOverflow);
+  await page.locator(".brand").focus();
+  for (let index = 0; index < 12; index += 1) await page.keyboard.press("Tab");
+  const legalNav = page.locator(".site-nav .nav-legal");
+  await expect(legalNav).toBeFocused();
+  await expect.poll(() => legalNav.evaluate((link) => {
+    const linkBox = link.getBoundingClientRect();
+    const navBox = link.closest(".site-nav").getBoundingClientRect();
+    return linkBox.left >= navBox.left - 1 && linkBox.right <= navBox.right + 1;
+  })).toBe(true);
+  await noHorizontalOverflow(page);
+  assertBoundary();
+});
+
+test("Global footer exposes verified profiles and the business contact without overflow", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  await mockPublicMonitor(page, monitorPayload());
+  await page.setViewportSize({ width: 375, height: 812 });
+  await gotoPublic(page, "/");
+  const footer = page.locator(".site-footer");
+  await footer.scrollIntoViewIfNeeded();
+  await expect(footer.locator('a[href="mailto:partnerships@fenrua.ai"]')).toHaveText("partnerships@fenrua.ai");
+  await expect(footer.getByRole("link", { name: "X", exact: true })).toHaveAttribute("href", "https://x.com/FenruaLabs");
+  await expect(footer.getByRole("link", { name: "LinkedIn", exact: true })).toHaveAttribute(
+    "href",
+    "https://www.linkedin.com/in/fenrua-labs-80b679388",
+  );
+  await noHorizontalOverflow(page);
   assertBoundary();
 });
 
 test("Legal Centre publishes the verified company identity without a transaction surface", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
+  const payload = monitorPayload();
+  await mockPublicMonitor(page, payload);
   await page.setViewportSize({ width: 320, height: 900 });
   await gotoPublic(page, "/legal");
   await expect(page.getByRole("heading", { name: "Legal and Company Centre" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AI efficiency infrastructure and related services" })).toBeVisible();
   const companyFacts = page.locator(".company-facts");
   await expect(companyFacts.getByText("ABN 62 700 182 663", { exact: true })).toBeVisible();
   await expect(companyFacts.getByText("ACN 700 182 663", { exact: true })).toBeVisible();
+  const operatingTable = page.locator(".legal-operating-table");
+  await expect(operatingTable.locator("tbody tr")).toHaveCount(7);
+  await expect(operatingTable.getByText("AVAILABLE BY OFFER", { exact: true })).toBeVisible();
+  await expect(operatingTable.getByText("AVAILABLE BY AGREEMENT", { exact: true })).toBeVisible();
+  await expect(page.getByText(/\b(?:XP|Fortnight League|Picker|community activity|bounded rewards)\b/i)).toHaveCount(0);
   await expect(page.locator("form, [data-wallet-connect], [data-checkout], [data-payment-receiver]")).toHaveCount(0);
   await expectMobileLiveBlocks(page);
+  await noHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const introRail = page.locator(".route-hero-chain-rail");
+  await expect(introRail).toBeVisible();
+  await expect(introRail.locator('[data-chain-field="978-block"]')).toHaveText(
+    new Intl.NumberFormat("en-US").format(payload.chains[0].blockNumber)
+  );
+  await expect(introRail.locator('[data-chain-field="521-block"]')).toHaveText(
+    new Intl.NumberFormat("en-US").format(payload.chains[1].blockNumber)
+  );
   await noHorizontalOverflow(page);
   assertBoundary();
 });
@@ -299,19 +429,23 @@ test("Status uses the permitted external relative-time script and responsive gri
     const tableBox = cell.closest(".status-table").getBoundingClientRect();
     return cellBox.left >= tableBox.left - 1 && cellBox.right <= tableBox.right + 1;
   })).toBe(true);
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeVisible();
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
   assertBoundary();
 });
 
-test("Status keeps the copied live rail hidden while its isolated monitor runs at desktop width", async ({ page }) => {
+test("Status reuses its isolated monitor for the compact desktop intro cards", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   await mockPublicMonitor(page, monitorPayload());
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoPublic(page, "/status");
   await expect(page.locator(".mobile-chain-rail")).toBeHidden();
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeVisible();
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
+  await expect(page.locator('.route-hero-chain-rail [data-chain-field="978-status"]')).toHaveText("Live");
+  await expect(page.locator('.route-hero-chain-rail [data-chain-field="521-status"]')).toHaveText("Live");
   await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-state]')).toHaveText("Live");
-  expect(assertBoundary.liveRequests).toContain("/api/chain-progress");
+  expect(assertBoundary.liveRequests.filter((path) => path === "/api/chain-progress")).toHaveLength(1);
   expect(assertBoundary.liveRequests).not.toContain("/kernel-status.js");
   assertBoundary();
 });
@@ -378,6 +512,48 @@ test("Status rejects a signed rollback, preserves high-water, and recovers only 
   assertBoundary();
 });
 
+test("Status rejects a stale rotation bridge and accepts an authenticated bridge without reload", async ({ page }) => {
+  const assertBoundary = protectLiveBoundary(page);
+  const initialObservedAt = new Date(Date.now() - 9_000).toISOString();
+  const nextObservedAt = new Date(Date.parse(initialObservedAt) + 2_000).toISOString();
+  const initial = monitorPayload({ observed978: initialObservedAt, refreshMs: 60_000 });
+  const unannounced = monitorPayload({
+    sequence978: initial.observations[0].sequence + 3,
+    block978: initial.observations[0].observed_block + 3,
+    observed978: nextObservedAt,
+    signature978: "signed-978-unannounced-key",
+    keyId978: "fenchain-978-observation-v2",
+    refreshMs: 60_000,
+  });
+  unannounced.observations[0].key_rotation = rotationBinding(
+    initial.observations[0].sequence - 1
+  );
+  const rotated = structuredClone(unannounced);
+  rotated.generatedAt = new Date().toISOString();
+  rotated.observations[0].key_rotation = rotationBinding(initial.observations[0].sequence + 2);
+
+  const requestCount = await mockSequentialPublicMonitor(page, [initial, unannounced, rotated]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoPublic(page, "/status");
+  const row = page.locator('[data-status-monitor-row="978"]');
+  await expect.poll(requestCount).toBe(1);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(2);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Failure");
+  await expect(row.locator("[data-status-monitor-source]")).toContainText("verification-key change rejected");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(requestCount).toBe(3);
+  await expect(row.locator("[data-status-monitor-state]")).toHaveText("Live");
+  await expect(row.locator("[data-status-monitor-sequence]")).toContainText(
+    "authenticated key rotation accepted"
+  );
+  await expect(row.locator("[data-status-monitor-block]")).toHaveText("333,685");
+  assertBoundary();
+});
+
 for (const width of [768, 820]) {
   test(`Toolchain keeps two summary columns at ${width}px`, async ({ page }) => {
     const assertBoundary = protectLiveBoundary(page);
@@ -387,7 +563,7 @@ for (const width of [768, 820]) {
     const summary = page.locator(".toolchain-summary:not(.state-grid)").first();
     await expect(summary).toBeVisible();
     await expect.poll(() => summary.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length)).toBe(2);
-    await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+    await expect(page.locator("[data-chain-card]")).toHaveCount(4);
     assertBoundary();
   });
 }
@@ -414,7 +590,7 @@ test("Verify table supports keyboard scrolling and forced-colors focus", async (
   await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(before);
   expect(await page.evaluate(() => matchMedia("(forced-colors: active)").matches)).toBe(true);
   await expect.poll(() => table.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none");
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
   assertBoundary();
   await context.close();
 });

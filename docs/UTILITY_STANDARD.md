@@ -36,9 +36,9 @@ They do not replace GitHub as the primary interface.
 
 ## Positioning Statement
 
-Fenrua Labs Pty Ltd provides access to AI security infrastructure software,
-related technology services, and evidence-aware intelligence workflows through
-tiered service subscriptions and client-specific business agreements only. It
+Fenrua Labs Pty Ltd undertakes the research, development, and provision of AI
+efficiency infrastructure software and related technology services through
+service subscriptions and client-specific business agreements. It
 does not offer investments, token crowdfunding, securities, bonds, equity, debt,
 managed investment interests, profit-sharing arrangements, revenue-sharing
 arrangements, yield products, exchange products, trading products, or any

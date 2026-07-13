@@ -1,4 +1,5 @@
 import { createHash, createPublicKey, randomBytes, verify as verifySignature } from "node:crypto";
+import { enforceObservationContinuity } from "../server/observation-continuity.js";
 
 // This route is intentionally a bounded public adapter. It never forwards a
 // browser request to JSON-RPC and never includes an endpoint, peer, hash, or
@@ -58,6 +59,7 @@ const observationTargets = [
       readHeader: "x-fenrua-observation-read-token",
       publicKey: "FENRUA_OBSERVATION_PUBLIC_KEY_B64",
       keyId: "FENRUA_OBSERVATION_KEY_ID",
+      rotationCertificate: "FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
     },
   },
   {
@@ -73,6 +75,7 @@ const observationTargets = [
       readHeader: "x-fenrua-n521-observation-read-token",
       publicKey: "FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64",
       keyId: "FENRUA_N521_OBSERVATION_KEY_ID",
+      rotationCertificate: "FENRUA_N521_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
     },
   },
 ];
@@ -385,9 +388,19 @@ async function fetchGatewayObservation(target) {
       return { observation: null, configuration: "configured" };
     }
 
+    const observation = normalizeGatewayObservation(JSON.parse(text), target);
+    if (!observation) return { observation: null, configuration: "configured" };
+
+    const continuity = await enforceObservationContinuity({
+      target,
+      observation,
+      canonicalPayload: canonicalSignedPayload(observation),
+      freshnessSeconds: maxFreshObservationAgeSeconds,
+    });
     return {
-      observation: normalizeGatewayObservation(JSON.parse(text), target),
+      observation: continuity.accepted ? observation : null,
       configuration: "configured",
+      keyRotation: continuity.accepted ? continuity.keyRotation ?? null : null,
     };
   } catch {
     return { observation: null, configuration: "configured" };
@@ -485,8 +498,10 @@ async function buildSnapshot() {
           // Only records that can support a current or partial public state are
           // exposed here. A signed `unavailable` watcher statement remains a
           // fail-closed source result; it is not a current chain observation.
-          observations: sources.flatMap(({ observation }) =>
-            observation && observation.status !== "unavailable" ? [observation] : []
+          observations: sources.flatMap(({ observation, keyRotation }) =>
+            observation && observation.status !== "unavailable"
+              ? [{ ...observation, ...(keyRotation ? { key_rotation: keyRotation } : {}) }]
+              : []
           ),
           chains: observationTargets.map((target, index) => mapObservation(target, sources[index], generatedAt)),
         };

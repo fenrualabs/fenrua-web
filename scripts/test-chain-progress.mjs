@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign as signObservation } from "node:crypto";
 import { readFileSync } from "node:fs";
+import {
+  checkpointTransitionLua,
+  evaluateCheckpointTransition,
+} from "../server/observation-continuity.js";
 
 const originalFetch = globalThis.fetch;
 const maxGatewayResponseBytesForTest = 2_048;
@@ -9,10 +13,19 @@ const environmentKeys = [
   "FENRUA_OBSERVATION_READ_TOKEN",
   "FENRUA_OBSERVATION_PUBLIC_KEY_B64",
   "FENRUA_OBSERVATION_KEY_ID",
+  "FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
   "FENRUA_N521_OBSERVATION_GATEWAY_URL",
   "FENRUA_N521_OBSERVATION_READ_TOKEN",
   "FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64",
   "FENRUA_N521_OBSERVATION_KEY_ID",
+  "FENRUA_N521_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
+  "FENRUA_OBSERVATION_CHECKPOINT_MODE",
+  "FENRUA_OBSERVATION_CHECKPOINT_NAMESPACE",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "KV_REST_API_URL",
+  "KV_REST_API_TOKEN",
+  "VERCEL_ENV",
 ];
 const originalEnvironment = Object.fromEntries(environmentKeys.map((key) => [key, process.env[key]]));
 
@@ -32,6 +45,34 @@ const publicKeys = Object.fromEntries(
     signer.publicKey.export({ type: "spki", format: "der" }).toString("base64url"),
   ])
 );
+const replacement978Signer = generateKeyPairSync("ed25519");
+const replacement978PublicKey = replacement978Signer.publicKey
+  .export({ type: "spki", format: "der" })
+  .toString("base64url");
+
+function encodeRotationCertificate({
+  fromPayloadSha256 = "a".repeat(64),
+  fromSequence = 41,
+} = {}) {
+  const certificate = {
+    chain: "978",
+    from_key_id: "fenchain-978-observation-v1",
+    from_payload_sha256: fromPayloadSha256,
+    from_public_key_b64: publicKeys["978"],
+    from_sequence: fromSequence,
+    issued_at: new Date().toISOString(),
+    purpose: "fenrua-observation-key-rotation",
+    to_key_id: "fenchain-978-observation-v2",
+    to_public_key_b64: replacement978PublicKey,
+    version: 1,
+  };
+  certificate.signature = signObservation(
+    null,
+    Buffer.from(JSON.stringify(certificate), "utf8"),
+    signers["978"].privateKey
+  ).toString("base64url");
+  return Buffer.from(JSON.stringify(certificate), "utf8").toString("base64url");
+}
 
 function responseRecorder() {
   const headers = new Map();
@@ -156,6 +197,28 @@ function observation(chain, overrides = {}) {
   return record;
 }
 
+function resignObservation(record, signer) {
+  const signed = { ...record };
+  signed.signature = signObservation(
+    null,
+    Buffer.from(
+      JSON.stringify({
+        chain: signed.chain,
+        key_id: signed.key_id,
+        observed_at: signed.observed_at,
+        observed_block: signed.observed_block,
+        sequence: signed.sequence,
+        source_quorum: signed.source_quorum,
+        status: signed.status,
+        version: signed.version,
+      }),
+      "utf8"
+    ),
+    signer.privateKey
+  ).toString("base64url");
+  return signed;
+}
+
 function assertSanitized(snapshot) {
   const forbidden = [
     "endpoint",
@@ -194,8 +257,8 @@ function assertSanitized(snapshot) {
   for (const secret of [
     "observation-978.example.test",
     "observation-521.example.test",
-    "test-978-read-token",
-    "test-521-read-token",
+    "test-fixture-978-read-token",
+    "test-fixture-521-read-token",
   ]) {
     assert.ok(!encoded.includes(secret), `Public chain payload must not disclose ${secret}.`);
   }
@@ -206,7 +269,7 @@ function assertSanitized(snapshot) {
     [978, 521]
   );
   for (const observationRecord of snapshot.observations) {
-    assert.deepEqual(Object.keys(observationRecord).sort(), [
+    const expectedFields = [
       "chain",
       "key_id",
       "observed_at",
@@ -217,19 +280,21 @@ function assertSanitized(snapshot) {
       "staleness_seconds",
       "status",
       "version",
-    ]);
+    ];
+    if (observationRecord.key_rotation) expectedFields.push("key_rotation");
+    assert.deepEqual(Object.keys(observationRecord).sort(), expectedFields.sort());
   }
 }
 
 function configureGateways({ n521 = true } = {}) {
   process.env.FENRUA_OBSERVATION_GATEWAY_URL = "https://observation-978.example.test/status";
-  process.env.FENRUA_OBSERVATION_READ_TOKEN = "test-978-read-token";
+  process.env.FENRUA_OBSERVATION_READ_TOKEN = "test-fixture-978-read-token"; // public-secret-fixture
   process.env.FENRUA_OBSERVATION_PUBLIC_KEY_B64 = publicKeys["978"];
   process.env.FENRUA_OBSERVATION_KEY_ID = "fenchain-978-observation-v1";
 
   if (n521) {
     process.env.FENRUA_N521_OBSERVATION_GATEWAY_URL = "https://observation-521.example.test/status";
-    process.env.FENRUA_N521_OBSERVATION_READ_TOKEN = "test-521-read-token";
+    process.env.FENRUA_N521_OBSERVATION_READ_TOKEN = "test-fixture-521-read-token"; // public-secret-fixture
     process.env.FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64 = publicKeys["521"];
     process.env.FENRUA_N521_OBSERVATION_KEY_ID = "fenchain-521-observation-v1";
   } else {
@@ -246,12 +311,12 @@ function twoGatewayFetch(overrides = {}) {
     assert.equal(options.method, "GET");
     assert.equal(options.body, undefined);
     if (endpoint === "https://observation-978.example.test/status") {
-      assert.equal(options.headers["x-fenrua-observation-read-token"], "test-978-read-token");
+      assert.equal(options.headers["x-fenrua-observation-read-token"], "test-fixture-978-read-token");
       assert.equal(options.headers["x-fenrua-n521-observation-read-token"], undefined);
       return gatewayResponse(observation("978", overrides["978"]));
     }
     if (endpoint === "https://observation-521.example.test/status") {
-      assert.equal(options.headers["x-fenrua-n521-observation-read-token"], "test-521-read-token");
+      assert.equal(options.headers["x-fenrua-n521-observation-read-token"], "test-fixture-521-read-token");
       assert.equal(options.headers["x-fenrua-observation-read-token"], undefined);
       return gatewayResponse(observation("521", overrides["521"]));
     }
@@ -260,6 +325,20 @@ function twoGatewayFetch(overrides = {}) {
 }
 
 try {
+  for (const key of [
+    "FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
+    "FENRUA_N521_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
+    "FENRUA_OBSERVATION_CHECKPOINT_MODE",
+    "FENRUA_OBSERVATION_CHECKPOINT_NAMESPACE",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "KV_REST_API_URL",
+    "KV_REST_API_TOKEN",
+    "VERCEL_ENV",
+  ]) {
+    delete process.env[key];
+  }
+
   assert.doesNotMatch(chainPage, /Blocks since check|data-chain-field="(?:978|521)-delta"/);
   assert.match(chainPage, /data-chain-field="978-activity"/);
   assert.match(chainPage, /data-chain-field="521-activity"/);
@@ -277,6 +356,17 @@ try {
   ]) {
     assert.match(chainClient, new RegExp(reason), `Overview cards must expose the fail-closed reason: ${reason}.`);
   }
+  assert.match(chainClient, /isAcceptedKeyRotation/, "Overview must evaluate server-validated key rotation bindings.");
+  assert.match(
+    chainClient,
+    /rotation\.from_key_id === previous\.keyId[\s\S]{0,350}rotation\.from_sequence >= previous\.sequence/,
+    "Overview rotation acceptance must bind the browser high-water key and a non-regressing bridge sequence."
+  );
+  assert.match(
+    chainClient,
+    /authenticated key rotation accepted/,
+    "Overview must support a valid rotation without requiring a page reload."
+  );
   for (const signedField of ["key_id", "sequence", "observed_at", "observed_block", "signature"]) {
     assert.match(chainClient, new RegExp(`observation\\.${signedField}`), `Overview high-water logic must bind ${signedField}.`);
   }
@@ -328,6 +418,113 @@ try {
   assert.equal(healthy.body.observations.length, 2);
   assertSanitized(healthy.body);
 
+  process.env.VERCEL_ENV = "production";
+  globalThis.fetch = twoGatewayFetch();
+  const missingProductionCheckpoint = await callHandler({
+    headers: { "x-forwarded-for": "198.51.100.200" },
+  });
+  assert.equal(missingProductionCheckpoint.statusCode, 200);
+  assert.ok(
+    missingProductionCheckpoint.body.chains.every((chain) => chain.status === "unavailable"),
+    "Production must fail closed when durable checkpoint storage is absent."
+  );
+  assert.deepEqual(missingProductionCheckpoint.body.observations, []);
+  delete process.env.VERCEL_ENV;
+
+  configureGateways();
+  process.env.FENRUA_OBSERVATION_CHECKPOINT_MODE = "required";
+  process.env.FENRUA_OBSERVATION_CHECKPOINT_NAMESPACE = "fenrua-web:test:api-rotation:v1";
+  process.env.UPSTASH_REDIS_REST_URL = "https://observation-checkpoint.example.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-fixture-token-at-least-sixteen-bytes"; // public-secret-fixture
+  const checkpointRecords = new Map();
+  const gatewayRecords = {
+    "978": observation("978"),
+    "521": observation("521"),
+  };
+  globalThis.fetch = async (endpoint, options) => {
+    if (endpoint === "https://observation-checkpoint.example.test") {
+      const command = JSON.parse(options.body);
+      assert.equal(command[0], "EVAL");
+      assert.equal(command[1], checkpointTransitionLua);
+      const key = command[3];
+      const nextCandidate = JSON.parse(command[4]);
+      const rotation = command[5] ? JSON.parse(command[5]) : null;
+      const transition = evaluateCheckpointTransition(
+        checkpointRecords.get(key) ?? null,
+        nextCandidate,
+        rotation
+      );
+      if (transition.accepted) checkpointRecords.set(key, transition.next);
+      return new Response(
+        JSON.stringify({
+          result: [transition.accepted ? "accepted" : "rejected", transition.reason],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    if (endpoint === "https://observation-978.example.test/status") {
+      return gatewayResponse(gatewayRecords["978"]);
+    }
+    if (endpoint === "https://observation-521.example.test/status") {
+      return gatewayResponse(gatewayRecords["521"]);
+    }
+    throw new Error(`Unexpected endpoint: ${endpoint}`);
+  };
+
+  const initializedCheckpoint = await callHandler({
+    headers: { "x-forwarded-for": "198.51.100.201" },
+  });
+  assert.ok(initializedCheckpoint.body.chains.every((chain) => chain.status === "live"));
+  const chain978Checkpoint = checkpointRecords.get("fenrua-web:test:api-rotation:v1:978");
+  assert.equal(chain978Checkpoint.sequence, 41);
+
+  const apiRotationCertificate = encodeRotationCertificate({
+    fromPayloadSha256: chain978Checkpoint.payload_sha256,
+    fromSequence: chain978Checkpoint.sequence,
+  });
+  process.env.FENRUA_OBSERVATION_PUBLIC_KEY_B64 = replacement978PublicKey;
+  process.env.FENRUA_OBSERVATION_KEY_ID = "fenchain-978-observation-v2";
+  process.env.FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64 = apiRotationCertificate;
+  gatewayRecords["978"] = resignObservation(
+    {
+      ...gatewayRecords["978"],
+      key_id: "fenchain-978-observation-v2",
+      observed_at: new Date(Date.parse(gatewayRecords["978"].observed_at) + 1_000).toISOString(),
+      observed_block: gatewayRecords["978"].observed_block + 1,
+      sequence: gatewayRecords["978"].sequence + 1,
+    },
+    replacement978Signer
+  );
+  const rotatedCheckpoint = await callHandler({
+    headers: { "x-forwarded-for": "198.51.100.202" },
+  });
+  assert.equal(rotatedCheckpoint.body.chains[0].status, "live");
+  const rotatedPublicObservation = rotatedCheckpoint.body.observations.find(
+    (record) => record.chain === "978"
+  );
+  assert.equal(rotatedPublicObservation.key_id, "fenchain-978-observation-v2");
+  assert.deepEqual(rotatedPublicObservation.key_rotation, {
+    version: 1,
+    certificate_sha256: rotatedPublicObservation.key_rotation.certificate_sha256,
+    from_key_id: "fenchain-978-observation-v1",
+    from_payload_sha256: chain978Checkpoint.payload_sha256,
+    from_sequence: 41,
+    to_key_id: "fenchain-978-observation-v2",
+  });
+  assert.match(rotatedPublicObservation.key_rotation.certificate_sha256, /^[a-f0-9]{64}$/);
+  assertSanitized(rotatedCheckpoint.body);
+
+  for (const key of [
+    "FENRUA_OBSERVATION_CHECKPOINT_MODE",
+    "FENRUA_OBSERVATION_CHECKPOINT_NAMESPACE",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64",
+  ]) {
+    delete process.env[key];
+  }
+  configureGateways();
+
   const query = await callHandler({
     url: "/api/chain-progress?cache-bust=1",
     headers: { "x-forwarded-for": "198.51.100.2" },
@@ -343,7 +540,7 @@ try {
   configureGateways({ n521: false });
   globalThis.fetch = async (endpoint, options) => {
     assert.equal(endpoint, "https://observation-978.example.test/status");
-    assert.equal(options.headers["x-fenrua-observation-read-token"], "test-978-read-token");
+    assert.equal(options.headers["x-fenrua-observation-read-token"], "test-fixture-978-read-token");
     assert.equal(options.headers["x-fenrua-n521-observation-read-token"], undefined);
     return gatewayResponse(observation("978"));
   };
@@ -390,6 +587,22 @@ try {
   assert.equal(signedUnavailable.body.observations.some((record) => record.chain === "978"), false);
   assert.equal(signedUnavailable.body.observations.some((record) => record.chain === "521"), true);
   assertSanitized(signedUnavailable.body);
+
+  globalThis.fetch = twoGatewayFetch({
+    "978": {
+      status: "unavailable",
+      observed_block: null,
+      source_quorum: 0,
+      signature: null,
+      sequence: 999,
+    },
+  });
+  const unsignedUnavailable = await callHandler({ headers: { "x-forwarded-for": "198.51.100.81" } });
+  assert.equal(unsignedUnavailable.statusCode, 200);
+  assert.equal(unsignedUnavailable.body.chains[0].status, "unavailable");
+  assert.equal(unsignedUnavailable.body.chains[0].observationSequence, null);
+  assert.equal(unsignedUnavailable.body.observations.some((record) => record.chain === "978"), false);
+  assertSanitized(unsignedUnavailable.body);
 
   globalThis.fetch = twoGatewayFetch({
     "978": {
@@ -506,6 +719,11 @@ try {
     [metadata521, "fenchain-521-observation-v1", publicKeys["521"]],
   ]) {
     assert.equal(metadata.statusCode, 200);
+    assert.equal(metadata.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+    assert.equal(
+      metadata.headers.get("cdn-cache-control"),
+      "public, s-maxage=0, stale-while-revalidate=0, stale-if-error=0"
+    );
     assert.deepEqual(Object.keys(metadata.body).sort(), [
       "algorithm",
       "canonicalization",
@@ -518,6 +736,23 @@ try {
     assert.equal(metadata.body.public_key_b64, expectedPublicKey);
     assert.match(metadata.body.canonicalization, /RFC 8785 JCS UTF-8/);
   }
+
+  const encodedRotationCertificate = encodeRotationCertificate();
+  process.env.FENRUA_OBSERVATION_PUBLIC_KEY_B64 = replacement978PublicKey;
+  process.env.FENRUA_OBSERVATION_KEY_ID = "fenchain-978-observation-v2";
+  process.env.FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64 = encodedRotationCertificate;
+  const rotatingMetadata = await callKeyHandler(chain978KeyHandler, "/api/chain-observation-key", {
+    headers: { "x-forwarded-for": "203.0.113.4" },
+  });
+  assert.equal(rotatingMetadata.statusCode, 200);
+  assert.equal(rotatingMetadata.headers.get("cache-control"), "public, max-age=0, must-revalidate");
+  assert.equal(rotatingMetadata.headers.get("cdn-cache-control"), "public, s-maxage=0, stale-while-revalidate=0, stale-if-error=0");
+  assert.equal(rotatingMetadata.body.key_id, "fenchain-978-observation-v2");
+  assert.equal(rotatingMetadata.body.public_key_b64, replacement978PublicKey);
+  assert.equal(rotatingMetadata.body.rotation_certificate_b64, encodedRotationCertificate);
+  assert.match(rotatingMetadata.body.rotation_certificate_sha256, /^[a-f0-9]{64}$/);
+  delete process.env.FENRUA_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64;
+  configureGateways();
 
   const n521KeyQuery = await callKeyHandler(chain521KeyHandler, "/api/chain-n521-observation-key", {
     url: "/api/chain-n521-observation-key?anything=1",
@@ -538,7 +773,7 @@ try {
     JSON.stringify({
       status: "ok",
       scope: "dual-public-observation-gateway",
-      cases: 15,
+      cases: 20,
       rawRpcForwarding: false,
       fakeN521Telemetry: false,
     })

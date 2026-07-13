@@ -1,31 +1,25 @@
-# Fenrua Labs Pty Ltd — Access-Only Services
+# Fenrua Labs Pty Ltd — Research and Technology Services
 
 Status: active public commercial boundary  
-Last reviewed: 2026-07-13
+Last reviewed: 2026-07-14
 
-Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only.
+Fenrua Labs Pty Ltd researches, develops, and provides AI efficiency infrastructure software and related technology services through service subscriptions and client-specific business agreements. Its work may include software, infrastructure access, hosting, research, development, integration, technical support, and evidence-aware workflows within the scope of the relevant service or agreement.
 
 Fenrua Labs Pty Ltd does not offer investments, token crowdfunding, securities, bonds, equity, debt, managed investment interests, profit-sharing arrangements, revenue-sharing arrangements, yield products, exchange products, trading products, or any financial-return scheme. Neither a subscription nor a client-specific business agreement gives, promises, expects, entitles, or represents profit, return, token appreciation, token allocation, liquidity, resale value, dividends, buyback rights, or ownership in Fenrua Labs Pty Ltd.
 
-Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, tax, professional, or other advice, or any recommendation to buy, sell, hold, trade, or rely on an asset for financial gain.
+Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, or tax advice, or recommend that a person buy, sell, hold, trade, or rely on an asset for financial gain.
 
 ## Service and agreement boundary
 
-This public technical website does not itself activate an account, accept payment, connect a wallet, settle a reward, or form a subscription or client agreement.
+Fenrua Labs Pty Ltd may enter into service subscriptions and client-specific business agreements, issue invoices, receive payment, and carry out the research, development, software, infrastructure, hosting, integration, support, and related technology activities covered by those arrangements.
 
-A service subscription is formed only where its applicable terms are presented and accepted. Client-specific business agreements are private, separately negotiated, and are not published or replaced by this public statement.
+Browsing this public website does not itself form a paid service agreement. The service description, price, scope, and terms presented or agreed for a particular service govern that service.
 
-## Payment and settlement boundary
+## Commercial operations
 
-Any supported asset or wallet is a payment or bounded-settlement rail only. It is not custody, an exchange service, a public swap, an investment, a token allocation, or a promise of financial return.
+Fenrua Labs Pty Ltd may receive payment for its lawful business activities through the commercial method agreed for the relevant service. The current public website is an information, evidence, and service-discovery surface and does not presently provide self-service account creation or checkout.
 
-Before any public payment flow is activated, it must identify the seller, service, price and currency, GST treatment, billing term, renewal and cancellation rules, refund route, receiver control, and applicable terms and privacy notice.
-
-## Community activity boundary
-
-XP is non-transferable community reputation metadata only and has no cash, redemption, resale, token, investment, or financial-return value.
-
-Any Fortnight League is a Fenrua Labs-hosted community activity with company-funded, predeclared and bounded rewards. Any Picker campaign is a host-bounded community activity whose eligibility, timing, reward and settlement terms must be disclosed before participation. Neither activity is an investment, wagering product, yield product, membership return, or token entitlement.
+A payment settles the price of the relevant service. It does not by itself give a customer equity, ownership, profit-sharing, investment returns, token allocation, or rights outside the applicable service terms or client agreement.
 
 ## Evidence boundary
 
@@ -37,4 +31,4 @@ Each public record is limited to its named artifacts, revisions, timestamps, has
 
 The canonical operator identity and official registry links are published in the [Legal and Company Centre](/legal) and the machine-readable [company identity record](/data/company-identity.json).
 
-This statement is a public description of service scope. It is not financial product, investment, legal, or tax advice and does not replace applicable subscription terms, a client-specific agreement, or a compliance-approved privacy notice.
+This statement describes the public service scope. It does not amend any terms, privacy notice, or client-specific agreement that applies to a particular service.

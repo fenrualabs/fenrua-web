@@ -1,4 +1,8 @@
 import { createHash, createPublicKey, randomBytes } from "node:crypto";
+import {
+  observationContinuityInternals,
+  verifyRotationCertificate,
+} from "../server/observation-continuity.js";
 
 // This endpoint publishes Chain N521 verification metadata only. The key is
 // public by design; no gateway URL, signing key, or private-mesh detail is
@@ -11,8 +15,8 @@ const rateLimitMaximumRequests = 120;
 const rateLimitMaximumEntries = 10_000;
 const rateLimitSalt = randomBytes(16).toString("base64url");
 const rateLimitEntries = new Map();
-const metadataCacheControl = "public, max-age=300, must-revalidate";
-const metadataCdnCacheControl = "public, s-maxage=300, stale-while-revalidate=0, stale-if-error=0";
+const metadataCacheControl = "public, max-age=0, must-revalidate";
+const metadataCdnCacheControl = "public, s-maxage=0, stale-while-revalidate=0, stale-if-error=0";
 const canonicalization =
   "RFC 8785 JCS UTF-8; fields: version,chain,observed_block,observed_at,sequence,source_quorum,status,key_id";
 
@@ -84,13 +88,28 @@ function readMetadata() {
     return null;
   }
 
-  return {
+  const metadata = {
     version: 1,
     key_id: keyId,
     algorithm: "Ed25519",
     public_key_b64: publicKey,
     canonicalization,
   };
+  const encodedCertificate = process.env.FENRUA_N521_OBSERVATION_KEY_ROTATION_CERTIFICATE_B64?.trim() || "";
+  const currentPublicKey = observationContinuityInternals.normalizeEd25519PublicKey(encodedPublicKey);
+  if (!currentPublicKey) return null;
+  const rotation = verifyRotationCertificate({
+    encodedCertificate,
+    target: { chain: "521" },
+    observation: { key_id: keyId },
+    currentPublicKey,
+  });
+  if (rotation.state === "invalid") return null;
+  if (rotation.state === "valid") {
+    metadata.rotation_certificate_b64 = encodedCertificate;
+    metadata.rotation_certificate_sha256 = rotation.rotation.certificate_sha256;
+  }
+  return metadata;
 }
 
 function sendError(response, statusCode, error, headers = {}) {
@@ -128,8 +147,8 @@ export default function handler(request, response) {
     return;
   }
 
-  const metadata = readMetadata();
-  if (!metadata) {
+  const result = readMetadata();
+  if (!result) {
     sendError(response, 503, "Observation key unavailable");
     return;
   }
@@ -137,5 +156,5 @@ export default function handler(request, response) {
   response.setHeader("Cache-Control", metadataCacheControl);
   response.setHeader("CDN-Cache-Control", metadataCdnCacheControl);
   response.setHeader("Vercel-CDN-Cache-Control", metadataCdnCacheControl);
-  response.status(200).json(metadata);
+  response.status(200).json(result);
 }

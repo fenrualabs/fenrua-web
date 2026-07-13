@@ -27,8 +27,30 @@ for (const route of routes) {
   assert.match(html, /<main id="content">/, `${route} must contain a main landmark`);
   assert.match(html, /Skip to content/, `${route} must include a skip link`);
   assert.match(html, /technical-data\.js/, `${route} must load technical data controls`);
+  assert.match(html, /<strong>Fenrua Protocol<\/strong>/, `${route} must use the canonical public protocol name`);
+  assert.match(html, /<small>by Fenrua Labs Pty Ltd<\/small>/, `${route} must identify the registered operator`);
+  assert.match(html, /<a class="nav-legal" href="\/legal"(?: aria-current="page")?>Legal<\/a>\s*<\/nav>/, `${route} must keep Legal as the dedicated final primary-navigation item`);
+  assert.match(html, /href="\/#commercial-boundary-title">Service boundary<\/a>/, `${route} must link to the canonical service boundary`);
+  assert.ok(
+    html.includes('Business enquiries: <a href="mailto:partnerships@fenrua.ai">partnerships@fenrua.ai</a>'),
+    `${route} must expose the public business contact`,
+  );
+  for (const [label, url] of [
+    ["GitHub", "https://github.com/fenrualabs"],
+    ["X", "https://x.com/FenruaLabs"],
+    ["LinkedIn", "https://www.linkedin.com/in/fenrua-labs-80b679388"],
+  ]) {
+    assert.ok(html.includes(`<a href="${url}" rel="me">${label}</a>`), `${route} must expose the verified ${label} profile`);
+  }
   assert.doesNotMatch(html, />Loading registry</, `${route} must not ship an empty loading registry`);
 }
+
+const renderedRouteHtml = await Promise.all(routes.map((route) => readFile(new URL(`../${route}`, import.meta.url), "utf8")));
+assert.equal(
+  renderedRouteHtml.reduce((count, html) => count + [...html.matchAll(/class="section-shell split-section commercial-boundary"/g)].length, 0),
+  1,
+  "The full commercial policy card must appear once, on Overview only."
+);
 
 const toolchain = await readFile(new URL("../toolchain/index.html", import.meta.url), "utf8");
 const renderedRows = [...toolchain.matchAll(/data-tool-row/g)].length;
@@ -52,6 +74,7 @@ assert.doesNotMatch(toolchain, /<span class="status-badge">[^<]+<\/span><br>/, "
 assert.doesNotMatch(toolchain, />Executed</);
 
 const overview = await readFile(new URL("../index.html", import.meta.url), "utf8");
+assert.equal([...overview.matchAll(/class="section-shell split-section commercial-boundary"/g)].length, 1, "Overview must retain the single full policy card.");
 assert.match(overview, /<script src="\/kernel-status\.js" defer><\/script>/, "overview must load live chain updater");
 assert.match(overview, /class="site-header site-header-live"/, "overview must place live blocks in the header");
 assert.match(overview, /class="header-chain-rail mobile-chain-rail"/, "overview must render the mobile header live chain rail");
@@ -61,6 +84,16 @@ assert.match(overview, /data-chain-card="521"/, "overview must render Chain N521
 assert.match(overview, /<link rel="icon" href="\/assets\/fenrua-header-logo\.jpg" type="image\/jpeg" \/>/, "overview must use the approved logo as its favicon");
 assert.match(overview, /<img src="\/assets\/fenrua-header-logo\.jpg" width="40" height="40" alt="" \/>/, "overview must use the approved logo in its header");
 assert.match(overview, /data-chain-meta="feed-status"/, "overview must expose live chain feed status");
+assert.match(
+  overview,
+  /Each chain is presented from its own independently signed bounded observation when one validates; otherwise its state remains waiting or unavailable\./,
+  "overview observation copy must remain conditional on each chain's current signed evidence."
+);
+assert.doesNotMatch(
+  overview,
+  /Chain N521 remains awaiting evidence/,
+  "overview must not freeze Chain N521 in an awaiting state when live signed evidence can change independently."
+);
 assert.equal([...overview.matchAll(/data-chain-card="/g)].length, 4, "overview must render two responsive pairs of live block cards");
 assert.match(overview, /Evidence source/);
 assert.match(overview, /Confidence/);
@@ -99,7 +132,7 @@ for (const state of ["loading", "success", "partial", "stale", "failure", "pause
 }
 assert.match(status, /Current public state/);
 assert.match(status, /Commercial boundary statement/);
-assert.match(status, /Access-only services/);
+assert.match(status, /Research and technology services/);
 assert.match(status, /LIVE SIGNED OBSERVATIONS/);
 assert.match(status, /STATIC RELEASE RECORDS/);
 assert.match(status, /<script src="\/status-monitor\.js" defer><\/script>/);
@@ -113,6 +146,16 @@ assert.doesNotMatch(status, /Last successful check/);
 assert.doesNotMatch(status, /<script>\s*\(\(\) =>/, "Status must not ship a CSP-blocked inline relative-time script.");
 assert.equal([...status.matchAll(/data-chain-meta="announcer"/g)].length, 0, "Status header telemetry must be non-announcing.");
 assert.equal([...status.matchAll(/data-status-monitor-announcer/g)].length, 1, "Status must expose one telemetry live region.");
+const staticReleaseTable = status.match(/<div class="registry status-table static-release-table"[\s\S]*?<\/table>/)?.[0];
+assert.ok(staticReleaseTable, "Status must render the static release table.");
+const staticReleaseBody = staticReleaseTable.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1];
+assert.ok(staticReleaseBody, "Status must render a static release table body.");
+const staticReleaseRows = [...staticReleaseBody.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+assert.ok(staticReleaseRows.length > 0, "Status must render static release rows.");
+for (const [index, row] of staticReleaseRows.entries()) {
+  assert.equal([...row.matchAll(/<td\b/g)].length, 8, `Static release row ${index + 1} must match the eight-column header.`);
+  assert.equal([...row.matchAll(/data-label="Current limitation"/g)].length, 1, `Static release row ${index + 1} must expose one limitation cell.`);
+}
 
 const evidence = await readFile(new URL("../evidence/index.html", import.meta.url), "utf8");
 assert.match(evidence, /class="hash-copy"/);
@@ -128,7 +171,8 @@ const audit = await readFile(new URL("../audit/index.html", import.meta.url), "u
 assert.match(audit, /CURRENT PUBLIC RELEASE/);
 assert.match(audit, /STATIC RELEASE SCOPE/);
 assert.match(audit, /\.well-known\/fenrua-release\.json/);
-assert.match(audit, /Fenrua Labs Pty Ltd — Access-Only Services/);
+assert.match(audit, /access-only-commercial-boundary/);
+assert.doesNotMatch(audit, /class="section-shell split-section commercial-boundary"/, "Audit must link to the canonical policy rather than repeat its full card.");
 
 const sitemap = await readFile(new URL("../sitemap.xml", import.meta.url), "utf8");
 for (const route of ["legal", "support", "security", "accessibility"]) assert.match(sitemap, new RegExp(`/${route}<`));
@@ -139,6 +183,13 @@ assert.match(legal, /FENRUA LABS PTY LTD/);
 assert.match(legal, /ABN 62 700 182 663/);
 assert.match(legal, /ACN 700 182 663/);
 assert.match(legal, /Registered from 2026-07-13/);
-assert.match(legal, /no public account activation, checkout, wallet connection, payment receiver, or reward-settlement action/i);
+assert.match(legal, /CURRENT OPERATING RECORD/);
+assert.match(legal, /AI efficiency infrastructure and related services/);
+assert.equal([...legal.matchAll(/<tr>/g)].length, 8, "Legal must render one header plus seven approved offering rows.");
+assert.match(legal, /may separately contract, invoice, receive payment, and deliver services through ordinary business arrangements/i);
+assert.doesNotMatch(legal, /\b(?:XP|Fortnight League|Picker|community activity|bounded rewards|payment rails)\b/i);
+assert.doesNotMatch(legal, /\b(?:compliance-owned gate|must be approved|compliance-approved)\b/i);
+assert.doesNotMatch(legal, /Fenrua Protocol is (?:the|an) AI security/i);
+assert.equal([...legal.matchAll(/class="section-shell split-section commercial-boundary"/g)].length, 0, "Legal must link to the Overview policy card rather than repeat it.");
 
 console.log(JSON.stringify({ status: "ok", scope: "static-routes", routes: routes.length, toolchainRows: renderedRows }));

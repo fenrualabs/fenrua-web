@@ -44,6 +44,33 @@
       ]
     },
     {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [
         {
@@ -71,6 +98,21 @@
       ]
     },
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?:fenrua-web-[a-z0-9-]+|fenrua-[a-z0-9]+-fenrualabs-projects)\\.vercel\\.app"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
       "source": "/data/(.*)",
       "headers": [
         {
@@ -87,7 +129,7 @@
         {
           "type": "header",
           "key": "host",
-          "value": "(?:fenrua-web(?:-[a-z0-9-]+)?|fenrua-[a-z0-9]+-fenrualabs-projects)\\.vercel\\.app"
+          "value": "fenrua-web\\.vercel\\.app"
         }
       ],
       "destination": "https://fenrua.ai/$1",
