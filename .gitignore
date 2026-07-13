@@ -4,6 +4,7 @@ Thumbs.db
 node_modules/
 dist/
 build/
+public/
 .env
 .env.*
 .vercel

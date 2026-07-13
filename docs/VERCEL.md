@@ -16,7 +16,7 @@ Use these settings for the existing Vercel project:
 - Node.js version: `24.x`
 - Install command: `npm ci --omit=dev`
 - Build command: `npm run build:release`
-- Output directory: not set; Vercel serves the repository's generated static files
+- Output directory: `public` (generated deterministically by the release build)
 - Production branch: `main`
 - Production domain: `fenrua.ai`
 

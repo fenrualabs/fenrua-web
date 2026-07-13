@@ -4,6 +4,7 @@
   "trailingSlash": false,
   "installCommand": "npm ci --omit=dev",
   "buildCommand": "npm run build:release",
+  "outputDirectory": "public",
   "headers": [
     {
       "source": "/(.*)",
