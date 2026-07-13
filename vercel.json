@@ -66,6 +66,18 @@
   ],
   "redirects": [
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "host",
+          "value": "www\\.fenrua\\.ai"
+        }
+      ],
+      "destination": "https://fenrua.ai/$1",
+      "permanent": true
+    },
+    {
       "source": "/genesis",
       "destination": "/audit",
       "permanent": true

@@ -32,11 +32,11 @@ data.
 In Vercel, open the project, go to **Settings -> Domains**, and add:
 
 - `fenrua.ai` as the canonical production domain
-- `www.fenrua.ai` as a permanent redirect to `fenrua.ai`
+- `www.fenrua.ai` as an alias; the committed host-specific redirect sends every
+  `www` request permanently to `https://fenrua.ai`
 
-The domain redirect is an owner-only Vercel configuration step. Do not add
-project IDs, organisation IDs, credentials, tokens, or other project internals
-to this repository.
+Do not add project IDs, organisation IDs, credentials, tokens, or other project
+internals to this repository.
 
 ## Notes
 
