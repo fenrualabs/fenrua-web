@@ -259,6 +259,7 @@ export function inspectPublicFile({ absolutePath, repositoryPath }) {
 export function scanPublicSource(repositoryRoot = root) {
   if (!statSync(repositoryRoot).isDirectory()) throw new Error("Repository root is unavailable.");
   const paths = new Set();
+  let gitMetadataUsable = false;
   if (existsSync(resolve(repositoryRoot, ".git"))) {
     try {
       const output = execFileSync(
@@ -271,6 +272,7 @@ export function scanPublicSource(repositoryRoot = root) {
           stdio: ["ignore", "pipe", "ignore"],
         }
       );
+      gitMetadataUsable = true;
       for (const path of output.split("\0").filter(Boolean)) paths.add(path);
     } catch {
       // Some deployment builders retain an empty .git directory after removing
@@ -281,6 +283,7 @@ export function scanPublicSource(repositoryRoot = root) {
   const visit = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name === ".git" || entry.name === "node_modules") continue;
+      if (!gitMetadataUsable && entry.name === ".vercel" && directory === repositoryRoot) continue;
       const absolutePath = resolve(directory, entry.name);
       if (entry.isDirectory() && !entry.isSymbolicLink()) {
         visit(absolutePath);
