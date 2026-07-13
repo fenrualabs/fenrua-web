@@ -260,12 +260,23 @@ export function scanPublicSource(repositoryRoot = root) {
   if (!statSync(repositoryRoot).isDirectory()) throw new Error("Repository root is unavailable.");
   const paths = new Set();
   if (existsSync(resolve(repositoryRoot, ".git"))) {
-    const output = execFileSync(
-      "git",
-      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-      { cwd: repositoryRoot, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }
-    );
-    for (const path of output.split("\0").filter(Boolean)) paths.add(path);
+    try {
+      const output = execFileSync(
+        "git",
+        ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        {
+          cwd: repositoryRoot,
+          encoding: "utf8",
+          maxBuffer: 8 * 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"],
+        }
+      );
+      for (const path of output.split("\0").filter(Boolean)) paths.add(path);
+    } catch {
+      // Some deployment builders retain an empty .git directory after removing
+      // Git metadata. The deterministic filesystem walk below remains the
+      // authoritative fallback and still scans ignored files such as .env.local.
+    }
   }
   const visit = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {

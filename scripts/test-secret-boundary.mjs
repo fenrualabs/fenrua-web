@@ -95,6 +95,17 @@ try {
     )
   );
 
+  const strippedGitBuild = join(temporaryRoot, "stripped-git-build");
+  mkdirSync(join(strippedGitBuild, ".git"), { recursive: true });
+  writeFileSync(join(strippedGitBuild, "safe.txt"), "public\n", { mode: 0o600 });
+  const strippedGitSecret = ["API_", "TOKEN=not-a-token\n"].join("");
+  writeFileSync(join(strippedGitBuild, ".env.local"), strippedGitSecret, { mode: 0o600 });
+  assert.ok(
+    scanPublicSource(strippedGitBuild).violations.some(
+      (violation) => violation.rule === "nonempty-sensitive-environment-value"
+    )
+  );
+
   const linkedCheckout = join(temporaryRoot, "linked-checkout");
   mkdirSync(join(linkedCheckout, ".vercel"), { recursive: true });
   execFileSync("git", ["init", "-q"], { cwd: linkedCheckout });
@@ -119,7 +130,7 @@ try {
   const multilineTemplate = ["const api", "Tok", "en = `not-a-token\\nsecond-line`;\n"].join("");
   assert.equal(inspect("config.js", multilineTemplate)[0].rule, "hardcoded-sensitive-literal");
 
-  console.log(JSON.stringify({ status: "ok", scope: "public-secret-boundary-regressions", cases: 29 }));
+  console.log(JSON.stringify({ status: "ok", scope: "public-secret-boundary-regressions", cases: 30 }));
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }
