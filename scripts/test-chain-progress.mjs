@@ -90,7 +90,7 @@ function observation(chain, overrides = {}) {
     source_quorum: 2,
     status: "confirmed",
     staleness_seconds: 0,
-    key_id: chain === "978" ? "fenchain-978-observation-v1" : "fenchain-n521-observation-v1",
+    key_id: chain === "978" ? "fenchain-978-observation-v1" : "fenchain-521-observation-v1",
     ...overrides,
   };
 
@@ -170,7 +170,7 @@ function configureGateways({ n521 = true } = {}) {
     process.env.FENRUA_N521_OBSERVATION_GATEWAY_URL = "https://observation-521.example.test/status";
     process.env.FENRUA_N521_OBSERVATION_READ_TOKEN = "test-521-read-token";
     process.env.FENRUA_N521_OBSERVATION_PUBLIC_KEY_B64 = publicKeys["521"];
-    process.env.FENRUA_N521_OBSERVATION_KEY_ID = "fenchain-n521-observation-v1";
+    process.env.FENRUA_N521_OBSERVATION_KEY_ID = "fenchain-521-observation-v1";
   } else {
     for (const key of environmentKeys.filter((key) => key.startsWith("FENRUA_N521_"))) delete process.env[key];
   }
@@ -309,7 +309,7 @@ try {
   });
   for (const [metadata, expectedKeyId, expectedPublicKey] of [
     [key978, "fenchain-978-observation-v1", publicKeys["978"]],
-    [key521, "fenchain-n521-observation-v1", publicKeys["521"]],
+    [key521, "fenchain-521-observation-v1", publicKeys["521"]],
   ]) {
     assert.equal(metadata.statusCode, 200);
     assert.deepEqual(Object.keys(metadata.body).sort(), [
