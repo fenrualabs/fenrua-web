@@ -29,7 +29,8 @@ the [Legal and Company Centre](https://fenrua.ai/legal). This repository does
 not publish an investment, token-crowdfunding, exchange, trading, or
 financial-return product.
 
-The public site now exposes Fenrua's Layer 0 AI security architecture,
+The public site now exposes Fenrua's AI efficiency infrastructure research and
+related technology services, including its Layer 0 AI security architecture,
 security-kernel model, standalone route system, toolchain registry, claim
 register, maturity register, verifier foundation, and evidence registry. Its
 current non-live commercial and document boundaries are recorded separately from

@@ -29,7 +29,9 @@ function protectLiveBoundary(page) {
 async function expectMobileLiveBlocks(page) {
   await expect(page.locator(".mobile-chain-rail")).toBeVisible();
   await expect(page.locator(".mobile-chain-rail [data-chain-card]")).toHaveCount(2);
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeHidden();
+  await expect(page.locator(".route-hero-chain-rail [data-chain-card]")).toHaveCount(2);
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
 }
 
 async function expectUnifiedMobileHeaderPlacement(page) {
@@ -323,20 +325,48 @@ test("Public intro and mobile header stay within the unified geometry contract",
   expect(mobile.headerHeight).toBeLessThanOrEqual(430);
   expect(mobile.minimumNavTarget).toBeGreaterThanOrEqual(44);
   expect(["auto", "scroll"]).toContain(mobile.navOverflow);
+  await page.locator(".brand").focus();
+  for (let index = 0; index < 12; index += 1) await page.keyboard.press("Tab");
+  const legalNav = page.locator(".site-nav .nav-legal");
+  await expect(legalNav).toBeFocused();
+  await expect.poll(() => legalNav.evaluate((link) => {
+    const linkBox = link.getBoundingClientRect();
+    const navBox = link.closest(".site-nav").getBoundingClientRect();
+    return linkBox.left >= navBox.left - 1 && linkBox.right <= navBox.right + 1;
+  })).toBe(true);
   await noHorizontalOverflow(page);
   assertBoundary();
 });
 
 test("Legal Centre publishes the verified company identity without a transaction surface", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
+  const payload = monitorPayload();
+  await mockPublicMonitor(page, payload);
   await page.setViewportSize({ width: 320, height: 900 });
   await gotoPublic(page, "/legal");
   await expect(page.getByRole("heading", { name: "Legal and Company Centre" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AI efficiency infrastructure and related services" })).toBeVisible();
   const companyFacts = page.locator(".company-facts");
   await expect(companyFacts.getByText("ABN 62 700 182 663", { exact: true })).toBeVisible();
   await expect(companyFacts.getByText("ACN 700 182 663", { exact: true })).toBeVisible();
+  const operatingTable = page.locator(".legal-operating-table");
+  await expect(operatingTable.locator("tbody tr")).toHaveCount(7);
+  await expect(operatingTable.getByText("AVAILABLE BY OFFER", { exact: true })).toBeVisible();
+  await expect(operatingTable.getByText("AVAILABLE BY AGREEMENT", { exact: true })).toBeVisible();
+  await expect(page.getByText(/\b(?:XP|Fortnight League|Picker|community activity|bounded rewards)\b/i)).toHaveCount(0);
   await expect(page.locator("form, [data-wallet-connect], [data-checkout], [data-payment-receiver]")).toHaveCount(0);
   await expectMobileLiveBlocks(page);
+  await noHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const introRail = page.locator(".route-hero-chain-rail");
+  await expect(introRail).toBeVisible();
+  await expect(introRail.locator('[data-chain-field="978-block"]')).toHaveText(
+    new Intl.NumberFormat("en-US").format(payload.chains[0].blockNumber)
+  );
+  await expect(introRail.locator('[data-chain-field="521-block"]')).toHaveText(
+    new Intl.NumberFormat("en-US").format(payload.chains[1].blockNumber)
+  );
   await noHorizontalOverflow(page);
   assertBoundary();
 });
@@ -382,19 +412,23 @@ test("Status uses the permitted external relative-time script and responsive gri
     const tableBox = cell.closest(".status-table").getBoundingClientRect();
     return cellBox.left >= tableBox.left - 1 && cellBox.right <= tableBox.right + 1;
   })).toBe(true);
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeVisible();
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
   assertBoundary();
 });
 
-test("Status keeps the copied live rail hidden while its isolated monitor runs at desktop width", async ({ page }) => {
+test("Status reuses its isolated monitor for the compact desktop intro cards", async ({ page }) => {
   const assertBoundary = protectLiveBoundary(page);
   await mockPublicMonitor(page, monitorPayload());
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoPublic(page, "/status");
   await expect(page.locator(".mobile-chain-rail")).toBeHidden();
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator(".route-hero-chain-rail")).toBeVisible();
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
+  await expect(page.locator('.route-hero-chain-rail [data-chain-field="978-status"]')).toHaveText("Live");
+  await expect(page.locator('.route-hero-chain-rail [data-chain-field="521-status"]')).toHaveText("Live");
   await expect(page.locator('[data-status-monitor-row="978"] [data-status-monitor-state]')).toHaveText("Live");
-  expect(assertBoundary.liveRequests).toContain("/api/chain-progress");
+  expect(assertBoundary.liveRequests.filter((path) => path === "/api/chain-progress")).toHaveLength(1);
   expect(assertBoundary.liveRequests).not.toContain("/kernel-status.js");
   assertBoundary();
 });
@@ -512,7 +546,7 @@ for (const width of [768, 820]) {
     const summary = page.locator(".toolchain-summary:not(.state-grid)").first();
     await expect(summary).toBeVisible();
     await expect.poll(() => summary.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length)).toBe(2);
-    await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+    await expect(page.locator("[data-chain-card]")).toHaveCount(4);
     assertBoundary();
   });
 }
@@ -539,7 +573,7 @@ test("Verify table supports keyboard scrolling and forced-colors focus", async (
   await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(before);
   expect(await page.evaluate(() => matchMedia("(forced-colors: active)").matches)).toBe(true);
   await expect.poll(() => table.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none");
-  await expect(page.locator("[data-chain-card]")).toHaveCount(2);
+  await expect(page.locator("[data-chain-card]")).toHaveCount(4);
   assertBoundary();
   await context.close();
 });

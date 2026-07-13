@@ -5,9 +5,10 @@ Last reviewed: 2026-07-12
 
 ## Purpose
 
-The public website is an evidence interface for Fenrua's Layer 0 AI security
-infrastructure. It must help a technical visitor understand what exists, what is
-planned, what has evidence, and what remains unverified.
+The public website is an evidence interface for Fenrua's AI efficiency
+infrastructure research, software, and related technology services, including
+its Layer 0 security controls. It must help a technical visitor understand what
+exists, what is planned, what has evidence, and what remains unverified.
 
 ## Public Truth Boundary
 
@@ -74,4 +75,3 @@ Primary navigation should map to user intent:
 8. Toolchain.
 9. Evidence.
 10. Status.
-

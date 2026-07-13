@@ -199,6 +199,11 @@ main > section:not(#chain-progress) {
   outline: none;
 }
 
+.site-nav .nav-legal {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
 .site-header-live {
   display: grid;
   grid-template-columns: minmax(13rem, auto) minmax(0, 1fr);
@@ -1691,9 +1696,10 @@ h3,
 
 .route-hero {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.42fr);
+  gap: clamp(1.25rem, 3vw, 2.75rem);
   min-height: clamp(18rem, 30vw, 26rem);
-  align-content: center;
+  align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -1701,6 +1707,34 @@ h3,
     rgba(18, 18, 18, 0.92);
   padding: clamp(1.25rem, 3.2vw, 3rem);
   box-shadow: var(--shadow);
+}
+
+.route-hero-copy {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  align-content: center;
+}
+
+.route-hero-solo {
+  grid-template-columns: 1fr;
+}
+
+.route-hero-chain-rail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  min-width: 0;
+  align-content: center;
+}
+
+.route-hero-chain-rail .header-chain-card {
+  gap: 0.42rem;
+  padding: 0.65rem;
+}
+
+.route-hero-chain-rail .header-chain-block strong {
+  font-size: clamp(0.98rem, 1.35vw, 1.18rem);
 }
 
 .route-hero h1 {
@@ -1714,9 +1748,9 @@ h3,
   line-height: 1.58;
 }
 
-.route-hero > .eyebrow,
-.route-hero > h1,
-.route-hero > p:not(.eyebrow) {
+.route-hero-copy > .eyebrow,
+.route-hero-copy > h1,
+.route-hero-copy > p:not(.eyebrow) {
   margin: 0;
 }
 
@@ -2217,6 +2251,7 @@ tr:last-child td {
     width: 100%;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
+    scroll-padding-inline: 1rem;
     padding-bottom: 0.25rem;
   }
 
@@ -2245,6 +2280,14 @@ tr:last-child td {
   .work-section {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .route-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .route-hero-chain-rail {
+    display: none;
   }
 
   .status-band,
@@ -2563,8 +2606,13 @@ tr:last-child td {
   }
 
   .route-hero {
+    grid-template-columns: 1fr;
     min-height: 18rem;
     padding: 1.25rem;
+  }
+
+  .route-hero-chain-rail {
+    display: none;
   }
 
   .filter-groups button {

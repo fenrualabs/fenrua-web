@@ -7,6 +7,8 @@ const [status, monitor] = await Promise.all([
 ]);
 
 assert.match(status, /<script src="\/status-monitor\.js" defer><\/script>/, "Status must load its isolated public monitor.");
+assert.doesNotMatch(status, /<script src="\/mobile-chain-status\.js" defer><\/script>/, "Status must not start a second public-observation poller.");
+assert.match(status, /class="route-hero-chain-rail"/, "Status must place the compact observation pair in its desktop intro card.");
 assert.match(status, /LIVE SIGNED OBSERVATIONS/, "Status must distinguish live observations from static release records.");
 assert.match(status, /STATIC RELEASE RECORDS/, "Static records must be explicitly scoped as non-live.");
 assert.match(status, /data-status-monitor-row="978"/, "Status must render a Chain 978 monitor target.");
@@ -20,6 +22,7 @@ assert.doesNotMatch(status, /2026-07-13T07:56:58Z/, "The shared release-input ti
 
 assert.match(monitor, /fetch\("\/api\/chain-progress"/, "The monitor may consume only the bounded public observation endpoint.");
 assert.match(monitor, /cache: "no-store"/, "The monitor must request a current public response.");
+assert.match(monitor, /function hydrateCompactCard\(chain, state\)/, "The validated status render must hydrate the compact intro cards.");
 assert.match(monitor, /observation\.observed_at !== chain\.checkedAt/, "The monitor must bind the row time to the signed observation time.");
 assert.match(monitor, /chain\.observationSequence !== observation\.sequence/, "The monitor must bind the displayed sequence to the signed observation.");
 assert.match(monitor, /No current state is asserted/, "Unavailable monitor responses must fail closed.");

@@ -27,6 +27,14 @@ const generatedIso = siteEvidence.generatedAt;
 if (typeof generatedIso !== "string" || !Number.isFinite(Date.parse(generatedIso))) {
   throw new Error("data/site-evidence.json must contain a valid generatedAt timestamp.");
 }
+if (
+  !Array.isArray(siteEvidence.legalOperatingRecord?.offerings)
+  || siteEvidence.legalOperatingRecord.offerings.length !== 7
+  || !Array.isArray(siteEvidence.legalOperatingRecord.technologyScope)
+  || !Array.isArray(siteEvidence.legalOperatingRecord.requestHandling)
+) {
+  throw new Error("data/site-evidence.json must contain the approved seven-row Legal operating record and supporting factual sections.");
+}
 const generatedDate = generatedIso.slice(0, 10);
 const checkMode = process.argv.includes("--check");
 const staleGeneratedFiles = [];
@@ -77,6 +85,7 @@ const nav = [
   ["Evidence", "/evidence"],
   ["Audit", "/audit"],
   ["Status", "/status"],
+  ["Legal", "/legal"],
 ];
 
 const evidenceRecords = [
@@ -476,7 +485,7 @@ const organizationJsonLd = JSON.stringify(
       contactType: "business enquiries",
       email: company.publicContact,
     },
-    description: "Fenrua Labs provides access-only AI security infrastructure software, technology services, and evidence-aware intelligence workflows.",
+    description: "Fenrua Labs researches, develops, and provides AI efficiency infrastructure software and related technology services.",
     sameAs: ["https://github.com/fenrualabs"],
   },
   null,
@@ -528,14 +537,14 @@ function pageDiscoveryJsonLd({ title, description, canonical, current }) {
   return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }, null, 2).replaceAll("<", "\\u003c");
 }
 
-function layout({ title, description, current, body, scripts = "", canonicalPath, headerLive = false, mobileLive = true, robots = "index,follow", includeCommercialBoundary = !headerLive }) {
+function layout({ title, description, current, body, scripts = "", canonicalPath, headerLive = false, mobileLive = true, robots = "index,follow" }) {
   const canonical = canonicalPath ?? (current === "Overview" ? "/" : `/${current.toLowerCase()}`);
   const canonicalUrl = `https://fenrua.ai${canonical}`;
   const searchDirectives = robots.includes("noindex")
     ? robots
     : `${robots},max-snippet:-1,max-image-preview:large,max-video-preview:-1`;
   const navHtml = nav
-    .map(([label, href]) => `<a href="${href}"${current === label ? ' aria-current="page"' : ""}>${label}</a>`)
+    .map(([label, href]) => `<a${label === "Legal" ? ' class="nav-legal"' : ""} href="${href}"${current === label ? ' aria-current="page"' : ""}>${label}</a>`)
     .join("\n        ");
   const headerClass = headerLive ? "site-header site-header-live" : mobileLive ? "site-header site-header-mobile-live" : "site-header";
   const headerRail = headerLive || mobileLive
@@ -544,7 +553,7 @@ function layout({ title, description, current, body, scripts = "", canonicalPath
   const pageScripts = [
     headerLive ? '<script src="/kernel-status.js" defer></script>' : "",
     scripts,
-    mobileLive && !headerLive ? '<script src="/mobile-chain-status.js" defer></script>' : "",
+    mobileLive && !headerLive && current !== "Status" ? '<script src="/mobile-chain-status.js" defer></script>' : "",
   ].filter(Boolean).join("\n    ");
   return `<!doctype html>
 <html lang="en-AU">
@@ -586,11 +595,11 @@ ${pageScripts ? `    ${pageScripts}\n` : ""}
     <a class="skip-link" href="#content">Skip to content</a>
     <span class="sr-only" data-copy-announcer role="status" aria-live="polite" aria-atomic="true"></span>
     <header class="${headerClass}" aria-label="Site header">
-      <a class="brand" href="/" aria-label="Fenrua home">
+      <a class="brand" href="/" aria-label="Fenrua Protocol home">
         <img src="/assets/fenrua-header-logo.jpg" width="40" height="40" alt="" />
         <span>
-          <strong>Fenrua</strong>
-          <small>Layer 0 AI security infrastructure</small>
+          <strong>Fenrua Protocol</strong>
+          <small>by Fenrua Labs Pty Ltd</small>
         </span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
@@ -598,7 +607,7 @@ ${pageScripts ? `    ${pageScripts}\n` : ""}
       </nav>${headerRail}
     </header>
     <main id="content">
-${body}${includeCommercialBoundary ? `\n${commercialBoundarySection()}` : ""}
+${body}
     </main>
     <footer class="site-footer">
       <div>
@@ -610,6 +619,7 @@ ${body}${includeCommercialBoundary ? `\n${commercialBoundarySection()}` : ""}
         <p>Public claims are bounded by public evidence.</p>
         <div class="footer-links">
           <a href="/legal">Legal &amp; company</a>
+          <a href="/#commercial-boundary-title">Service boundary</a>
           <a href="mailto:${attr(company.publicContact)}">Contact</a>
           <a href="/audit">Audit</a>
           <a href="/evidence">Evidence</a>
@@ -624,12 +634,16 @@ ${body}${includeCommercialBoundary ? `\n${commercialBoundarySection()}` : ""}
 `;
 }
 
-function routeHero(eyebrow, title, text, cta = "") {
-  return `      <section class="route-hero" aria-labelledby="page-title">
-        <p class="eyebrow">${esc(eyebrow)}</p>
-        <h1 id="page-title">${esc(title)}</h1>
-        <p>${esc(text)}</p>
-        ${cta}
+function routeHero(eyebrow, title, text, cta = "", includeChainRail = true) {
+  const heroClass = includeChainRail ? "route-hero" : "route-hero route-hero-solo";
+  return `      <section class="${heroClass}" aria-labelledby="page-title">
+        <div class="route-hero-copy">
+          <p class="eyebrow">${esc(eyebrow)}</p>
+          <h1 id="page-title">${esc(title)}</h1>
+          <p>${esc(text)}</p>
+          ${cta}
+        </div>
+        ${includeChainRail ? chainRail("route-hero-chain-rail", "Current signed chain observations", false) : ""}
       </section>`;
 }
 
@@ -755,16 +769,16 @@ function chainProgressSection() {
 
 function home() {
   return layout({
-    title: "Fenrua | Layer 0 AI Security Infrastructure",
-    description: "Fenrua is the public evidence surface for the open security kernel beneath autonomous AI systems.",
+    title: "Fenrua Protocol | AI Efficiency Infrastructure",
+    description: "Fenrua Labs researches, develops, and provides AI efficiency infrastructure software and related technology services.",
     current: "Overview",
     headerLive: true,
-    includeCommercialBoundary: true,
     body: `${routeHero(
-      "LAYER 0 AI SECURITY UTILITY INFRASTRUCTURE",
-      "The security kernel beneath autonomous AI.",
-      "Fenrua provides identity, authority, integrity, policy, evidence, verification, containment, and recovery primitives for AI agents, models, tools, runtimes, applications, chains, and infrastructure.",
-      `<div class="cta-row"><a class="button button-primary" href="/architecture">Explore architecture</a><a class="button button-secondary" href="/verify">Verify locally</a><a class="button button-secondary" href="/toolchain">Inspect toolchain</a></div>`
+      "AI EFFICIENCY INFRASTRUCTURE",
+      "AI efficiency infrastructure for verifiable systems.",
+      "Fenrua researches, develops, and provides software and related technology services spanning AI efficiency, infrastructure, evidence, identity, authority, integrity, policy, verification, containment, recovery, hosting, and integration.",
+      `<div class="cta-row"><a class="button button-primary" href="/architecture">Explore architecture</a><a class="button button-secondary" href="/verify">Verify locally</a><a class="button button-secondary" href="/toolchain">Inspect toolchain</a></div>`,
+      false
     )}
       ${chainProgressSection()}
       <section class="section-shell" aria-labelledby="home-answers">
@@ -774,7 +788,7 @@ function home() {
           <p>The homepage is intentionally a routing surface. Deep technical detail lives on dedicated pages so evidence, maturity, and limitations stay inspectable.</p>
         </div>
         ${cardGrid([
-          { kicker: "WHAT", title: "Fenrua is a security substrate", text: "It is not a chatbot, marketplace, generic chain, wallet surface, or certification authority.", href: "/architecture", link: "Architecture" },
+          { kicker: "WHAT", title: "Fenrua is an infrastructure protocol", text: "It is a research, software, and technology-services foundation for efficient, verifiable AI systems; security is one technical discipline within the broader architecture.", href: "/architecture", link: "Architecture" },
           { kicker: "WHY LAYER 0", title: "It sits beneath AI execution", text: "Independent systems need identity, authority, integrity, policy, evidence, verification, containment, and recovery before autonomous execution can be trusted.", href: "/kernel", link: "Kernel primitives" },
           { kicker: "TODAY", title: "Reference surfaces are public", text: "The website, evidence registry, toolchain lock, telemetry checks, and schema foundations are available with maturity labels.", href: "/status", link: "Status" },
           { kicker: "EVIDENCE", title: "Claims are source-linked", text: "Every significant public claim points to a source, timestamp, maturity label, and limitation.", href: "/evidence", link: "Evidence registry" },
@@ -790,9 +804,10 @@ function home() {
         <div class="constraint-list">
           <p><strong>Semgrep:</strong> detected <code>1.169.0</code>.</p>
           <p><strong>SnarkJS:</strong> detected <code>0.7.6</code>; <code>1.13.8</code> is <code>underscore</code>.</p>
-          <p><strong>Commercial boundary:</strong> Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only. <a href="/legal">Read the Legal and Company Centre</a>.</p>
+          <p><strong>Commercial boundary:</strong> ${esc(siteEvidence.commercialBoundary.paragraphs[0])} <a href="/legal">Read the Legal and Company Centre</a>.</p>
         </div>
-      </section>`,
+      </section>
+      ${commercialBoundarySection()}`,
   });
 }
 
@@ -1196,18 +1211,25 @@ function evidence() {
 
 function legal() {
   const boundary = siteEvidence.commercialBoundary;
+  const operatingRecord = siteEvidence.legalOperatingRecord;
   const registryLinks = company.registrySources
     .map(
       (source) => `<p><strong>${esc(source.authority)}:</strong> <a href="${attr(source.url)}">Official registry source</a>${source.lookup ? ` · Lookup <code>${esc(source.lookup)}</code>` : ""}<br><small>${esc(source.scope)}</small></p>`
     )
     .join("\n          ");
+  const offeringRows = operatingRecord.offerings.map(
+    (record) => `<tr>
+      <td data-label="Category">${esc(record.category)}</td>
+      <td data-label="Current status">${statusBadge(record.badgeState, record.status)}</td>
+      <td data-label="Public description">${esc(record.description)}</td>
+    </tr>`
+  );
   return layout({
     title: "Legal and Company Centre | Fenrua Labs",
-    description: "Verified Fenrua Labs company identity, access-only service boundary, evidence scope, and public activation limits.",
+    description: "Verified Fenrua Labs company identity, current public service scope, evidence boundaries, and contact information.",
     current: "Legal",
     canonicalPath: "/legal",
-    includeCommercialBoundary: false,
-    body: `${routeHero("REGISTERED OPERATOR", "Legal and Company Centre", "Verified company identity and the public boundaries for services, evidence, payments, and community activity.")}
+    body: `${routeHero("REGISTERED OPERATOR", "Legal and Company Centre", "Verified company identity and the current public scope for research, development, AI efficiency infrastructure software, related technology services, evidence, and contact.")}
       <section class="section-shell" aria-labelledby="company-identity-title">
         <div class="section-heading">
           <p class="eyebrow">COMPANY IDENTITY</p>
@@ -1225,7 +1247,7 @@ function legal() {
           <div><dt>GST status</dt><dd>${esc(company.gstStatus)}</dd></div>
           <div><dt>Registered-office locality</dt><dd>${esc(company.registeredOffice.locality)} ${esc(company.registeredOffice.region)} ${esc(company.registeredOffice.postalCode)}, Australia</dd></div>
           <div><dt>Main business location</dt><dd>${esc(company.mainBusinessLocation.region)} ${esc(company.mainBusinessLocation.postalCode)}, Australia</dd></div>
-          <div><dt>Regulator</dt><dd>${esc(company.regulator)}</dd></div>
+          <div><dt>Company registry authority</dt><dd>${esc(company.regulator)}</dd></div>
           <div><dt>Next ASIC review</dt><dd>${esc(displayDate(company.nextReviewDate))} <small>(point-in-time registry record)</small></dd></div>
         </dl>
         <div class="constraint-list registry-source-list">
@@ -1233,39 +1255,49 @@ function legal() {
           <p><a href="/data/company-identity.json">Download the machine-readable company identity record</a>.</p>
         </div>
       </section>
-      ${commercialBoundarySection()}
+      <section class="section-shell" aria-labelledby="legal-operating-record-title">
+        <div class="section-heading">
+          <p class="eyebrow">CURRENT OPERATING RECORD</p>
+          <h2 id="legal-operating-record-title">What is public, offered, agreement-specific, or outside the current site</h2>
+          <p>These labels describe the present operating model. They are not internal approval gates, future launch promises, or restrictions on ordinary Fenrua Labs business activity.</p>
+        </div>
+        ${table(["Category", "Current status", "Public description"], offeringRows, "status-table legal-operating-table", "Fenrua current operating and offering record")}
+      </section>
       <section class="section-shell split-section" aria-labelledby="agreement-status-title">
         <div>
-          <p class="eyebrow">FORMATION BOUNDARY</p>
-          <h2 id="agreement-status-title">How service access is formed</h2>
+          <p class="eyebrow">BUSINESS OPERATIONS</p>
+          <h2 id="agreement-status-title">Research and technology services</h2>
         </div>
         <div class="constraint-list">
           ${boundary.serviceAgreementBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}
-          <p><strong>Current website state:</strong> no public account activation, checkout, wallet connection, payment receiver, or reward-settlement action is exposed by this technical evidence site.</p>
-          <p><strong>Compliance-owned gate:</strong> public subscription terms and a privacy notice must be approved and presented before any self-service account, billing, or personal-data flow is activated.</p>
+          <p><strong>Current website state:</strong> public company information, technical documentation, evidence records, service discovery, and bounded read-only observation functions. Fenrua Labs may separately contract, invoice, receive payment, and deliver services through ordinary business arrangements.</p>
         </div>
       </section>
-      <section class="section-shell split-section" aria-labelledby="payment-boundary-title">
-        <div><p class="eyebrow">PAYMENT AND SETTLEMENT</p><h2 id="payment-boundary-title">Payment rails are not financial products</h2></div>
-        <div class="constraint-list">${boundary.paymentBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
+      <section class="section-shell split-section" aria-labelledby="commercial-operations-title">
+        <div><p class="eyebrow">COMMERCIAL OPERATIONS</p><h2 id="commercial-operations-title">Ordinary business activity</h2></div>
+        <div class="constraint-list">${boundary.businessOperationsBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
       </section>
-      <section class="section-shell split-section" aria-labelledby="community-boundary-title">
-        <div><p class="eyebrow">COMMUNITY ACTIVITY</p><h2 id="community-boundary-title">Reputation and bounded rewards</h2></div>
-        <div class="constraint-list">${boundary.communityBoundary.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
+      <section class="section-shell split-section" aria-labelledby="technology-scope-title">
+        <div><p class="eyebrow">TECHNOLOGY SCOPE</p><h2 id="technology-scope-title">AI efficiency infrastructure and related services</h2></div>
+        <div class="constraint-list">${operatingRecord.technologyScope.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
       </section>
       <section class="section-shell split-section" aria-labelledby="evidence-boundary-title">
         <div><p class="eyebrow">EVIDENCE SCOPE</p><h2 id="evidence-boundary-title">Point-in-time public records</h2></div>
         <div class="constraint-list">
           <p>Each public evidence record is limited to its named artifacts, revisions, timestamps, hashes, validation steps, maturity, and stated limitations.</p>
-          <p>Periodic synchronization validates published records and internal bindings; it does not rerun the underlying research campaign or attest live services, protected systems, private client environments, signing keys, private gateways, validators, private meshes, or production security beyond the record's stated scope.</p>
+          <p>Periodic synchronization validates published records and internal bindings; it does not rerun the underlying research and validation work or attest live services, protected systems, private client environments, signing keys, private gateways, validators, private meshes, or operational controls beyond the record's stated scope.</p>
         </div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="request-handling-title">
+        <div><p class="eyebrow">CURRENT REQUEST HANDLING</p><h2 id="request-handling-title">Public endpoint and contact facts</h2></div>
+        <div class="constraint-list">${operatingRecord.requestHandling.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
       </section>
       <section class="section-shell split-section" aria-labelledby="contact-title">
         <div><p class="eyebrow">CONTACT</p><h2 id="contact-title">Public business contact</h2></div>
         <div class="constraint-list">
           <p>Business and collaboration enquiries: <a href="mailto:${attr(company.publicContact)}">${esc(company.publicContact)}</a>.</p>
           <p>Do not send private keys, credentials, witness material, client-confidential data, or unredacted vulnerability details through public channels.</p>
-          <p>This centre is a factual identity and scope record. It does not replace compliance-approved terms, privacy notices, or client-specific agreements.</p>
+          <p>This centre records company identity and the current public operating scope. It does not amend any service terms, privacy notice, or client-specific agreement that applies in its own context.</p>
         </div>
       </section>`,
   });
@@ -1371,7 +1403,6 @@ function audit() {
     description: "Current public static release evidence, document status, access-only commercial boundary, and explicit limitations.",
     current: "Audit",
     canonicalPath: "/audit",
-    includeCommercialBoundary: false,
     body: `${routeHero("CURRENT PUBLIC RELEASE", "Audit and Release Evidence", "This page identifies the current public static release evidence and its limits. It does not attest to dynamic observations, live block-card data, or protected systems.", `<div class="cta-row"><a class="button button-primary" href="/.well-known/fenrua-release.json">Open release manifest</a><a class="button button-secondary" href="/data/public-document-register.json">Download document register</a></div>`)}
       <section class="section-shell split-section">
         <div>
@@ -1384,7 +1415,6 @@ function audit() {
           <p><strong>Site evidence SHA-256:</strong> <code>${esc(siteEvidenceHash)}</code></p>
         </div>
       </section>
-      ${commercialBoundarySection()}
       <section class="section-shell split-section">
         <div>
           <p class="eyebrow">EXCLUSIONS</p>
@@ -1416,7 +1446,7 @@ function status() {
     ["Developer quick start", "success", "Published", "Reproducibility guide", "/developers", "Static release artifact", "clean checkout report", "Node 24 required.", "Tagged release reproduction"],
     ["Toolchain registry", "success", "Published", "Read-only release evidence", "data/toolchain-registry.json", "Frozen registry input", "registry validation", "Version capture is not security proof.", "New frozen evidence bundle"],
     ["Evidence registry", "success", "Published", "Evidence surface", "/evidence", "Static release artifact", "static route validation", "Evidence provenance is scoped to public artifacts.", "External evidence review"],
-    ["Commercial boundary statement", "success", "Published", "Access-only services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", "Public boundary statement", "public boundary and company-identity validation", "No public account activation, checkout, wallet connection, payment receiver, or settlement action is asserted by this site.", "Compliance-approved terms and privacy notice before self-service activation"],
+    ["Commercial boundary statement", "success", "Published", "Research and technology services", "/docs/ACCESS_ONLY_COMMERCIAL_BOUNDARY.md", "Public operating statement", "public boundary and company-identity validation", "The public site is an information and service-discovery surface; commercial services may be separately contracted and paid.", "Capability-specific interface records if a self-service feature is introduced"],
     ["Public repository", "success", "Published", "Source surface", "https://github.com/fenrualabs/fenrua-web", "Release provenance", "git provenance", "Repository state changes after each deployment.", "Tagged release"],
     ["Schema set", "success", "Published", "Specification", "/docs/", "Static specification set", "example corpus validation", "Schemas are examples/specifications, not a hosted validator.", "Schema validator package"],
   ].map(

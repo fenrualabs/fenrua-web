@@ -6,14 +6,17 @@ Maturity: reference architecture with implemented evidence surfaces
 
 ## Category
 
-Fenrua is building Layer 0 AI Security Utility Infrastructure.
+This document describes Fenrua's Layer 0 AI security-control subsystem within
+the broader AI efficiency infrastructure, research, software, hosting, and
+related technology-services scope.
 
 Fenrua provides the identity, authority, integrity, policy, evidence,
 verification, containment, and recovery layer beneath autonomous AI systems.
 
 ## Linux Analogy
 
-Fenrua aims to do for AI security what Linux did for computing infrastructure:
+Within this subsystem, Fenrua aims to do for AI security controls what Linux did
+for computing infrastructure:
 provide an open, modular, inspectable, composable foundation that other systems
 can depend on without surrendering control to a single application vendor.
 
@@ -40,8 +43,8 @@ IDENTITY · AUTHORITY · INTEGRITY · POLICY
 EVIDENCE · VERIFICATION · CONTAINMENT · RECOVERY
 ```
 
-Fenrua secures, constrains, records, and verifies upper layers. It does not
-replace them.
+This subsystem secures, constrains, records, and verifies upper layers. It does
+not replace them.
 
 ## Kernel Space
 
@@ -94,4 +97,3 @@ Fenrua is an evolving research and infrastructure project. Individual
 primitives, schemas, tools, utilities, contracts, and integrations may have
 different maturity levels. Public evidence defines what is currently
 implemented, tested, deployed, or still under development.
-

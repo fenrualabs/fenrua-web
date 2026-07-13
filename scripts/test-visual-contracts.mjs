@@ -26,8 +26,11 @@ assert.match(styles, /\.site-header-mobile-live \.site-nav\s*\{\s*grid-area: nav
 assert.match(styles, /--font-ui: system-ui,[\s\S]*?--font-mono:/, "The public surface must define separate UI and technical font stacks.");
 assert.match(styles, /body\s*\{[\s\S]*?font-family: var\(--font-ui\);/, "Public prose must use the platform UI stack without a remote font dependency.");
 assert.match(styles, /code,\s*pre,\s*kbd,\s*samp\s*\{\s*font-family: var\(--font-mono\);/, "Code and technical text must retain the mono stack.");
-assert.match(styles, /\.route-hero > \.eyebrow,\s*\.route-hero > h1,\s*\.route-hero > p:not\(\.eyebrow\)\s*\{\s*margin: 0;/, "Intro-card grid spacing must not be doubled by child margins.");
+assert.match(styles, /\.route-hero-copy > \.eyebrow,\s*\.route-hero-copy > h1,\s*\.route-hero-copy > p:not\(\.eyebrow\)\s*\{\s*margin: 0;/, "Intro-card grid spacing must not be doubled by child margins.");
+assert.match(styles, /\.route-hero\s*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(15rem, 0\.42fr\);/, "Desktop intro cards must reserve a compact right-side observation column.");
+assert.match(styles, /@media \(max-width: 900px\)[\s\S]*?\.route-hero-chain-rail\s*\{\s*display: none;/, "The desktop intro observation copy must not duplicate the mobile header cards.");
 assert.match(styles, /\.site-header-live \.site-nav,\s*\.site-header-mobile-live \.site-nav\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/, "Mobile navigation must remain a single keyboard-scrollable row.");
+assert.match(styles, /\.site-header-live \.site-nav,\s*\.site-header-mobile-live \.site-nav\s*\{[\s\S]*?scroll-padding-inline: 1rem;/, "Mobile navigation must fully reveal the terminal Legal item on keyboard focus.");
 assert.match(styles, /\.site-header-live \.site-nav a,\s*\.site-header-mobile-live \.site-nav a\s*\{[\s\S]*?min-height: 2\.75rem;/, "Mobile navigation targets must remain at least 44 CSS pixels high.");
 assert.match(styles, /\.desktop-chain-progress\s*\{\s*--dim: #7f8984;\s*display: none;/, "Detailed live-card labels must use the AA contrast token with rendering margin.");
 assert.match(styles, /\.registry\[tabindex\]:focus-visible/, "Scrollable table regions need visible keyboard focus.");
@@ -37,6 +40,7 @@ assert.match(status, /<script src="\/status-monitor\.js" defer><\/script>/, "Sta
 assert.doesNotMatch(status, /<script>\s*\(\(\) =>/, "Status must not ship a CSP-blocked inline script.");
 assert.doesNotMatch(status, /data-relative-time=/, "Static release timestamps must not be represented as live updates.");
 assert.match(statusMonitor, /Last signed observation|observed_at/, "The monitor must use signed-observation semantics.");
+assert.match(statusMonitor, /function hydrateCompactCard\(chain, state\)/, "Status must mirror its already-validated render state into compact cards without another poller.");
 assert.match(status, /<span class="status-artifact-value" title="[^"]+">[^<]+<\/span>/, "Static release artifacts must expose full text while using the two-row visual wrapper.");
 assert.match(technicalData, /function bindRelativeTimes\(\)/, "The shared external script must preserve generic relative-time support.");
 assert.match(evidence, /data-label="Hash"/, "Evidence must preserve mobile record labels.");

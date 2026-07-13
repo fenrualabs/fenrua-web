@@ -51,6 +51,45 @@
     if (element) element.textContent = value;
   }
 
+  function setCompactText(chain, field, value) {
+    document.querySelectorAll(`[data-chain-field="${chain}-${field}"]`).forEach((element) => {
+      element.textContent = value;
+    });
+  }
+
+  function hydrateCompactCard(chain, state) {
+    const row = rows.get(chain);
+    if (!row) return;
+    const compactState = {
+      live: "confirmed",
+      delayed: "delayed",
+      partial: "partial",
+      waiting: "waiting",
+      failure: "wrong-chain",
+      unavailable: "unavailable",
+    }[state] ?? "unavailable";
+    const rowText = (selector, fallback) => row.querySelector(selector)?.textContent?.trim() || fallback;
+    const relativeTime = row.querySelector("[data-status-monitor-relative]")?.textContent?.trim();
+
+    setCompactText(chain, "status", stateDisplay(state).label);
+    setCompactText(chain, "block", rowText("[data-status-monitor-block]", "Observation unavailable"));
+    setCompactText(
+      chain,
+      "checked",
+      relativeTime || rowText("[data-status-monitor-time]", "not observed")
+    );
+    setCompactText(
+      chain,
+      "source",
+      `Evidence source: ${rowText("[data-status-monitor-source]", "unavailable")}`
+    );
+    setCompactText(chain, "activity", rowText("[data-status-monitor-sequence]", "No verified sequence"));
+    document.querySelectorAll(`[data-chain-card="${chain}"]`).forEach((card) => {
+      card.dataset.status = compactState;
+      card.dataset.activity = state;
+    });
+  }
+
   function stateDisplay(state) {
     if (state === "live") return { label: "Live", className: "status-success" };
     if (state === "delayed") return { label: "Stale", className: "status-stale" };
@@ -316,6 +355,7 @@
 
   function renderSnapshot(snapshot) {
     const states = monitoredChains.map((chain) => renderChain(snapshot, snapshot.chains.get(chain)));
+    states.forEach(({ chain, state }) => hydrateCompactCard(chain, state));
     if (meta) {
       meta.textContent = `Public monitor snapshot generated ${formatUtc(snapshot.generatedAt)}. Each row uses its own signed observation time; the snapshot time is not an activation event. Refresh target: ${Math.round(snapshot.refreshMs / 1_000)} seconds.`;
     }
@@ -325,7 +365,10 @@
   function renderFailure() {
     monitoredChains.forEach((chain) => {
       const row = rows.get(chain);
-      if (row) renderUnavailable(row, "unavailable", "Public monitor unavailable; no current observation is asserted.");
+      if (row) {
+        renderUnavailable(row, "unavailable", "Public monitor unavailable; no current observation is asserted.");
+        hydrateCompactCard(chain, "unavailable");
+      }
     });
     if (meta) meta.textContent = `The public monitor did not return a valid current observation. No current state is asserted; retrying in ${Math.round(monitor.retryMs / 1_000)} seconds.`;
     announce(monitoredChains.map((chain) => ({ chain, state: "unavailable", sequence: null })));

@@ -84,6 +84,32 @@ try {
     )
   );
 
+  const gitlessBuild = join(temporaryRoot, "gitless-build");
+  mkdirSync(gitlessBuild, { recursive: true });
+  writeFileSync(join(gitlessBuild, "safe.txt"), "public\n", { mode: 0o600 });
+  const gitlessSecret = ["API_", "TOKEN=not-a-token\n"].join("");
+  writeFileSync(join(gitlessBuild, ".env.local"), gitlessSecret, { mode: 0o600 });
+  assert.ok(
+    scanPublicSource(gitlessBuild).violations.some(
+      (violation) => violation.rule === "nonempty-sensitive-environment-value"
+    )
+  );
+
+  const linkedCheckout = join(temporaryRoot, "linked-checkout");
+  mkdirSync(join(linkedCheckout, ".vercel"), { recursive: true });
+  execFileSync("git", ["init", "-q"], { cwd: linkedCheckout });
+  writeFileSync(join(linkedCheckout, ".gitignore"), ".vercel\n", { mode: 0o600 });
+  writeFileSync(
+    join(linkedCheckout, ".vercel", "project.json"),
+    '{"orgId":"test-fixture-org","projectId":"test-fixture-project"}\n',
+    { mode: 0o600 }
+  );
+  assert.ok(
+    scanPublicSource(linkedCheckout).violations.some(
+      (violation) => violation.rule === "secret-directory-in-public-source"
+    )
+  );
+
   const envrc = ["export API_", "TOKEN=not-a-token\n"].join("");
   assert.equal(inspect(".envrc", envrc)[0].rule, "nonempty-sensitive-environment-value");
   const quotedTemplate = ["const config = {\"api", "Token\": `not-a-token`};\n"].join("");
@@ -93,7 +119,7 @@ try {
   const multilineTemplate = ["const api", "Tok", "en = `not-a-token\\nsecond-line`;\n"].join("");
   assert.equal(inspect("config.js", multilineTemplate)[0].rule, "hardcoded-sensitive-literal");
 
-  console.log(JSON.stringify({ status: "ok", scope: "public-secret-boundary-regressions", cases: 27 }));
+  console.log(JSON.stringify({ status: "ok", scope: "public-secret-boundary-regressions", cases: 29 }));
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }

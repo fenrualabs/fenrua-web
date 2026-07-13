@@ -13,15 +13,29 @@ const vercel = JSON.parse(read("vercel.json"));
 
 assert.equal(evidence.schemaVersion, "fenrua.site-evidence.v1");
 assert.deepEqual(evidence.commercialBoundary?.paragraphs, [
-  "Fenrua Labs Pty Ltd provides access to AI security infrastructure software, related technology services, and evidence-aware intelligence workflows through tiered service subscriptions and client-specific business agreements only.",
+  "Fenrua Labs Pty Ltd researches, develops, and provides AI efficiency infrastructure software and related technology services through service subscriptions and client-specific business agreements. Its work may include software, infrastructure access, hosting, research, development, integration, technical support, and evidence-aware workflows within the scope of the relevant service or agreement.",
   "Fenrua Labs Pty Ltd does not offer investments, token crowdfunding, securities, bonds, equity, debt, managed investment interests, profit-sharing arrangements, revenue-sharing arrangements, yield products, exchange products, trading products, or any financial-return scheme. Neither a subscription nor a client-specific business agreement gives, promises, expects, entitles, or represents profit, return, token appreciation, token allocation, liquidity, resale value, dividends, buyback rights, or ownership in Fenrua Labs Pty Ltd.",
-  "Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, tax, professional, or other advice, or any recommendation to buy, sell, hold, trade, or rely on an asset for financial gain.",
+  "Fenrua Labs Pty Ltd does not operate a market, exchange, order book, trading venue, or public swap product. It does not provide financial, investment, legal, or tax advice, or recommend that a person buy, sell, hold, trade, or rely on an asset for financial gain.",
 ]);
 assert.match(evidence.commercialBoundary.paragraphs.join(" "), /does not offer investments, token crowdfunding, securities/i);
 assert.match(evidence.commercialBoundary.paragraphs.join(" "), /does not operate a market, exchange, order book, trading venue, or public swap product/i);
-assert.match(evidence.commercialBoundary.serviceAgreementBoundary.join(" "), /does not itself activate an account, accept payment, connect a wallet/i);
-assert.match(evidence.commercialBoundary.paymentBoundary.join(" "), /payment or bounded-settlement rail only/i);
-assert.match(evidence.commercialBoundary.communityBoundary.join(" "), /XP is non-transferable community reputation metadata only/i);
+assert.match(evidence.commercialBoundary.serviceAgreementBoundary.join(" "), /issue invoices, receive payment, and carry out the research/i);
+assert.match(evidence.commercialBoundary.businessOperationsBoundary.join(" "), /may receive payment for its lawful business activities/i);
+assert.equal("paymentBoundary" in evidence.commercialBoundary, false);
+assert.equal("communityBoundary" in evidence.commercialBoundary, false);
+assert.equal(evidence.legalOperatingRecord?.offerings?.length, 7);
+assert.deepEqual(
+  [...new Set(evidence.legalOperatingRecord.offerings.map((record) => record.status))].sort(),
+  [
+    "AVAILABLE BY AGREEMENT",
+    "AVAILABLE BY OFFER",
+    "CURRENT PUBLIC",
+    "NOT OFFERED",
+    "NOT PART OF THE CURRENT PUBLIC SITE",
+    "RESEARCH / EVIDENCE",
+  ],
+);
+assert.match(evidence.legalOperatingRecord.technologyScope.join(" "), /business and technical direction includes research, development, software/i);
 assert.equal(company.schemaVersion, "fenrua.company-identity.v1");
 assert.equal(company.legalName, "FENRUA LABS PTY LTD");
 assert.equal(company.abn, "62 700 182 663");
@@ -107,10 +121,33 @@ assert.match(reportPolicy, /must be created and retained outside this source rep
 assert.match(reportPolicy, /must not be\s+committed, staged into the public output/i);
 
 const audit = read("audit/index.html");
-assert.match(audit, /Fenrua Labs Pty Ltd — Access-Only Services/);
-assert.match(audit, /does not offer investments, token crowdfunding, securities/i);
-assert.match(audit, /does not operate a market, exchange, order book, trading venue, or public swap product/i);
+assert.match(audit, /access-only-commercial-boundary/);
+assert.match(audit, /docs\/ACCESS_ONLY_COMMERCIAL_BOUNDARY\.md/);
+assert.doesNotMatch(audit, /class="section-shell split-section commercial-boundary"/, "Audit must cite, not duplicate, the canonical full policy.");
 assert.match(audit, /does not attest to dynamic observations, live block-card data, or protected systems/i);
 assert.match(audit, /ABN 62 700 182 663/);
+
+const legal = read("legal/index.html");
+assert.match(legal, /Research and technology services/);
+assert.match(legal, /Ordinary business activity/);
+assert.match(legal, /AI efficiency infrastructure and related services/);
+assert.match(legal, /may separately contract, invoice, receive payment, and deliver services through ordinary business arrangements/i);
+assert.equal([...legal.matchAll(/<tr>/g)].length, 8, "Legal must render one header plus the approved seven offering rows.");
+for (const status of ["CURRENT PUBLIC", "AVAILABLE BY OFFER", "AVAILABLE BY AGREEMENT", "RESEARCH \/ EVIDENCE", "NOT PART OF THE CURRENT PUBLIC SITE", "NOT OFFERED"]) {
+  assert.match(legal, new RegExp(status));
+}
+assert.doesNotMatch(legal, /\b(?:XP|Fortnight League|Picker|community activity|bounded rewards|payment rails)\b/i);
+assert.doesNotMatch(legal, /\b(?:compliance-owned gate|must be approved|compliance-approved)\b/i);
+assert.doesNotMatch(legal, /Fenrua Protocol is (?:the|an) AI security/i);
+assert.match(legal, /href="\/#commercial-boundary-title">Service boundary<\/a>/);
+assert.equal([...legal.matchAll(/class="section-shell split-section commercial-boundary"/g)].length, 0);
+
+const overview = read("index.html");
+assert.match(overview, /Fenrua Labs Pty Ltd — Research and Technology Services/);
+assert.match(overview, /AI efficiency infrastructure software and related technology services/i);
+assert.match(overview, /AI efficiency infrastructure for verifiable systems/i);
+assert.match(overview, /does not offer investments, token crowdfunding, securities/i);
+assert.match(overview, /does not operate a market, exchange, order book, trading venue, or public swap product/i);
+assert.equal([...overview.matchAll(/class="section-shell split-section commercial-boundary"/g)].length, 1);
 
 console.log(JSON.stringify({ status: "ok", scope: "access-only-boundary-and-archive-policy", documents: register.records.length }));

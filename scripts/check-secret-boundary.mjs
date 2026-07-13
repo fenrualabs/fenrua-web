@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,7 +38,7 @@ const prohibitedExtensions = new Set([
   ".pem",
   ".pfx",
 ]);
-const prohibitedDirectoryNames = new Set([".secrets", "secrets", "vault"]);
+const prohibitedDirectoryNames = new Set([".secrets", ".vercel", "secrets", "vault"]);
 const privateKeyPattern = new RegExp(
   ["-----BEGIN", "(?:[A-Z0-9]+ )?PRIVATE", "KEY-----"].join(" ")
 );
@@ -258,12 +258,15 @@ export function inspectPublicFile({ absolutePath, repositoryPath }) {
 
 export function scanPublicSource(repositoryRoot = root) {
   if (!statSync(repositoryRoot).isDirectory()) throw new Error("Repository root is unavailable.");
-  const output = execFileSync(
-    "git",
-    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-    { cwd: repositoryRoot, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }
-  );
-  const paths = new Set(output.split("\0").filter(Boolean));
+  const paths = new Set();
+  if (existsSync(resolve(repositoryRoot, ".git"))) {
+    const output = execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+      { cwd: repositoryRoot, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }
+    );
+    for (const path of output.split("\0").filter(Boolean)) paths.add(path);
+  }
   const visit = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name === ".git" || entry.name === "node_modules") continue;
