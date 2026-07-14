@@ -210,7 +210,8 @@ for (const column of [
 }
 requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "F10-PT-004");
 requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "provider deployment success from being treated as rendered-content verification");
-requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "owner-authenticated content evidence remains pending");
+requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "Resolved 2026-07-14; preview observation states remain preview evidence, not live-chain claims");
+requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "dpl_bL85hoMwEwWKAUF7xZWdS9RY2A1K");
 requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "b374487a4bb389086a3a6f72ca24ffbc0c38bc6e");
 requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "b1c45116d0d35605afaad5a59c814bf789935dce");
 requireText("docs/FENRUA_INDUSTRIAL_10_READINESS_LEDGER.md", "268788e18bb39d69ffed706294d2605878f04c34");
