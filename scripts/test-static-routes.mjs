@@ -141,6 +141,8 @@ assert.match(platform, /CURRENT CAPABILITY STATES/);
 assert.match(platform, /capability-register\.json/);
 assert.match(platform, /Local Trust Gate/);
 assert.match(platform, /No public implementation, CLI, SDK, API, hosted interface, or release artifact is recorded\./);
+assert.match(platform, /AI efficiency evidence standard/);
+assert.match(platform, /does not publish a measured AI-efficiency benchmark/i);
 
 const start = await readFile(new URL("../start/index.html", import.meta.url), "utf8");
 for (const role of ["Developer", "Security engineer", "Researcher", "Enterprise technical leader", "University or educator", "Open-source contributor", "General technical reviewer"]) {

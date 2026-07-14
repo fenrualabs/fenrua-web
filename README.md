@@ -177,6 +177,7 @@ cards, APIs, private systems, or a perpetual production assertion.
 - `docs/EXTERNAL_ARTIFACT_POLICY.md` - enforced outside-repository report boundary
 - `docs/PUBLIC_SECRET_BOUNDARY.md` - public source and external-vault separation policy
 - `docs/PUBLIC_DATA_FLOW.md` - source-bound public data-flow inventory
+- `docs/FENRUA_AI_EFFICIENCY_EVIDENCE_STANDARD.md` - evidence contract for future AI-efficiency claims
 - `docs/DEPENDENCY_LICENSES.md` - exact development dependency license inventory
 - `docs/archive/2026-07-13/` - superseded, noindex public-document records
 - `docs/VERCEL.md` - Vercel publishing notes for `fenrua.ai`

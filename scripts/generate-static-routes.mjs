@@ -140,6 +140,7 @@ const sectionNavigation = {
     ["Security Kernel", "/kernel"],
     ["Utilities", "/utilities"],
     ["Deployment profiles", "/architecture/deployment"],
+    ["Efficiency evidence", "/docs/FENRUA_AI_EFFICIENCY_EVIDENCE_STANDARD.md"],
   ],
   Developers: [
     ["Developers", "/developers"],
@@ -1224,6 +1225,7 @@ function platform() {
       <section class="section-shell" aria-labelledby="platform-capabilities"><div class="section-heading"><p class="eyebrow">CURRENT CAPABILITY STATES</p><h2 id="platform-capabilities">Maturity stays attached to the record</h2><p>These summaries are generated from the canonical capability register. A public page, specification, or record is not promoted into a service merely by being visible here.</p></div>
         ${capabilityCards(["capability.public-website", "capability.security-kernel-specification", "capability.utility-catalogue", "capability.local-verifier", "capability.local-trust-gate"], { "capability.security-kernel-specification": "/kernel", "capability.utility-catalogue": "/utilities", "capability.local-verifier": "/verify" })}
       </section>
+      <section class="section-shell split-section" aria-labelledby="platform-efficiency-evidence"><div><p class="eyebrow">MEASUREMENT BOUNDARY</p><h2 id="platform-efficiency-evidence">Efficiency claims require a reproducible method</h2><p>The public platform does not publish a measured AI-efficiency benchmark. The standard defines the workload, baseline, environment, quality, uncertainty, and artifact inputs required before a future performance claim can be made.</p></div><div class="doc-grid"><a href="/docs/FENRUA_AI_EFFICIENCY_EVIDENCE_STANDARD.md">AI efficiency evidence standard</a><a href="/trust/claims">Inspect current claim boundaries</a></div></section>
       <section class="section-shell" aria-labelledby="platform-next"><div class="section-heading"><p class="eyebrow">NEXT BY ROLE</p><h2 id="platform-next">Inspect before integrating</h2><p>Technical reviewers can trace claims and evidence. Developers can reproduce local checks. Service discussions remain agreement-specific and do not become public self-service workflows.</p></div>
         ${modelDownloads()}
       </section>`,

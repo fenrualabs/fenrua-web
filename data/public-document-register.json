@@ -39,6 +39,13 @@
       "artifactSha256": "77e1564457130bc1f8c500884ce297b4702fab5dfd917557e9403c259ca3de12"
     },
     {
+      "id": "ai-efficiency-evidence-standard",
+      "status": "active",
+      "path": "docs/FENRUA_AI_EFFICIENCY_EVIDENCE_STANDARD.md",
+      "replacementPath": "/platform",
+      "artifactSha256": "ad82ab5e3f1d633baa8ef2ae2de863f4590f9b89b99451ced0646cc0d028ecde"
+    },
+    {
       "id": "public-document-register",
       "status": "active",
       "path": "data/public-document-register.json",
