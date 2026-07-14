@@ -1,3 +1,5 @@
+import { RETIRED_ROUTE_CACHE_CONTROL, RETIRED_ROUTE_ROBOTS } from "../scripts/retired-route-contract.mjs";
+
 const allowedMethods = new Set(["GET", "HEAD"]);
 
 export default function handler(request, response) {
@@ -8,8 +10,8 @@ export default function handler(request, response) {
   }
 
   response.setHeader("Content-Type", "text/html; charset=utf-8");
-  response.setHeader("Cache-Control", "no-store, max-age=0");
-  response.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+  response.setHeader("Cache-Control", RETIRED_ROUTE_CACHE_CONTROL);
+  response.setHeader("X-Robots-Tag", RETIRED_ROUTE_ROBOTS);
   response.status(410);
 
   if (request.method === "HEAD") {
