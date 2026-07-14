@@ -14,9 +14,9 @@ import {
   readJson,
   readText,
   requireFields,
-  scanFiles,
   termOccurrences,
 } from "./check-product-ontology.mjs";
+import { publicArtifactFiles } from "./public-output-lib.mjs";
 
 const REQUIRED_TERMS = [
   "observed",
@@ -212,9 +212,11 @@ export function validateAssuranceLanguage() {
   expect(errors, Array.isArray(scan?.allowances), "assurance language allowances must be an array");
   if (!Array.isArray(scan?.allowances)) return errors;
 
-  const generatedFiles = scanFiles("public", (absolutePath) => absolutePath.endsWith("/index.html") || absolutePath.endsWith("\\index.html"));
+  const generatedFiles = publicArtifactFiles()
+    .filter((file) => file === "index.html" || file.endsWith("/index.html"))
+    .map((file) => `public/${file}`);
   expect(errors, generatedFiles.length > 0, "No generated public HTML files were found for assurance scanning");
-  const htmlByFile = new Map(generatedFiles.map((file) => [file, readText(file)]));
+  const htmlByFile = new Map(generatedFiles.map((file) => [file, readText(file.slice("public/".length))]));
   const textByFile = new Map(generatedFiles.map((file) => [file, assuranceTextFromHtml(htmlByFile.get(file))]));
   const allowanceKeys = [];
   const allowancesByFile = new Map();
