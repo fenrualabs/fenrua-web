@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { publicArtifactFiles } from "./public-output-lib.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 export const REPO_ROOT = path.resolve(path.dirname(scriptPath), "..");
@@ -213,9 +214,16 @@ function validateLegacyTermScan(errors, data, claimIds) {
   }
   for (const term of requiredTerms) expect(errors, termsByName.has(term), `legacyTermPolicy must include ${term}`);
 
-  const generatedFiles = scanFiles("public", (absolutePath) => path.basename(absolutePath) === "index.html");
+  // public/ is a disposable staging directory. Scan the exact source artifacts it
+  // would contain so `npm ci && npm run generate:static && npm run validate` works
+  // from a fresh checkout without accepting stale staged output.
+  const generatedFiles = publicArtifactFiles()
+    .filter((file) => path.basename(file) === "index.html")
+    .map((file) => `public/${file}`);
   expect(errors, generatedFiles.length > 0, "No generated public HTML files were found for legacy-term scanning");
-  const textByFile = new Map(generatedFiles.map((file) => [file, mainTextFromHtml(readText(file))]));
+  const textByFile = new Map(
+    generatedFiles.map((file) => [file, mainTextFromHtml(readText(file.slice("public/".length)))])
+  );
 
   for (const [term, termRecord] of termsByName) {
     const allowances = termRecord.allowances ?? [];
