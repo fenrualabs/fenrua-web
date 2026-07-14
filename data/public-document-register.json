@@ -32,6 +32,13 @@
       "artifactSha256": "56780ab9cef19a411b5dbc4471ca3b6dfc78085f723eb29748194494c6bef964"
     },
     {
+      "id": "public-data-flow",
+      "status": "active",
+      "path": "docs/PUBLIC_DATA_FLOW.md",
+      "replacementPath": "/company",
+      "artifactSha256": "77e1564457130bc1f8c500884ce297b4702fab5dfd917557e9403c259ca3de12"
+    },
+    {
       "id": "public-document-register",
       "status": "active",
       "path": "data/public-document-register.json",

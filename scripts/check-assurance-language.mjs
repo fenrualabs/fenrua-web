@@ -9,7 +9,7 @@ import {
   isDate,
   isMain,
   isNonEmptyString,
-  mainTextFromHtml,
+  normaliseText,
   occurrenceInRanges,
   readJson,
   readText,
@@ -37,6 +37,103 @@ const REQUIRED_TERMS = [
 
 const CONTRACT_FIELDS = ["term", "level", "permittedEvidenceClasses", "requires", "prohibitedWithout", "doesNotMean", "scan"];
 const ALLOWANCE_CONTEXT_TYPES = new Set(["claim", "explanatory", "historical", "fixture"]);
+const ASSURANCE_SCOPE_MARKER_PATTERN = /<!-- fenrua-assurance-scope:(?:(claims|capability|taxonomy):([a-z0-9._,-]+):start|end) -->/g;
+
+function mainHtml(html) {
+  return html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? "";
+}
+
+function assuranceTextFromHtml(html) {
+  return normaliseText(mainHtml(html).replace(/<nav\b[\s\S]*?<\/nav>/gi, " "));
+}
+
+function registerScopeTerms(errors, scope, file, text, allowedByTerm, claimsById, capabilitiesById, contractsByTerm) {
+  const scopeText = normaliseText(scope.content);
+  expect(errors, scopeText.length > 0, `assurance scope ${scope.mode} is empty in ${file}`);
+  const ranges = contextRanges(text, scopeText);
+  expect(errors, ranges.length > 0, `assurance scope ${scope.mode} has no matching rendered content in ${file}`);
+
+  let terms = [];
+  if (scope.mode === "claims") {
+    const claimIds = scope.ids.split(",").filter(Boolean);
+    expect(errors, claimIds.length > 0, `claim-bound assurance scope has no claim ids in ${file}`);
+    for (const claimId of claimIds) {
+      const claim = claimsById.get(claimId);
+      expect(errors, claim !== undefined, `assurance scope in ${file} references unknown claim ${claimId}`);
+      const contract = contractsByTerm.get(claim?.assuranceVerb);
+      expect(errors, contract !== undefined, `assurance scope claim ${claimId} has no assurance contract`);
+      if (contract?.scan) terms.push(contract.term);
+    }
+  } else if (scope.mode === "capability") {
+    const capabilityIds = scope.ids.split(",").filter(Boolean);
+    expect(errors, capabilityIds.length === 1, `capability assurance scope must name exactly one capability in ${file}`);
+    for (const capabilityId of capabilityIds) {
+      const capability = capabilitiesById.get(capabilityId);
+      expect(errors, capability !== undefined, `assurance scope in ${file} references unknown capability ${capabilityId}`);
+      expect(errors, scope.content.includes(`data-capability-id="${capabilityId}"`), `capability assurance scope does not contain ${capabilityId} in ${file}`);
+      const sourceText = [
+        capability?.name,
+        capability?.summary,
+        ...(capability?.limitations ?? []),
+        ...(capability?.nonClaims ?? []),
+        capability?.promotionGate,
+        ...(capability?.claimIds ?? []),
+      ].filter(Boolean).join(" ");
+      for (const contract of contractsByTerm.values()) {
+        if (contract.scan && termOccurrences(sourceText, contract.term).length > 0) terms.push(contract.term);
+      }
+    }
+  } else {
+    expect(errors, file === "public/trust/evidence-classes/index.html", `assurance taxonomy scope is only permitted on the evidence-classes route, not ${file}`);
+    expect(errors, scope.ids === "-", `assurance taxonomy scope cannot name claims in ${file}`);
+    terms = [...contractsByTerm.values()].filter((contract) => contract.scan).map((contract) => contract.term);
+  }
+
+  for (const term of new Set(terms)) {
+    const positions = allowedByTerm.get(term) ?? new Set();
+    for (const occurrence of termOccurrences(text, term)) {
+      if (occurrenceInRanges(occurrence, ranges)) positions.add(occurrence.index);
+    }
+    allowedByTerm.set(term, positions);
+  }
+}
+
+function collectAssuranceScopes(errors, file, content) {
+  const genericStarts = [...content.matchAll(/<!-- fenrua-assurance-scope:[^>]*:start -->/g)].length;
+  const genericEnds = [...content.matchAll(/<!-- fenrua-assurance-scope:end -->/g)].length;
+  const scopes = [];
+  const stack = [];
+  let knownStarts = 0;
+  let knownEnds = 0;
+
+  for (const match of content.matchAll(ASSURANCE_SCOPE_MARKER_PATTERN)) {
+    if (match[1]) {
+      knownStarts += 1;
+      stack.push({ mode: match[1], ids: match[2], start: match.index + match[0].length });
+      continue;
+    }
+
+    knownEnds += 1;
+    const scope = stack.pop();
+    if (!scope) {
+      errors.push(`assurance scope end marker has no matching start in ${file}`);
+      continue;
+    }
+    scopes.push({ ...scope, content: content.slice(scope.start, match.index) });
+  }
+
+  expect(errors, genericStarts === knownStarts, `assurance scope start marker is malformed in ${file}`);
+  expect(errors, genericEnds === knownEnds, `assurance scope end marker is malformed in ${file}`);
+  expect(errors, stack.length === 0, `assurance scope start marker is unmatched in ${file}`);
+  return scopes;
+}
+
+function registerAssuranceScopes(errors, file, html, text, allowedByTerm, claimsById, capabilitiesById, contractsByTerm) {
+  const content = mainHtml(html);
+  for (const scope of collectAssuranceScopes(errors, file, content)) {
+    registerScopeTerms(errors, scope, file, text, allowedByTerm, claimsById, capabilitiesById, contractsByTerm);
+  }
+}
 
 function validateStringArray(errors, value, label) {
   expect(errors, Array.isArray(value), `${label} must be an array`);
@@ -67,8 +164,10 @@ export function validateAssuranceLanguage() {
   const data = readJson("data/assurance-language.json");
   const taxonomy = readJson("data/evidence-taxonomy.json");
   const claims = readJson("data/claim-register.json");
+  const capabilities = readJson("data/capability-register.json");
   const evidenceClassIds = new Set((taxonomy.classes ?? []).map((entry) => entry.id));
   const claimsById = new Map((claims.claims ?? []).map((claim) => [claim.id, claim]));
+  const capabilitiesById = new Map((capabilities.capabilities ?? []).map((capability) => [capability.id, capability]));
 
   checkSchemaMetadata(
     errors,
@@ -115,7 +214,8 @@ export function validateAssuranceLanguage() {
 
   const generatedFiles = scanFiles("public", (absolutePath) => absolutePath.endsWith("/index.html") || absolutePath.endsWith("\\index.html"));
   expect(errors, generatedFiles.length > 0, "No generated public HTML files were found for assurance scanning");
-  const textByFile = new Map(generatedFiles.map((file) => [file, mainTextFromHtml(readText(file))]));
+  const htmlByFile = new Map(generatedFiles.map((file) => [file, readText(file)]));
+  const textByFile = new Map(generatedFiles.map((file) => [file, assuranceTextFromHtml(htmlByFile.get(file))]));
   const allowanceKeys = [];
   const allowancesByFile = new Map();
   for (const allowance of scan.allowances) {
@@ -147,6 +247,7 @@ export function validateAssuranceLanguage() {
   for (const file of generatedFiles) {
     const text = textByFile.get(file);
     const allowedByTerm = new Map();
+    registerAssuranceScopes(errors, file, htmlByFile.get(file), text, allowedByTerm, claimsById, capabilitiesById, contractsByTerm);
     for (const allowance of allowancesByFile.get(file) ?? []) registerAllowanceMatches(errors, allowance, file, text, allowedByTerm);
     for (const term of scannedTerms) {
       const allowedPositions = allowedByTerm.get(term) ?? new Set();

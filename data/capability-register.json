@@ -153,7 +153,7 @@
       ],
       "claimIds": ["claim.observation.n521-awaiting"],
       "evidenceIds": ["source-capability-maturity-register", "source-observation-gateway"],
-      "limitations": ["No liveness claim is made until its independently signed gateway and key are configured."],
+      "limitations": ["No liveness claim is made until an independent gateway and public verification key are configured."],
       "nonClaims": ["A waiting or unavailable UI state is not a simulated live head or a claim of chain availability."],
       "dependencies": ["fenrua.fenn521"],
       "owner": "operations",
@@ -274,7 +274,10 @@
       "claimIds": [],
       "evidenceIds": [],
       "limitations": ["No public implementation, CLI, SDK, API, hosted interface, or release artifact is recorded."],
-      "nonClaims": ["This register does not claim Local Trust Gate is available, tested, beta, or production ready."],
+      "nonClaims": [
+        "This register does not claim Local Trust Gate is available, tested, beta, or production ready.",
+        "No public implementation, CLI, SDK, API, hosted interface, or release artifact is available."
+      ],
       "dependencies": ["fenrua.local-trust-gate"],
       "owner": "developer-platform",
       "lastReviewed": "2026-07-14",

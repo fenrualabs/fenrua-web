@@ -192,7 +192,7 @@
       "definition": "Public label for the bounded Chain N521 observation source, which remains subject to its independent evidence boundary.",
       "aliases": ["Chain N521"],
       "deprecatedAliases": [],
-      "prohibitedAmbiguities": ["Chain N521 observation is not the definition of the platform and no liveness claim is made until its signed gateway and key are configured."],
+      "prohibitedAmbiguities": ["Chain N521 observation is not the definition of the platform and no liveness claim is made until an independent gateway and public verification key are configured."],
       "replacementId": null,
       "effectiveDate": "2026-07-14",
       "publicRoutes": ["/status", "/research/read-only-chain-observation"],
@@ -277,7 +277,14 @@
         "term": "wallet",
         "status": "deprecated",
         "replacementId": "fenrua.protocol",
-        "allowances": []
+        "allowances": [
+          {
+            "file": "public/company/index.html",
+            "context": "The public site does not represent a client portal, checkout, trading venue, wallet, token offering, or financial-return product.",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          }
+        ]
       },
       {
         "term": "swap",
@@ -293,6 +300,12 @@
           {
             "file": "public/legal/index.html",
             "context": "Investment, financial-return, exchange, trading, custody, or public-swap product",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          },
+          {
+            "file": "public/trust/claims/index.html",
+            "context": "The current public service boundary does not offer investment, token-crowdfunding, exchange, trading, custody, public-swap, or financial-return products.",
             "claimId": "claim.commercial.no-financial-products",
             "expectedMatches": 1
           }
@@ -355,6 +368,24 @@
           {
             "file": "public/developers/index.html",
             "context": "No public token, investment, trading, or financial-return product is claimed.",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          },
+          {
+            "file": "public/company/index.html",
+            "context": "The public site does not represent a client portal, checkout, trading venue, wallet, token offering, or financial-return product.",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          },
+          {
+            "file": "public/start/index.html",
+            "context": "These paths use current public records only. They do not imply an investment, account, token, or hosted-product journey.",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          },
+          {
+            "file": "public/trust/claims/index.html",
+            "context": "The current public service boundary does not offer investment, token-crowdfunding, exchange, trading, custody, public-swap, or financial-return products.",
             "claimId": "claim.commercial.no-financial-products",
             "expectedMatches": 1
           }

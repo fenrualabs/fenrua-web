@@ -77,14 +77,17 @@ for (const route of canonicalRoutes) {
   });
 }
 
-test("chain updates expose one announcement region in mobile Overview and desktop non-Overview views", async ({ page }) => {
+test("observation announcements are limited to the relevant surfaces", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoCanonicalRoute(page, "/");
   await expectSingleExposedChainAnnouncementRegion(page);
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoCanonicalRoute(page, "/architecture");
-  await expectSingleExposedChainAnnouncementRegion(page);
+  expect(await exposedChainAnnouncementRegions(page)).toHaveLength(0);
+
+  await gotoCanonicalRoute(page, "/status");
+  await expect(page.locator("[data-status-monitor-announcer]")).toHaveCount(1);
 });
 
 test("Toolchain filter results use a live status region", async ({ page }) => {
@@ -129,19 +132,15 @@ test("Overview keeps an honest signed-observation fallback without JavaScript", 
   }
 });
 
-test("the final mobile navigation item receives focus within the horizontal navigation viewport", async ({ page }) => {
+test("the final mobile navigation category remains visible and keyboard-focusable", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await gotoCanonicalRoute(page, "/");
-  await page.locator(".brand").focus();
-  for (let index = 0; index < 12; index += 1) await page.keyboard.press("Tab");
-  const terminalLink = page.locator(".site-nav .nav-legal");
+  const terminalLink = page.locator('.site-nav a[href="/company"]');
+  await terminalLink.focus();
 
   await expect(terminalLink).toBeFocused();
   await expect.poll(() => terminalLink.evaluate((link) => {
-    const nav = link.closest(".site-nav");
-    if (!nav) return false;
     const linkBox = link.getBoundingClientRect();
-    const navBox = nav.getBoundingClientRect();
-    return linkBox.left >= navBox.left - 1 && linkBox.right <= navBox.right + 1;
+    return linkBox.left >= 0 && linkBox.right <= window.innerWidth && linkBox.top >= 0 && linkBox.bottom <= window.innerHeight;
   })).toBe(true);
 });

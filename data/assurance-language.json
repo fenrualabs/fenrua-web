@@ -147,49 +147,13 @@
     "root": "public",
     "allowances": [
       {
-        "files": [
-          "public/architecture/index.html",
-          "public/kernel/index.html",
-          "public/utilities/index.html",
-          "public/research/index.html",
-          "public/research/pn521-cross-limb-borrow/index.html",
-          "public/research/read-only-chain-observation/index.html",
-          "public/research/toolchain-evidence-lock/index.html",
-          "public/verify/index.html",
-          "public/developers/index.html",
-          "public/toolchain/index.html",
-          "public/evidence/index.html",
-          "public/audit/index.html",
-          "public/status/index.html",
-          "public/legal/index.html",
-          "public/support/index.html",
-          "public/security/index.html",
-          "public/accessibility/index.html"
-        ],
-        "term": "signed",
-        "context": "Signed activity: loading",
-        "claimId": "claim.observation.signed-read-only",
-        "contextType": "claim",
-        "minimumMatches": 2,
-        "maximumMatches": 2
-      },
-      {
-        "files": ["public/index.html"],
-        "term": "signed",
-        "context": "Signed activity loading",
-        "claimId": "claim.observation.signed-read-only",
-        "contextType": "claim",
-        "minimumMatches": 2,
-        "maximumMatches": 2
-      },
-      {
         "files": ["public/index.html"],
         "term": "signed",
         "context": "SIGNED READ-ONLY OBSERVATION",
         "claimId": "claim.observation.signed-read-only",
         "contextType": "claim",
         "minimumMatches": 1,
-        "maximumMatches": 2
+        "maximumMatches": 1
       },
       {
         "files": ["public/index.html"],
@@ -198,7 +162,7 @@
         "claimId": "claim.observation.signed-read-only",
         "contextType": "claim",
         "minimumMatches": 1,
-        "maximumMatches": 2
+        "maximumMatches": 1
       },
       {
         "files": ["public/index.html"],
@@ -207,6 +171,33 @@
         "claimId": "claim.observation.signed-read-only",
         "contextType": "claim",
         "minimumMatches": 1,
+        "maximumMatches": 1
+      },
+      {
+        "files": ["public/index.html"],
+        "term": "signed",
+        "context": "awaiting signed observation",
+        "claimId": "claim.observation.signed-read-only",
+        "contextType": "claim",
+        "minimumMatches": 5,
+        "maximumMatches": 5
+      },
+      {
+        "files": ["public/index.html"],
+        "term": "signed",
+        "context": "No current signed observation",
+        "claimId": "claim.observation.signed-read-only",
+        "contextType": "claim",
+        "minimumMatches": 2,
+        "maximumMatches": 2
+      },
+      {
+        "files": ["public/index.html"],
+        "term": "signed",
+        "context": "Signed activity",
+        "claimId": "claim.observation.signed-read-only",
+        "contextType": "claim",
+        "minimumMatches": 2,
         "maximumMatches": 2
       },
       {
@@ -221,7 +212,7 @@
       {
         "files": ["public/index.html"],
         "term": "observed",
-        "context": "Confidence loading Observed loading Signed activity",
+        "context": "Observed No current signed observation",
         "claimId": "claim.observation.observed-block-label",
         "contextType": "claim",
         "minimumMatches": 2,

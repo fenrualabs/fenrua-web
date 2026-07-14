@@ -170,7 +170,7 @@
     {
       "id": "claim.observation.n521-awaiting",
       "anchor": "claim-observation-n521-awaiting",
-      "statement": "Chain N521 has no liveness claim until its independently signed gateway and public verification key are configured; the public boundary uses an awaiting state instead of fabricated data.",
+      "statement": "Chain N521 has no liveness claim until an independent gateway and public verification key are configured; the public boundary uses an awaiting state instead of fabricated data.",
       "subjectId": "capability.observation-n521",
       "assertionState": "current",
       "assuranceVerb": "published",
@@ -325,7 +325,7 @@
       "supersedes": [],
       "supersededBy": null,
       "limitations": ["This is a public-scope statement, not legal, financial, investment, or tax advice."],
-      "publicRoutes": ["/", "/legal", "/audit", "/developers"]
+      "publicRoutes": ["/", "/legal", "/audit", "/developers", "/company", "/start", "/trust/claims"]
     },
     {
       "id": "claim.commercial.agreement-specific-services",

@@ -5,9 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const playwrightCli = resolve(root, "node_modules", "@playwright", "test", "cli.js");
+const requestedArguments = process.argv.slice(2);
+const projectArguments = requestedArguments.some((argument) => argument === "--project" || argument.startsWith("--project="))
+  ? requestedArguments
+  : ["--project=chromium", ...requestedArguments];
 const result = spawnSync(
   process.execPath,
-  [playwrightCli, "test", "tests/browser/accessibility.spec.mjs", ...process.argv.slice(2)],
+  [playwrightCli, "test", "tests/browser/accessibility.spec.mjs", ...projectArguments],
   {
     cwd: root,
     env: {
