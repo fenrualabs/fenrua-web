@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import handler from "../api/legacy-gone.js";
+import { RETIRED_ROUTE_CACHE_CONTROL, RETIRED_ROUTE_ROBOTS } from "./retired-route-contract.mjs";
+
+assert.equal(RETIRED_ROUTE_CACHE_CONTROL, "no-store, max-age=0");
+assert.equal(RETIRED_ROUTE_ROBOTS, "noindex, nofollow, noarchive");
 
 const [vercelSource, sitemap, robots] = await Promise.all([
   readFile(new URL("../vercel.json", import.meta.url), "utf8"),
@@ -31,9 +35,9 @@ function responseRecorder() {
 const get = responseRecorder();
 handler({ method: "GET" }, get);
 assert.equal(get.statusCode, 410);
-assert.equal(get.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
+assert.equal(get.headers.get("x-robots-tag"), RETIRED_ROUTE_ROBOTS);
 assert.match(get.headers.get("content-type"), /^text\/html/);
-assert.equal(get.headers.get("cache-control"), "no-store, max-age=0");
+assert.equal(get.headers.get("cache-control"), RETIRED_ROUTE_CACHE_CONTROL);
 assert.match(get.body, /<title>Retired route \| Fenrua Protocol<\/title>/);
 assert.match(get.body, /<h1>This route has been retired\.<\/h1>/);
 assert.match(get.body, /Fenrua Labs Pty Ltd/);
@@ -44,7 +48,7 @@ assert.doesNotMatch(get.body, /<(?:script|style|iframe|object|embed)\b|\son[a-z]
 const head = responseRecorder();
 handler({ method: "HEAD" }, head);
 assert.equal(head.statusCode, 410);
-assert.equal(head.headers.get("cache-control"), "no-store, max-age=0");
+assert.equal(head.headers.get("cache-control"), RETIRED_ROUTE_CACHE_CONTROL);
 assert.equal(head.headers.get("content-type"), get.headers.get("content-type"));
 assert.equal(head.headers.get("x-robots-tag"), get.headers.get("x-robots-tag"));
 assert.equal(head.body, "");

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { RETIRED_ROUTE_CACHE_CONTROL, RETIRED_ROUTE_ROBOTS } from "./retired-route-contract.mjs";
 
 const defaultOrigin = "https://fenrua.ai";
 const urlArgument = process.argv.find((argument) => argument.startsWith("--url="));
@@ -103,8 +104,8 @@ const gonePaths = [
 for (const path of gonePaths) {
   const { response } = await request(path);
   assert.equal(response.status, 410, `${path} must return HTTP 410.`);
-  assert.equal(header(response, "x-robots-tag"), "noindex, nofollow, noarchive", `${path} must be excluded from search.`);
-  assert.match(header(response, "cache-control"), /\bmust-revalidate\b/i, `${path} must remain crawlable with bounded caching.`);
+  assert.equal(header(response, "x-robots-tag"), RETIRED_ROUTE_ROBOTS, `${path} must be excluded from search.`);
+  assert.equal(header(response, "cache-control"), RETIRED_ROUTE_CACHE_CONTROL, `${path} must use the retired-route no-store cache contract.`);
 }
 
 const successorRedirects = new Map([
