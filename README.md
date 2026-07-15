@@ -89,10 +89,14 @@ verifies the release manifest, stages the complete public output, runs the
 bounded Overview and Status browser checks, route-wide accessibility analysis,
 the Chromium/Firefox/WebKit information-architecture matrix, JavaScript-disabled
 coverage, an external visual-capture matrix, and a clean-checkout reproduction.
-`npm run release:production-check` additionally requires an approved external
-visual baseline for its strict comparison. The explicit owner-authorized
-production command below merges a checked PR through Git and audits the live
-static release; neither release check verifies protected systems.
+`npm run release:production-check` additionally requires an owner-approved
+out-of-repository visual baseline for its strict comparison. The explicit
+owner-authorized production command accepts either a checked ready PR or an
+already merged PR whose recorded single-parent squash commit remains current on
+`main` and whose parent SHA is supplied. It squash-merges only the ready-PR
+path; the already-merged path verifies that exact resulting main commit before
+auditing the live static release. Neither release check verifies protected
+systems.
 
 ## Canonical Public Model
 
@@ -218,7 +222,8 @@ tracking scripts. If traffic data is needed, use raw server logs from the host.
 
 ## Production Domain
 
-Before merging to `main`, run the owner production gate from a clean checkout:
+For the standalone owner production gate on the approved `main` commit, use a
+clean main checkout:
 
 ```bash
 npm run release:production-check
@@ -227,13 +232,19 @@ npm run release:production-check
 Production publishing is performed by the existing Vercel Git integration, not
 by a repository-local deployment CLI.
 
-With an approved external visual baseline and explicit owner authorization, the
-release command validates the exact PR, merges it through GitHub, waits for the
-Git integration's production deployment, and audits the public release:
+With an owner-approved out-of-repository visual baseline and explicit owner
+authorization, the release command accepts a checked ready PR or an
+already-merged PR. It resolves the exact main commit, merges only the ready-PR
+path through GitHub, waits for the matching Git integration production
+deployment, and audits the public release:
 
 ```bash
 FENRUA_VISUAL_BASELINE_DIR=/absolute/external/approved-visual-baseline \
   npm run deploy:production:node24 -- --pr <number> --confirm-production
+
+# For a PR already merged through GitHub, supply the parent of its recorded squash merge commit.
+FENRUA_VISUAL_BASELINE_DIR=/absolute/external/approved-visual-baseline \
+  npm run deploy:production:node24 -- --pr <number> --previous-main-sha <parent-of-recorded-squash-merge-commit-sha> --confirm-production
 ```
 
 See [Vercel Publishing](docs/VERCEL.md) and the

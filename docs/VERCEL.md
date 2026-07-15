@@ -90,20 +90,32 @@ system `VERCEL_GIT_COMMIT_SHA` binds the remote build to the source revision.
 The repository deliberately has no Vercel CLI dependency. Browser testing stays
 outside the Vercel build because Vercel installs production dependencies only.
 
-For an explicitly owner-authorized release PR, use the guarded Node 24 command:
+For an explicitly owner-authorized release PR, whether ready for merge or
+already merged, use the guarded Node 24 command:
 
 ```bash
 FENRUA_VISUAL_BASELINE_DIR=/absolute/external/approved-visual-baseline \
   npm run deploy:production:node24 -- --pr <number> --confirm-production
+
+# For a PR already merged through GitHub, supply the parent of its recorded squash merge commit.
+FENRUA_VISUAL_BASELINE_DIR=/absolute/external/approved-visual-baseline \
+  npm run deploy:production:node24 -- --pr <number> --previous-main-sha <parent-of-recorded-squash-merge-commit-sha> --confirm-production
 ```
 
-It requires a clean checkout matching the ready PR head, passing required PR checks,
-an approved external baseline, and an explicit confirmation flag. It runs the release
-check and strict visual comparison, squash-merges that exact head through GitHub, and
-refuses to continue if `main` moves. It then waits for the resulting Vercel Git
-production deployment and retries the read-only live release audit while the canonical
-alias propagates. It never stores provider credentials, changes domains or environment
-variables, purges caches, or promotes previews.
+It requires a clean checkout matching the ready PR head before merge, or a
+clean worktree for an already-merged PR. Both paths require passing PR checks,
+an owner-approved out-of-repository visual baseline, and an explicit
+confirmation flag. The already-merged path additionally requires
+`--previous-main-sha`; its value must equal the parent of the recorded
+single-parent squash merge commit, and `main` must still equal that exact merge
+commit. It runs the release check and strict visual comparison. For a ready PR
+it squash-merges the exact head through GitHub; for an already-merged PR it
+verifies the remote deployment of the exact recorded main commit. Both paths
+refuse if, after synchronising main, it is not the PR's recorded merge commit,
+then wait for the matching Vercel Git production deployment and retry the
+read-only live release audit while the canonical alias propagates. It never
+stores provider credentials, changes domains or environment variables, purges
+caches, or promotes previews.
 
 After deployment, observe the public static artifact set without writing to
 the deployment:
