@@ -53,7 +53,7 @@ function sleep(milliseconds) {
 }
 
 function usage() {
-  console.log("Usage: FENRUA_VISUAL_BASELINE_DIR=/absolute/external/baseline npm run deploy:production:node24 -- --pr <number> --confirm-production");
+  console.log("Usage: FENRUA_VISUAL_BASELINE_DIR=/absolute/external/baseline npm run deploy:production:node24 -- --pr <number> --confirm-production [--previous-main-sha <40-character-sha>]");
 }
 
 function option(name) {
@@ -93,9 +93,60 @@ function requireSuccessfulChecks(pr) {
   if (pendingOrFailed.length) fail(`Pull request checks are not successful: ${pendingOrFailed.map(checkName).join(", ")}.`);
 }
 
+function requireMergedPullRequest(pr, label) {
+  const mergeCommit = pr.mergeCommit?.oid?.toLowerCase() ?? "";
+  const headCommit = pr.headRefOid?.toLowerCase() ?? "";
+  if (pr.state !== "MERGED" || pr.isDraft || pr.baseRefName !== "main" || !pr.mergedAt || !/^[0-9a-f]{40}$/.test(mergeCommit) || !/^[0-9a-f]{40}$/.test(headCommit)) {
+    fail(`${label} must be a verifiably merged pull request targeting main.`);
+  }
+  if (mergeCommit === headCommit) {
+    fail(`${label} must be a squash merge with a distinct pull request head commit for remote verification.`);
+  }
+  return mergeCommit;
+}
+
+function assertMainAtMergeCommit(mergeCommit) {
+  const branch = run("git", ["branch", "--show-current"], { capture: true }).trim();
+  if (branch !== "main") fail("Production verification requires the checked-out main branch.");
+
+  const productionCommit = run("git", ["rev-parse", "HEAD"], { capture: true }).trim();
+  const remoteMain = run("git", ["rev-parse", "origin/main"], { capture: true }).trim();
+  if (productionCommit !== remoteMain) fail("Local main must exactly match origin/main before production verification.");
+  if (productionCommit !== mergeCommit) {
+    fail(`main moved after pull request #${pullRequest} merged; refusing to verify a different production commit.`);
+  }
+  return productionCommit;
+}
+
+function assertSingleParentMerge(mergeCommit, previousMainSha) {
+  const commits = run("git", ["rev-list", "--parents", "-n", "1", mergeCommit], { capture: true }).trim().split(/\s+/);
+  if (commits.length !== 2 || commits[0] !== mergeCommit) {
+    fail(`Merged pull request #${pullRequest} must resolve to a single-parent squash commit for remote verification.`);
+  }
+  if (commits[1] !== previousMainSha) {
+    fail(`The previous main SHA does not match the parent of merged pull request #${pullRequest}.`);
+  }
+}
+
+function syncMainAtMergeCommit(mergeCommit, previousMainSha = null) {
+  run("git", ["fetch", "origin", "main"]);
+  run("git", ["switch", "main"]);
+  run("git", ["pull", "--ff-only", "origin", "main"]);
+  assertCleanWorktree();
+
+  const productionCommit = assertMainAtMergeCommit(mergeCommit);
+  if (previousMainSha) assertSingleParentMerge(productionCommit, previousMainSha);
+  return productionCommit;
+}
+
+function reassertMainAtMergeCommit(mergeCommit) {
+  run("git", ["fetch", "origin", "main"]);
+  return assertMainAtMergeCommit(mergeCommit);
+}
+
 function currentProductionDeployment(commit) {
   const deployments = readJson("gh", ["api", `repos/${repository}/deployments?sha=${commit}&per_page=100`]);
-  const deployment = deployments.find((candidate) => String(candidate.environment ?? "").toLowerCase() === "production");
+  const deployment = deployments.find((candidate) => String(candidate.environment ?? "").toLowerCase() === "production" && candidate.creator?.login === "vercel[bot]");
   if (!deployment) return null;
   const statuses = readJson("gh", ["api", `repos/${repository}/deployments/${deployment.id}/statuses?per_page=1`]);
   return { deployment, status: statuses[0] ?? null };
@@ -145,6 +196,7 @@ if (process.argv.includes("--help")) {
 }
 
 const pullRequest = option("--pr");
+const previousMainSha = option("--previous-main-sha")?.toLowerCase() ?? null;
 if (!/^\d+$/.test(pullRequest ?? "")) {
   usage();
   fail("--pr must name the approved pull request number.");
@@ -152,6 +204,10 @@ if (!/^\d+$/.test(pullRequest ?? "")) {
 if (!process.argv.includes("--confirm-production")) {
   usage();
   fail("--confirm-production is required before a production merge and deployment.");
+}
+if (previousMainSha !== null && !/^[0-9a-f]{40}$/.test(previousMainSha)) {
+  usage();
+  fail("--previous-main-sha must be a 40-character commit SHA.");
 }
 
 run(process.execPath, ["scripts/require-node24.mjs"]);
@@ -171,65 +227,68 @@ const pr = readJson("gh", [
   "--repo",
   repository,
   "--json",
-  "number,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,statusCheckRollup,url",
+  "number,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,statusCheckRollup,mergedAt,mergeCommit,url",
 ]);
-if (pr.state !== "OPEN" || pr.isDraft || pr.baseRefName !== "main") {
-  fail(`Pull request #${pullRequest} must be an open, ready-for-review pull request targeting main.`);
-}
-if (pr.mergeStateStatus !== "CLEAN") fail(`Pull request #${pullRequest} is not mergeable: ${pr.mergeStateStatus}.`);
+if (pr.baseRefName !== "main") fail(`Pull request #${pullRequest} must target main.`);
 requireSuccessfulChecks(pr);
 
-const branch = run("git", ["branch", "--show-current"], { capture: true }).trim();
-const head = run("git", ["rev-parse", "HEAD"], { capture: true }).trim();
-if (branch !== pr.headRefName || head !== pr.headRefOid) {
-  fail(`The checked-out source must exactly match pull request #${pullRequest} head ${pr.headRefName}.`);
+let productionCommit;
+if (pr.state === "OPEN") {
+  if (pr.isDraft) fail(`Pull request #${pullRequest} must be ready for review before production deployment.`);
+  if (pr.mergeStateStatus !== "CLEAN") fail(`Pull request #${pullRequest} is not mergeable: ${pr.mergeStateStatus}.`);
+  if (previousMainSha !== null) fail("--previous-main-sha is reserved for an already merged pull request.");
+
+  const branch = run("git", ["branch", "--show-current"], { capture: true }).trim();
+  const head = run("git", ["rev-parse", "HEAD"], { capture: true }).trim();
+  if (branch !== pr.headRefName || head !== pr.headRefOid) {
+    fail(`The checked-out source must exactly match pull request #${pullRequest} head ${pr.headRefName}.`);
+  }
+
+  console.log(JSON.stringify({ status: "preflight-ok", pullRequest: pr.number, baselineDirectory, mode: "ready-pr" }));
+  run("npm", ["run", "release:check"]);
+  run("npm", ["run", "test:visual-regression"]);
+  assertCleanWorktree();
+
+  run("gh", [
+    "pr",
+    "merge",
+    pullRequest,
+    "--squash",
+    "--match-head-commit",
+    pr.headRefOid,
+    "--repo",
+    repository,
+  ], { env: { GH_PROMPT_DISABLED: "1" } });
+  const mergedPr = readJson("gh", [
+    "pr",
+    "view",
+    pullRequest,
+    "--repo",
+    repository,
+    "--json",
+    "state,baseRefName,headRefOid,mergedAt,mergeCommit,url",
+  ]);
+  const mergeCommit = requireMergedPullRequest(mergedPr, `Pull request #${pullRequest}`);
+  productionCommit = syncMainAtMergeCommit(mergeCommit);
+} else if (pr.state === "MERGED") {
+  if (!previousMainSha) fail("--previous-main-sha is required when verifying an already merged pull request.");
+  const mergeCommit = requireMergedPullRequest(pr, `Pull request #${pullRequest}`);
+  console.log(JSON.stringify({ status: "preflight-ok", pullRequest: pr.number, baselineDirectory, mode: "merged-pr", previousMainSha }));
+  productionCommit = syncMainAtMergeCommit(mergeCommit, previousMainSha);
+} else {
+  fail(`Pull request #${pullRequest} must be open and ready for review, or already merged to main.`);
 }
 
-console.log(JSON.stringify({ status: "preflight-ok", pullRequest: pr.number, baselineDirectory }));
-run("npm", ["run", "release:check"]);
-run("npm", ["run", "test:visual-regression"]);
-assertCleanWorktree();
-
-run("gh", [
-  "pr",
-  "merge",
-  pullRequest,
-  "--squash",
-  "--match-head-commit",
-  pr.headRefOid,
-  "--repo",
-  repository,
-], { env: { GH_PROMPT_DISABLED: "1" } });
-const mergedPr = readJson("gh", [
-  "pr",
-  "view",
-  pullRequest,
-  "--repo",
-  repository,
-  "--json",
-  "state,mergedAt,mergeCommit,url",
-]);
-if (mergedPr.state !== "MERGED" || !mergedPr.mergedAt || !mergedPr.mergeCommit?.oid) {
-  fail(`Pull request #${pullRequest} did not complete a verifiable merge.`);
-}
-run("git", ["fetch", "origin", "main"]);
-run("git", ["switch", "main"]);
-run("git", ["pull", "--ff-only", "origin", "main"]);
-assertCleanWorktree();
-
-const productionCommit = run("git", ["rev-parse", "HEAD"], { capture: true }).trim();
-const remoteMain = run("git", ["rev-parse", "origin/main"], { capture: true }).trim();
-if (productionCommit !== remoteMain) fail("Local main must exactly match origin/main before production verification.");
-if (productionCommit !== mergedPr.mergeCommit.oid) {
-  fail(`main moved after pull request #${pullRequest} merged; refusing to verify a different production commit.`);
-}
 run("npm", ["run", "release:production-check"]);
+assertCleanWorktree();
+reassertMainAtMergeCommit(productionCommit);
 const releaseRecord = JSON.parse(readFileSync(resolve(root, ".well-known", "fenrua-release.json"), "utf8"));
 const recordSha = releaseRecord.integrity?.recordSha256;
 if (!/^[0-9a-f]{64}$/.test(recordSha ?? "")) fail("The generated release record is missing its integrity digest.");
 
 const deployment = waitForProductionDeployment(productionCommit);
 waitForLiveAudit(productionCommit, recordSha);
+reassertMainAtMergeCommit(productionCommit);
 
 console.log(JSON.stringify({
   status: "ok",
