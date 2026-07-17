@@ -157,7 +157,7 @@ exit 0`);
   assertPrivacySafePreflight(simulated.stdout, "ready-pr");
   assertBaselinePathRedacted(simulated, simulationBaseline, "Ready PR simulation");
   const simulatedLog = readFileSync(simulationLog, "utf8");
-  assert.match(simulatedLog, /gh pr merge 17 --squash --match-head-commit a{40} --repo fenrualabs\/fenrua-web/);
+  assert.match(simulatedLog, /gh pr merge 17 --squash --match-head-commit a{40} --repo Fenrua-Labs-Pty-Ltd\/fenrua-web/);
   assert.match(simulatedLog, /npm run release:check/);
   assert.match(simulatedLog, /npm run test:visual-regression/);
 
