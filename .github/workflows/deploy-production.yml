@@ -1,0 +1,18 @@
+name: Retired public production deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retired:
+    name: Production deploy moved to private ops
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse public-repo deployment
+        run: |
+          echo "::error::Production publishing no longer runs from fenrua-web."
+          echo "::error::Use SAE-owned private operations deployment control."
+          exit 1

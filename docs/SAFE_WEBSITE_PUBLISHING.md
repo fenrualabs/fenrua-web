@@ -221,3 +221,9 @@ Founder, CSA, or any other department may request, authorise, halt, or reject a 
 The public `fenrua-web` repository must not contain Vercel tokens, provider credentials, `.vercel` project state, production deployment CLI wiring, or protected deployment secrets.
 
 Vercel preview/build status may provide useful signal, but it is not the source of publishing authority. The required public repository gate is the GitHub Actions `Validate public surface` check. Production publishing authority remains SAE-controlled.
+
+## Retired public deployment sentinels
+
+The files `.github/workflows/deploy-production.yml` and `.github/workflows/sae-release-gate.yml` may remain only as fail-closed sentinels for repository continuity and validation compatibility.
+
+They must not contain Vercel CLI usage, provider secrets, production deploy steps, or public-repository publishing authority. If manually triggered, they must refuse deployment and direct execution to SAE-owned private operations control.
