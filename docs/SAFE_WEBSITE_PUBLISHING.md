@@ -93,14 +93,7 @@ If a local execution environment is unavailable, the pull request body must stat
 
 The production publication executor is `.github/workflows/deploy-production.yml`, named `SAE release gate`.
 
-The gate uses the existing GitHub Actions Vercel secrets only inside the runner environment:
-
-```yaml
-Required_Secrets:
-  VERCEL_ORG_ID: "GitHub Actions secret"
-  VERCEL_PROJECT_ID: "GitHub Actions secret"
-  VERCEL_TOKEN: "GitHub Actions secret"
-```
+The gate uses the existing GitHub Actions Vercel secrets only inside the runner environment. The public repository may describe that the gate requires the organisation identifier, project identifier, and deployment token, but it must not write their secret variable names in public assignment blocks or expose their values.
 
 The gate must not print, commit, upload, or expose token values, provider internals, local paths, screenshots, or private release evidence.
 
