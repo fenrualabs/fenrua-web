@@ -89,6 +89,20 @@ npm run build:release
 
 If a local execution environment is unavailable, the pull request body must state that CI and deployment checks are authoritative, and the PR must not be merged until the required checks and preview deployment succeed.
 
+## SAE GitHub Action release gate
+
+The production publication executor is `.github/workflows/deploy-production.yml`, named `SAE release gate`.
+
+The gate uses the existing GitHub Actions Vercel secrets only inside the runner environment. The public repository may describe that the gate requires the organisation identifier, project identifier, and deployment token, but it must not write their secret variable names in public assignment blocks or expose their values.
+
+The gate must not print, commit, upload, or expose token values, provider internals, local paths, screenshots, or private release evidence.
+
+The gate may run automatically only after the `Site integrity` workflow succeeds on `main`, or by explicit manual dispatch with the `SAE-PUBLISH-fenrua.ai` confirmation string. In both cases it must verify that the selected commit is the exact current `main` commit before building or deploying.
+
+Before production deployment, the gate installs the pinned Node/npm/Vercel toolchain, runs the release check, pulls production configuration through the Vercel token, builds the production deployment, deploys the prebuilt output, and polls `https://fenrua.ai/.well-known/fenrua-release.json` until the live manifest reports the same source commit.
+
+A GitHub Actions run is not a completed website publication unless the live-domain manifest check passes.
+
 ## Public trust-boundary review
 
 Any change that affects public claims, trust language, legal/commercial boundaries, official-source statements, token/no-token statements, evidence language, or operational status language requires explicit trust-boundary review before merge.
@@ -185,5 +199,5 @@ Safe website publishing never authorises exposure of:
 Use this rule for every website update:
 
 ```text
-One SAE-owned release path. One clean branch. One bounded PR. Passing checks. Successful preview. Squash merge. Watch main. Verify live domain. Leave no open release PR behind.
+One SAE-owned release path. One clean branch. One bounded PR. Passing checks. Successful preview. Squash merge. SAE release gate. Verify live domain. Leave no open release PR behind.
 ```
