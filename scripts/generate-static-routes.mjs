@@ -169,6 +169,7 @@ const sectionNavigation = {
   ],
   Trust: [
     ["Trust overview", "/trust"],
+    ["Trust Gate", "/trust#trust-gate", null],
     ["Claims", "/trust/claims"],
     ["Evidence classes", "/trust/evidence-classes"],
     ["Evidence", "/evidence"],
@@ -1292,16 +1293,53 @@ function platform() {
 }
 
 function trust() {
+  const reviewerPath = [
+    ["01", "Action Request", "An AI-linked action, tool call, model decision, infrastructure change, or release claim is proposed for review."],
+    ["02", "Identity and Scope", "The action is tied to an authorised identity, tenant or context boundary, and permitted surface."],
+    ["03", "Manifest and Policy", "The declared manifest, policy state, route scope, capability boundary, and current maturity are checked together."],
+    ["04", "Revocation and Deny-Overrides", "Revoked, denied, expired, or superseded authority remains a separate stop condition."],
+    ["05", "Evidence Construction", "The action produces bounded evidence rather than relying on assertion alone."],
+    ["06", "Verification", "Relevant evidence can be inspected against its public or tenant-scoped boundary."],
+    ["07", "Review / Stop / Escalation", "ALLOW is not EXECUTE. Review, stop authority, and escalation remain separate from raw capability."],
+  ];
   return layout({
     title: "Fenrua Trust",
-    description: "Fenrua claims, evidence classes, release verification, and public trust boundaries.",
+    description: "Fenrua Trust Gate reviewer path, claims, evidence classes, release verification, and public trust boundaries.",
     current: "Trust",
     canonicalPath: "/trust",
     section: "Trust",
     body: assuranceScope("claims", ["claim.observation.signed-read-only"], `<div class="trust-intro">
 ${officialSourceWarning()}
-      ${routeHero("TRUST BOUNDARIES", "Trust", "Fenrua BlackBox Protocol provides bounded evidence for reviewer verification while keeping private AI execution outside the public/private disclosure boundary. Public trust is expressed through scoped claims, evidence classes, release records, and explicit non-claims—not a generic assurance badge.", `<div class="cta-row"><a class="button button-primary" href="/trust/claims">Inspect claims</a><a class="button button-secondary" href="/trust/evidence-classes">Read evidence classes</a></div>`)}
+      ${routeHero("TRUST BOUNDARIES", "Trust", "Fenrua BlackBox Protocol provides bounded evidence for reviewer verification while keeping private AI execution outside the public/private disclosure boundary. Public trust is expressed through scoped claims, evidence classes, release records, and explicit non-claims—not a generic assurance badge.", `<div class="cta-row"><a class="button button-primary" href="#trust-gate">Trust Gate reviewer path</a><a class="button button-secondary" href="/trust/claims">Inspect claims</a><a class="button button-secondary" href="/trust/evidence-classes">Read evidence classes</a></div>`)}
       </div>
+      <section id="trust-gate" class="section-shell" aria-labelledby="trust-gate-title">
+        <div class="section-heading"><p class="eyebrow">PUBLIC GOVERNANCE MODEL</p><h2 id="trust-gate-title">Trust Gate: Capability Is Not Authority</h2><p>A model's ability to produce an action does not mean the action should be trusted.</p></div>
+        <div class="constraint-list"><p>Fenrua's Trust Gate direction separates AI capability from execution authority. Tool calls, model decisions, network actions, infrastructure changes, and release claims should be evaluated through bounded evidence before they become trusted operational actions.</p></div>
+        ${cardGrid([
+          { kicker: "DOCTRINE", title: "Evidence Before Authority", text: "Evidence is a prerequisite for trust. A public claim remains bounded by its source, maturity, limitation, and review context." },
+          { kicker: "BOUNDARY", title: "Capability is not authority", text: "A tool permission is not the same as operational trust. Raw capability does not collapse identity, policy, evidence, verification, containment, and recovery." },
+          { kicker: "DECISION", title: "ALLOW is not EXECUTE", text: "An allowed condition does not itself execute an action. Review, stop authority, and escalation remain separate from capability." , href: "#allow-is-not-execute", link: "Read the authority boundary" },
+        ])}
+      </section>
+      <section id="allow-is-not-execute" class="section-shell split-section" aria-labelledby="allow-is-not-execute-title">
+        <div><p class="eyebrow">AUTHORITY BOUNDARY</p><h2 id="allow-is-not-execute-title">ALLOW is not EXECUTE</h2><p>A Trust Gate direction is a governance model for review; it is not an instruction path, a public executor, or a runtime control surface.</p></div>
+        <div class="constraint-list"><p>A log is not enough unless it can prove the relevant identity, request, policy, revocation state, and evidence boundary.</p><p>An action can be allowed within a bounded decision context while still requiring review, a separate executor, an explicit stop condition, or escalation.</p></div>
+      </section>
+      <section class="section-shell" aria-labelledby="trust-gate-reviewer-path-title">
+        <div class="section-heading"><p class="eyebrow">REVIEWER PATH</p><h2 id="trust-gate-reviewer-path-title">Inspect the action boundary before treating it as authority</h2><p>This is a high-level public reviewer path. It describes the records and boundaries a reviewer should expect, not a public implementation workflow.</p></div>
+        ${cardGrid(reviewerPath.map(([kicker, title, text]) => ({ kicker, title, text })))}
+      </section>
+      <section class="section-shell" aria-labelledby="trust-gate-state-title">
+        <div class="section-heading"><p class="eyebrow">MATURITY BOUNDARY</p><h2 id="trust-gate-state-title">Current public state and staged direction are separate</h2><p>Public records are inspectable today. Future Trust Gate capabilities remain promotion-gated until matching public evidence and release conditions exist.</p></div>
+        <div class="trust-gate-state-grid">
+          <article><span>INSPECTABLE TODAY</span><h3>Current public state</h3><p>Fenrua publishes a public evidence interface, claim and capability registers, a release manifest, a local validation path, bounded observation context, public/private disclosure boundaries, and documented Trust Gate model and promotion-gated direction.</p><ul><li>Public records remain source-bound and limitation-aware.</li><li>Local validation reproduces the public static surface only.</li><li>Bounded observations remain separate from runtime authority.</li></ul></article>
+          <article><span>STAGED / NOT LIVE</span><h3>Roadmap direction</h3><p>The Local Trust Gate CLI and hosted verifier have no public interface. Tenant identity, agent capture, proof ingress, challenge and replay protocol, and production rollout gates remain staged direction.</p><ul><li>No tenant identity system is represented as live.</li><li>No agent capture pipeline or proof ingress is represented as live.</li><li>No challenge, replay, or production rollout feature is represented as live.</li></ul><p><strong>Boundary:</strong> This Trust Gate page describes Fenrua's public governance model and staged protocol direction. It does not claim that all Trust Gate tooling, tenant identity, proof ingress, challenge/replay, or hosted verifier features are live unless explicitly marked as live on fenrua.ai.</p></article>
+        </div>
+      </section>
+      <section class="section-shell split-section" aria-labelledby="autonomous-ai-risk-title">
+        <div><p class="eyebrow">AUTONOMOUS AI RISK CONTEXT</p><h2 id="autonomous-ai-risk-title">Review the authority path, not capability alone</h2></div>
+        <div class="constraint-list"><p>Autonomous AI systems can pursue narrow objectives across tool, network, and infrastructure boundaries. Fenrua addresses the governance class behind that risk: raw capability becoming unreviewed operational authority.</p><p>A sandbox alone is not enough if a capable system can find a path around it. A tool permission alone is not enough if the action is not tied to policy. A log alone is not enough if it cannot prove which identity, manifest, request, revocation state, and evidence boundary made the action acceptable.</p><p>Fenrua does not claim to prevent every misuse of autonomous AI. It provides a protocol direction for bounding, evidencing, reviewing, and challenging the actions that matter.</p></div>
+      </section>
       <section class="section-shell" aria-labelledby="trust-records"><div class="section-heading"><p class="eyebrow">MACHINE-READABLE RECORDS</p><h2 id="trust-records">Trace public statements to their boundary</h2><p>Claims link to capability and evidence records. Stronger assurance language is governed by a versioned public contract rather than presentation alone.</p></div>
         ${modelDownloads()}
       </section>
@@ -1477,7 +1515,7 @@ ${officialSourceWarning()}
         </div>
         ${cardGrid([
           { kicker: "DOCTRINE", title: "Evidence Before Authority", text: "Fenrua BlackBox Protocol makes evidence a prerequisite for trust: public records remain bounded, reviewable, and adjacent to their limitations.", href: "/trust", link: "Trust records" },
-          { kicker: "CONTROL", title: "Capability is not authority", text: "Autonomous systems need identity, authority, integrity, policy, evidence, verification, containment, and recovery before execution can be trusted.", href: "/kernel", link: "Kernel primitives" },
+          { kicker: "CONTROL", title: "Trust Gate reviewer path", text: "Capability is not authority. Autonomous systems need identity, authority, integrity, policy, evidence, verification, containment, and recovery before execution can be trusted.", href: "/trust#trust-gate", link: "Inspect the Trust Gate model" },
           { kicker: "TODAY", title: "Reference surfaces are public", text: "The website, evidence registry, toolchain lock, telemetry checks, and schema foundations are available with maturity labels.", href: "/operations", link: "Operations" },
           { kicker: "EVIDENCE", title: "Claims are source-linked", text: "Every significant public claim points to a source, timestamp, maturity label, and limitation.", href: "/trust", link: "Trust records" },
           { kicker: "NEXT", title: "Developers start locally", text: "The verifier page and developer quick-start show the local workflow without pretending a live verifier exists.", href: "/start", link: "Choose a path" },
@@ -1485,7 +1523,7 @@ ${officialSourceWarning()}
       </section>
       <section class="section-shell split-section" aria-labelledby="home-roadmap-title">
         <div><p class="eyebrow">STAGED PROTOCOL DIRECTION</p><h2 id="home-roadmap-title">Governable autonomous AI execution</h2></div>
-        <div class="constraint-list"><p>Fenrua is built for autonomous systems that must be questioned before they are trusted. The staged direction covers tenant identity, agent capture, evidence events, proof ingress, tenant logical blocks, encrypted archive and recovery, selective disclosure, challenge and replay protocol, and production rollout gates.</p><p>Trust Gate and the P/N-521 proof-kernel direction remain promotion-gated research. Reviewer verification examines bounded evidence and the public/private disclosure boundary; it does not claim a live Trust Gate, completed proof system, runtime safety, or production rollout.</p><p><a href="/roadmap">Read the public BlackBox Roadmap</a>.</p></div>
+        <div class="constraint-list"><p>Fenrua is built for autonomous systems that must be questioned before they are trusted. The staged direction covers tenant identity, agent capture, evidence events, proof ingress, tenant logical blocks, encrypted archive and recovery, selective disclosure, challenge and replay protocol, and production rollout gates.</p><p>Trust Gate and the P/N-521 proof-kernel direction remain promotion-gated research. Reviewer verification examines bounded evidence and the public/private disclosure boundary; it does not claim a live Trust Gate, completed proof system, runtime safety, or production rollout.</p><p><a href="/roadmap">Read the public BlackBox Roadmap</a> · <a href="/trust#trust-gate">Inspect the Trust Gate reviewer path</a>.</p></div>
       </section>
       <section class="section-shell split-section" aria-labelledby="home-boundary">
         <div>
@@ -1508,7 +1546,7 @@ function roadmap() {
     ["01", "Public Evidence Surface", "Public website, evidence records, trust records, release scope, and local validation paths make the reviewable surface inspectable."],
     ["02", "Official Source and Impersonation Boundary", "fenrua.ai is the sole source of truth. Fenrua has no public token, claim page, or public-mainnet contract."],
     ["03", "Governable AI Execution", "Capability is not authority. AI-linked tool calls and model actions require bounded evidence and review before they can be trusted."],
-    ["04", "Trust Gate Direction", "Manifest, policy, request, revocation, evidence construction, and verification describe the direction. ALLOW is not EXECUTE, and future tooling is not claimed as live."],
+    ["04", "Trust Gate Direction", "Manifest, policy, request, revocation, evidence construction, and verification describe the direction. ALLOW is not EXECUTE, and future tooling is not claimed as live.", "/trust#trust-gate", "Open reviewer path"],
     ["05", "Tenant Identity and Scoped Access", "Future tenant-scoped evidence projection is intended to preserve separate review boundaries without cross-tenant disclosure."],
     ["06", "Agent Capture and Evidence Events", "Model, tool, and infrastructure actions can become bounded evidence records while protected implementation details remain outside the public surface."],
     ["07", "Proof Ingress Direction", "The P/N-521 proof-kernel direction may inform future bounded proof ingress. This page does not describe equations, formulas, witnesses, or implementation details."],
@@ -1531,11 +1569,11 @@ function roadmap() {
       </section>
       <section class="section-shell" aria-labelledby="roadmap-stages-title">
         <div class="section-heading"><p class="eyebrow">CONTROLLED MATURITY PATH</p><h2 id="roadmap-stages-title">Twelve public stages</h2><p>Each stage describes a bounded public meaning and preserves the distinction between direction, evidence, and live capability.</p></div>
-        ${cardGrid(stages.map(([kicker, title, text]) => ({ kicker, title, text })))}
+        ${cardGrid(stages.map(([kicker, title, text, href, link]) => ({ kicker, title, text, href, link })))}
       </section>
       <section class="section-shell split-section" aria-labelledby="roadmap-review-title">
         <div><p class="eyebrow">REVIEW PATH</p><h2 id="roadmap-review-title">Evidence before authority</h2></div>
-        <div class="constraint-list"><p>Inspect the current public trust records, release scope, and legal boundary before treating any external claim as authoritative.</p><p><a href="/trust">Trust records</a> · <a href="/audit">Release verification</a> · <a href="/legal">Legal and company boundary</a></p></div>
+        <div class="constraint-list"><p>Inspect the current public trust records, release scope, and legal boundary before treating any external claim as authoritative.</p><p><a href="/trust#trust-gate">Trust Gate reviewer path</a> · <a href="/trust">Trust records</a> · <a href="/audit">Release verification</a> · <a href="/legal">Legal and company boundary</a></p></div>
       </section>`,
   });
 }
@@ -1805,7 +1843,7 @@ function verify() {
     title: "Fenrua Verify",
     description: "Fenrua public verification foundation with historical scenarios, documentation, and repository validation.",
     current: "Verify",
-    body: `${routeHero("LEGACY VERIFICATION CORPUS", "Verify", "No live server-side verifier is claimed. The current scenario corpus is historical reference material, not a Trust Gate result, decision, or execution interface.")}
+    body: `${routeHero("LEGACY VERIFICATION CORPUS", "Verify", "No live server-side verifier is claimed. The current scenario corpus is historical reference material, not a Trust Gate result, decision, or execution interface.", `<div class="cta-row"><a class="button button-primary" href="/trust#allow-is-not-execute">Read reviewer authority boundary</a><a class="button button-secondary" href="/trust/claims">Inspect claims</a></div>`)}
       <section id="local-verification" class="section-shell split-section" aria-labelledby="local-verification-title">
         <div>
           <p class="eyebrow">REPOSITORY VALIDATION WALKTHROUGH</p>

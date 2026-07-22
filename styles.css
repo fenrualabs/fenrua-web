@@ -1868,6 +1868,39 @@ h3 {
   outline: none;
 }
 
+.trust-gate-state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.trust-gate-state-grid article {
+  display: grid;
+  gap: 0.65rem;
+  min-height: 13rem;
+  border: 1px solid var(--line);
+  background: var(--surface-1);
+  padding: 1rem;
+}
+
+.trust-gate-state-grid article > span {
+  color: var(--blue);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.trust-gate-state-grid article p,
+.trust-gate-state-grid article li {
+  color: var(--muted);
+}
+
+.trust-gate-state-grid ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 .breadcrumb-nav {
   margin: 1rem 0 0.65rem;
   color: var(--muted);
@@ -2597,6 +2630,7 @@ tr:last-child td {
   .doc-grid,
   .model-downloads,
   .route-grid,
+  .trust-gate-state-grid,
   .toolchain-meta,
   .lifecycle-list {
     grid-template-columns: minmax(0, 1fr);

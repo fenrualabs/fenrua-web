@@ -195,6 +195,29 @@ assert.match(overview, /Governable autonomous AI execution/);
 assert.match(overview, /Trust Gate and the P\/N-521 proof-kernel direction remain promotion-gated research\./);
 assert.doesNotMatch(overview, /AI efficiency infrastructure for verifiable systems/i);
 assert.match(trust, /Fenrua BlackBox Protocol provides bounded evidence for reviewer verification/);
+assert.match(trust, /id="trust-gate"/);
+assert.match(trust, /Trust Gate: Capability Is Not Authority/);
+assert.match(trust, /A model's ability to produce an action does not mean the action should be trusted\./);
+assert.match(trust, /Evidence Before Authority/);
+assert.match(trust, /Capability is not authority/);
+assert.match(trust, /id="allow-is-not-execute"/);
+assert.match(trust, /ALLOW is not EXECUTE/);
+for (const reviewerStep of [
+  "Action Request",
+  "Identity and Scope",
+  "Manifest and Policy",
+  "Revocation and Deny-Overrides",
+  "Evidence Construction",
+  "Verification",
+  "Review / Stop / Escalation",
+]) assert.match(trust, new RegExp(`<h3>${reviewerStep}<\\/h3>`), `Trust must include reviewer step: ${reviewerStep}.`);
+assert.match(trust, /Current public state/);
+assert.match(trust, /Roadmap direction/);
+assert.match(trust, /The Local Trust Gate CLI and hosted verifier have no public interface\./);
+assert.match(trust, /This Trust Gate page describes Fenrua's public governance model and staged protocol direction\./);
+assert.match(trust, /Autonomous AI systems can pursue narrow objectives across tool, network, and infrastructure boundaries\./);
+assert.match(trust, /href="\/trust#trust-gate"[^>]*>Trust Gate<\/a>/, "Trust section navigation must expose the canonical reviewer path.");
+assert.doesNotMatch(trust, /(?:cryptographic formulas?|tenant projection equations?|commitment formulas?|nullifier formulas?|witness vectors?|proof relations?|Merkle\/?MMR equations?|sparse Merkle aggregation details?|settlement formulas?|private chain topology|peer maps?|provider routes?|RPC details?)/i, "Trust Gate reviewer path must remain conceptual and public-safe.");
 assert.match(overview, /<script src="\/kernel-status\.js" defer><\/script>/, "overview must load live chain updater");
 assert.match(overview, /class="site-header site-header-live"/, "overview must place live blocks in the header");
 assert.match(overview, /class="header-chain-rail mobile-chain-rail"/, "overview must render the mobile header live chain rail");
@@ -222,6 +245,8 @@ assert.doesNotMatch(overview, /Blocks since check|data-chain-field="(?:978|521)-
 
 assert.match(overview, /href="\/roadmap">View roadmap<\/a>/, "Overview must expose the public roadmap from its primary introduction.");
 assert.match(overview, /href="\/roadmap">Read the public BlackBox Roadmap<\/a>/, "Overview must link the staged direction section to the roadmap.");
+assert.match(overview, /href="\/trust#trust-gate">Inspect the Trust Gate model<\/a>/, "Overview must expose the canonical Trust Gate reviewer path.");
+assert.match(overview, /href="\/trust#trust-gate">Inspect the Trust Gate reviewer path<\/a>/, "Overview staged direction must link to the canonical Trust Gate reviewer path.");
 assert.match(roadmap, /<h1 id="page-title">BlackBox Roadmap<\/h1>/);
 assert.match(roadmap, /This roadmap describes staged protocol direction and public review boundaries\./);
 assert.match(roadmap, /Future-stage items are not availability claims unless explicitly marked as live on fenrua\.ai\./);
@@ -242,6 +267,8 @@ for (const stage of [
   assert.match(roadmap, new RegExp(`<h3>${stage}<\\/h3>`), `Roadmap must include ${stage}.`);
 }
 assert.match(roadmap, /ALLOW is not EXECUTE/);
+assert.match(roadmap, /href="\/trust#trust-gate">Open reviewer path<\/a>/, "Roadmap Trust Gate stage must link to the canonical reviewer path.");
+assert.match(roadmap, /href="\/trust#trust-gate">Trust Gate reviewer path<\/a>/, "Roadmap review path must link to the canonical reviewer path.");
 assert.match(roadmap, /P\/N-521 proof-kernel direction/);
 assert.doesNotMatch(roadmap, /<(?:math|pre|code)\b/i, "Roadmap must not render formula or implementation notation.");
 assert.doesNotMatch(roadmap, /(?:witness vectors?|commitment formulas?|nullifier formulas?|Merkle\/MMR equations?|key-derivation formulas?|RPC details?|contract addresses?|tokenomics)/i, "Roadmap must remain public-safe and formula-free.");
@@ -258,6 +285,9 @@ assert.match(platform, /href="\/trust\/claims#capability\.local-trust-gate">Insp
 assert.doesNotMatch(platform, /\/platform\/trust-gate/, "A dedicated Trust Gate product route must remain absent until the approved repository and release gate exist.");
 assert.match(platform, /AI efficiency evidence standard/);
 assert.match(platform, /does not publish a measured AI-efficiency benchmark/i);
+
+const verifyReviewerPath = await readFile(new URL("../verify/index.html", import.meta.url), "utf8");
+assert.match(verifyReviewerPath, /href="\/trust#allow-is-not-execute">Read reviewer authority boundary<\/a>/, "Verify must link to the canonical authority boundary without claiming a live verifier.");
 
 const start = await readFile(new URL("../start/index.html", import.meta.url), "utf8");
 for (const role of ["Developer", "Security engineer", "Researcher", "Enterprise technical leader", "University or educator", "Open-source contributor", "General technical reviewer"]) {
