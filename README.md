@@ -269,6 +269,10 @@ Production publishes through the existing Vercel project `fenrua-web`, which own
 
 Website publishing is controlled by the [Safe Website Publishing Control](docs/SAFE_WEBSITE_PUBLISHING.md).
 
+CSA may synthesize public posture and raise release concerns. Under the active
+SAM/Owner policy, authorized Codex agents may submit bounded website-update
+pull requests; the Owner approves the exact release and private operations
+publishes it without exposing production credentials.
 CSA may synthesize public posture, review final wording, and raise release concerns, but CSA does not publish website updates.
 
 An explicitly assigned Codex Release Agent may prepare a bounded public update, validation evidence, screenshots, public pull request, and non-secret operations release request. The Owner or Project Lead may authorise, halt, or supersede a release; only the Owner's protected merge of the exact release request in the private operations control plane can trigger production. See the [Owner-approved release workflow](docs/OWNER_APPROVED_RELEASE_WORKFLOW.md).
@@ -382,6 +386,7 @@ npm run audit:live-release -- --url https://fenrua.ai --expected-commit <40-char
 
 The expected record digest is the independent trust anchor. A live manifest’s self-hash alone cannot detect origin compromise. The receipt proves only the observed public static artifact set at that time; it is not evidence for live cards, APIs, private systems, or perpetual production assertion.
 
+For source evidence on the approved `main` commit, use a clean checkout:
 For source-only production-readiness evidence on the approved `main` commit, use a clean main checkout:
 
 ```bash

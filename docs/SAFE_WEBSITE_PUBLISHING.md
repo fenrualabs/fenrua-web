@@ -1,20 +1,32 @@
-# Safe Website Publishing Control
+# SAM/Owner Website Release Policy
 
-Status: Active public-repository control  
+Status: **active Owner-approved control**
 Repository: `Fenrua-Labs-Pty-Ltd/fenrua-web`  
+Canonical public domain: `https://fenrua.ai`
 Canonical public domain: `https://fenrua.ai`  
 Publication authority: Owner-approved Git-integrated release
 Founder authority: may authorise, halt, or supersede publication  
 CSA boundary: CSA does not publish
 
-## Purpose
+## Legacy disposition
 
-This document defines the minimum safe path for publishing any Fenrua website update. It replaces ad-hoc publish behaviour for this repository.
+All earlier CSA and SAE-only website-publication rulings are legacy for this
+repository. They do not block the SAM/Owner path. This replacement does not
+weaken the public secret boundary, exact-commit binding, public validation, or
+live-manifest verification.
 
-A website update is safe to publish only when the source tree, review surface, generated public output, deployment state, and live-domain confirmation all agree.
+## Authority model
 
-## Authority boundary
+An authorized Codex agent may submit a bounded website-update pull request and
+prepare a non-secret release request. The Owner approves the exact release in
+GitHub. The private
+`fenrualabs/fenrua-public-operations-system` repository is the only production
+publisher; it holds the protected provider integration and never exposes its
+credentials to the public website repository or agent workspace.
 
+```text
+Codex agent -> validated public PR -> Owner approval -> private operations
+release request -> protected deployment -> fenrua.ai live-manifest check
 An explicitly assigned Codex Release Agent may prepare a bounded website change, validation evidence, screenshots, public pull request, protected-main merge, production watch, and source-bound live audit. CSA may review final public posture, synthesize department findings, and raise release concerns, but CSA does not publish unless explicitly assigned the Release Agent role.
 
 Founder or Project Lead authority may authorise, stop, or supersede publication. After the exact reviewed pull request is green, the Owner's direct **ship it** or **deploy live** command authorises the Release Agent to squash-merge that exact commit to protected `main`; the existing Vercel Git integration is the production trigger. A Release Agent cannot access credentials, substitute a commit, bypass a gate, or claim publication before the live-manifest check passes.
@@ -68,71 +80,63 @@ Implementation_Scope:
   protected_infrastructure_touched: false
 ```
 
-When `generated_files_changed` is true, the generator or postprocessor that owns those files must also be updated or validated. Do not hand-edit generated public output without preserving the deterministic generation path.
+An agent may not retrieve, copy, echo, set, or use a Vercel token, provider
+secret, `.vercel` linkage, private endpoint, or production environment value.
+An Owner's GitHub approval is the release decision. A WSL login, local path, or
+manually entered unlock code is not an approval mechanism.
 
-## Required local or CI validation
+## Fast release lane
 
-The release path must preserve the repository validation contract. At minimum, the pull request must leave the following commands valid for the checked-out source:
+1. Start from the intended `main` commit and create a bounded pull request.
+2. Run the repository's public validation and use the preview as review
+   evidence.
+3. The Owner approves the exact reviewed change and merges it to protected
+   `main`.
+4. A non-secret request in the private operations repository binds that exact
+   merge commit, repository, branch, domain, Owner approval marker, and expiry.
+5. The Owner merges the reviewed private release request to protected
+   pull-request-only `main`. The controller accepts deployment only when that
+   merge is performed by the designated Owner actor; this is the
+   GitHub-recorded approval for the private operation.
+6. The private operation verifies the source commit and Vercel project binding,
+   deploys only that commit, waits for provider readiness, and checks the live
+   release manifest at `https://fenrua.ai`.
+
+Failure of a public check, private deployment, or live-manifest binding stops
+that release only. It does not require an unlock code, credentials in WSL, or a
+public deployment command.
+
+## Required public boundaries
+
+The public repository must never contain:
+
+- Vercel tokens, organization IDs, project IDs, provider credentials, or
+  `.vercel` project state;
+- Vercel CLI deployment commands or deployment workflows;
+- private infrastructure topology, signing material, validator routes, or
+  protected runtime values;
+- unsupported public claims about production, certification, uptime, or private
+  systems.
+
+The public boundary workflow validates these constraints on every pull request
+and `main` update. It is a guardrail, not a publishing authority.
+
+## Recovery and rollback
+
+Recovery uses the same Owner-approved private release route. A rollback targets
+the designated last-known-good commit and its release record; it does not
+promote an arbitrary historical deployment. Post-release and post-rollback
+checks remain read-only:
 
 ```bash
-npm run generate:static
-npm run check:source-syntax
-npm run check:generated
-npm run validate
-npm run build:release
+npm run audit:live-release -- --url https://fenrua.ai --expected-commit <40-character-commit> --expected-record-sha256 <record-digest>
+npm run audit:live-routes -- --url https://fenrua.ai
+npm run audit:live-search-surface -- --url=https://fenrua.ai
 ```
 
-If a local execution environment is unavailable, the pull request body must state that CI and deployment checks are authoritative, and the PR must not be merged until the required checks and preview deployment succeed.
-
-## Public trust-boundary review
-
-Any change that affects public claims, trust language, legal/commercial boundaries, official-source statements, token/no-token statements, evidence language, or operational status language requires explicit trust-boundary review before merge.
-
-The review must confirm:
-
-```yaml
-Trust_Boundary_Check:
-  provider_names_added: false
-  secrets_or_credentials_added: false
-  contract_addresses_added: false
-  tokenomics_added: false
-  wallet_payment_swap_staking_bridge_claim_mechanics_added: false
-  future_token_implication_added: false
-  protected_infrastructure_disclosed: false
-  private_chain_operational_details_disclosed: false
-  unsupported_live_claim_added: false
-```
-
-## Merge gate
-
-A pull request may be merged only when:
-
-- it is based on the current intended `main` line;
-- the file diff matches the approved scope;
-- required GitHub checks are successful;
-- preview deployment is successful;
-- no unresolved trust-boundary or release-boundary finding remains;
-- no unrelated open release PR is competing for the same public surface.
-
-Do not merge a PR with a failed preview deployment. Do not merge a PR only because the code diff looks correct.
-
-## Production watch gate
-
-After merge, bind the watch to the merged `main` commit, not only to the pre-merge branch head.
-
-```yaml
-Production_Watch:
-  commit: "<merged main sha>"
-  notify_on:
-    - "success"
-    - "failure"
-  silent_on:
-    - "pending"
-    - "missing"
-  include_deployment_url: true
-  stop_after_final_state: true
-```
-
+Keep approval, deployment, and audit receipts outside the public source
+repository. Never commit credentials, provider exports, private paths, or
+protected operational data.
 If production succeeds, verify `https://fenrua.ai` directly. If production fails, do not publish another website update until the failed deployment is either fixed, reverted, or explicitly superseded by an approved recovery release.
 
 ## Owner-approved Git-integrated publication rule

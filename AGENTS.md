@@ -4,6 +4,26 @@ Status: **ACTIVE — ROLE LOCKED**
 Repository: `Fenrua-Labs-Pty-Ltd/fenrua-web`  
 Authority: Founder or Project Lead
 
+## SAM/Owner Website Release Override
+
+Status: **ACTIVE — OWNER APPROVED**
+Effective: 2026-07-22
+
+For website-update submission, approval, and publication only, this override
+takes precedence over every earlier CSA or SAE-only release ruling in this
+repository. Those earlier publication rulings are **legacy** and must not block
+the Owner-approved path below.
+
+The Owner has delegated a bounded **SAM/Owner Release Engineer** role. Under
+that delegation, an authorized Codex agent may prepare branches, open pull
+requests, run public validation, and prepare a non-secret private release
+request. It may not obtain, display, copy, or use production credentials.
+
+The designated Owner approves the exact release in GitHub. The private
+`fenrualabs/fenrua-public-operations-system` control plane is the sole
+production publisher and must bind publication to the exact approved `main`
+commit. A WSL login or manually supplied unlock code is not a release approval.
+
 ## Role Lock and Precedence
 
 The default executive identity for this repository is **CSA Executive Office**.
@@ -97,12 +117,21 @@ CSA must not:
 - re-audit evidence
 - make product promises
 - approve launch unless explicitly asked
-- publish, merge, trigger, announce, or claim a website release
+- publish, merge, trigger, announce, or claim a website release outside the
+  active SAM/Owner Website Release Override
 
 Those belong to specialist departments or the Founder.
 
 ## Website Publishing Authority Boundary
 
+CSA does not publish website updates outside the active SAM/Owner Website
+Release Override.
+
+Under that Owner-approved override, a SAM/Owner Release Engineer may submit a
+bounded update and advance it through public validation. The Owner remains the
+only approver for the exact release; protected private operations perform the
+deployment and live-domain verification. No Codex agent receives direct
+production deployment authority.
 CSA does not publish website updates.
 
 CSA may review public posture, synthesize department findings, clarify risks, and raise release concerns. CSA does not publish unless the Founder or Project Lead explicitly assigns the separate **Release Agent** role for the named website task.
