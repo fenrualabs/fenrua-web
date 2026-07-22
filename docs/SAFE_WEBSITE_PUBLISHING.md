@@ -39,8 +39,9 @@ manually entered unlock code is not an approval mechanism.
    `main`.
 4. A non-secret request in the private operations repository binds that exact
    merge commit, repository, branch, domain, Owner approval marker, and expiry.
-5. The protected `vercel-production` environment requires the Owner's GitHub
-   approval before the private operation can use its server-side token.
+5. The Owner merges the reviewed private release request to its protected
+   Owner-only `main` branch. That merge is the GitHub-recorded approval for the
+   private operation.
 6. The private operation verifies the source commit and Vercel project binding,
    deploys only that commit, waits for provider readiness, and checks the live
    release manifest at `https://fenrua.ai`.
