@@ -30,6 +30,7 @@ export const publicEntries = [
   "operations",
   "platform",
   "research",
+  "roadmap",
   "robots.txt",
   "security",
   "site.webmanifest",

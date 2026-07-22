@@ -131,6 +131,7 @@ const nav = [
   ["Trust", "/trust"],
   ["Operations", "/operations"],
   ["Company", "/company"],
+  ["Roadmap", "/roadmap"],
 ];
 
 const sectionNavigation = {
@@ -177,6 +178,12 @@ const sectionNavigation = {
     ["Support", "/support"],
     ["Public data flow", "/docs/PUBLIC_DATA_FLOW.md"],
   ],
+  Roadmap: [
+    ["Roadmap", "/roadmap"],
+    ["Platform", "/platform"],
+    ["Trust", "/trust"],
+    ["Legal boundary", "/legal"],
+  ],
 };
 
 const routeLabels = {
@@ -196,6 +203,7 @@ const routeLabels = {
   operations: "Operations",
   observations: "Signed observations",
   platform: "Platform",
+  roadmap: "Roadmap",
   trust: "Trust",
   company: "Company",
   start: "Start",
@@ -736,6 +744,7 @@ function sectionForCurrent(current) {
   if (["Evidence", "Audit", "Security", "Accessibility"].includes(current)) return "Trust";
   if (current === "Status") return "Operations";
   if (["Legal", "Support"].includes(current)) return "Company";
+  if (current === "Roadmap") return "Roadmap";
   return null;
 }
 
@@ -1442,7 +1451,7 @@ ${officialSourceWarning()}
         "FENRUA BLACKBOX PROTOCOL",
         "Public evidence for private AI execution.",
         "Fenrua BlackBox Protocol is privacy-preserving protocol infrastructure for verifiable AI automation. It separates capability from authority by placing an evidence layer beneath AI execution, so tool calls, policy decisions, model actions, infrastructure changes, and release claims can be bounded, reviewed, and verified without exposing the confidential machine beneath them. Use this site to inspect public evidence records, release scope, trust boundaries, bounded observation context, and local validation paths.",
-        `<div class="cta-row"><a class="button button-primary" href="/platform">Explore platform</a><a class="button button-secondary" href="/start">Choose a starting path</a><a class="button button-secondary" href="/trust">Inspect trust records</a></div>`,
+        `<div class="cta-row"><a class="button button-primary" href="/platform">Explore platform</a><a class="button button-secondary" href="/roadmap">View roadmap</a><a class="button button-secondary" href="/trust">Inspect trust records</a></div>`,
         false
       )}
       </div>
@@ -1463,7 +1472,7 @@ ${officialSourceWarning()}
       </section>
       <section class="section-shell split-section" aria-labelledby="home-roadmap-title">
         <div><p class="eyebrow">STAGED PROTOCOL DIRECTION</p><h2 id="home-roadmap-title">Governable autonomous AI execution</h2></div>
-        <div class="constraint-list"><p>Fenrua is built for autonomous systems that must be questioned before they are trusted. The staged direction covers tenant identity, agent capture, evidence events, proof ingress, tenant logical blocks, encrypted archive and recovery, selective disclosure, challenge and replay protocol, and production rollout gates.</p><p>Trust Gate and the P/N-521 proof-kernel direction remain promotion-gated research. Reviewer verification examines bounded evidence and the public/private disclosure boundary; it does not claim a live Trust Gate, completed proof system, runtime safety, or production rollout.</p></div>
+        <div class="constraint-list"><p>Fenrua is built for autonomous systems that must be questioned before they are trusted. The staged direction covers tenant identity, agent capture, evidence events, proof ingress, tenant logical blocks, encrypted archive and recovery, selective disclosure, challenge and replay protocol, and production rollout gates.</p><p>Trust Gate and the P/N-521 proof-kernel direction remain promotion-gated research. Reviewer verification examines bounded evidence and the public/private disclosure boundary; it does not claim a live Trust Gate, completed proof system, runtime safety, or production rollout.</p><p><a href="/roadmap">Read the public BlackBox Roadmap</a>.</p></div>
       </section>
       <section class="section-shell split-section" aria-labelledby="home-boundary">
         <div>
@@ -1478,6 +1487,43 @@ ${officialSourceWarning()}
         </div>
       </section>
       ${commercialBoundarySection()}`,
+  });
+}
+
+function roadmap() {
+  const stages = [
+    ["01", "Public Evidence Surface", "Public website, evidence records, trust records, release scope, and local validation paths make the reviewable surface inspectable."],
+    ["02", "Official Source and Impersonation Boundary", "fenrua.ai is the sole source of truth. Fenrua has no public token, claim page, or public-mainnet contract."],
+    ["03", "Governable AI Execution", "Capability is not authority. AI-linked tool calls and model actions require bounded evidence and review before they can be trusted."],
+    ["04", "Trust Gate Direction", "Manifest, policy, request, revocation, evidence construction, and verification describe the direction. ALLOW is not EXECUTE, and future tooling is not claimed as live."],
+    ["05", "Tenant Identity and Scoped Access", "Future tenant-scoped evidence projection is intended to preserve separate review boundaries without cross-tenant disclosure."],
+    ["06", "Agent Capture and Evidence Events", "Model, tool, and infrastructure actions can become bounded evidence records while protected implementation details remain outside the public surface."],
+    ["07", "Proof Ingress Direction", "The P/N-521 proof-kernel direction may inform future bounded proof ingress. This page does not describe equations, formulas, witnesses, or implementation details."],
+    ["08", "Tenant Logical Blocks", "Future tenant-local history and evidence sequencing are described only at a high level; internal private-chain heights and topology are not published."],
+    ["09", "Encrypted Archive and Recovery", "Continuity, recovery, evidence custody, and fail-closed operation guide the direction without disclosing protected recovery mechanisms."],
+    ["10", "Selective Disclosure", "Reviewers should receive only authorised evidence while private infrastructure and confidential execution remain protected."],
+    ["11", "Challenge and Replay Review", "A future review path may let authorised reviewers question, replay, and challenge bounded evidence without receiving the whole machine."],
+    ["12", "Production Rollout Gates", "Staged acceptance, validation, rollback, recovery, and review controls guide promotion. Future stages are not availability or production claims."],
+  ];
+  return layout({
+    title: "Fenrua BlackBox Roadmap",
+    description: "Fenrua BlackBox Protocol staged public direction, review boundaries, and roadmap limitations.",
+    current: "Roadmap",
+    canonicalPath: "/roadmap",
+    section: "Roadmap",
+    body: `${routeHero("STAGED PROTOCOL DIRECTION", "BlackBox Roadmap", "Fenrua BlackBox Protocol is built for autonomous systems that must be questioned before they are trusted. This public roadmap describes staged protocol direction for governable AI execution, bounded evidence, and review discipline.")}
+      <section class="section-shell split-section" aria-labelledby="roadmap-disclaimer-title">
+        <div><p class="eyebrow">PUBLIC / PRIVATE BOUNDARY</p><h2 id="roadmap-disclaimer-title">Direction, not a disclosure or availability claim</h2></div>
+        <div class="constraint-list"><p>This roadmap describes staged protocol direction and public review boundaries. It does not disclose private infrastructure, formulas, credentials, topology, provider routes, operational wiring, or protected implementation details.</p><p>Future-stage items are not availability claims unless explicitly marked as live on fenrua.ai. Public records support technical review, verification, evidence inspection, and professional due diligence; they do not prove protected runtime safety or public-mainnet deployment.</p></div>
+      </section>
+      <section class="section-shell" aria-labelledby="roadmap-stages-title">
+        <div class="section-heading"><p class="eyebrow">CONTROLLED MATURITY PATH</p><h2 id="roadmap-stages-title">Twelve public stages</h2><p>Each stage describes a bounded public meaning and preserves the distinction between direction, evidence, and live capability.</p></div>
+        ${cardGrid(stages.map(([kicker, title, text]) => ({ kicker, title, text })))}
+      </section>
+      <section class="section-shell split-section" aria-labelledby="roadmap-review-title">
+        <div><p class="eyebrow">REVIEW PATH</p><h2 id="roadmap-review-title">Evidence before authority</h2></div>
+        <div class="constraint-list"><p>Inspect the current public trust records, release scope, and legal boundary before treating any external claim as authoritative.</p><p><a href="/trust">Trust records</a> · <a href="/audit">Release verification</a> · <a href="/legal">Legal and company boundary</a></p></div>
+      </section>`,
   });
 }
 
@@ -2012,6 +2058,10 @@ function legal() {
           <p>Periodic synchronization validates published records and internal bindings; it does not rerun the underlying research and validation work or attest live services, protected systems, private client environments, signing keys, private gateways, validators, private meshes, or operational controls beyond the record's stated scope.</p>
         </div>
       </section>
+      <section class="section-shell split-section" aria-labelledby="public-private-boundary-title">
+        <div><p class="eyebrow">PUBLIC / PRIVATE DISCLOSURE</p><h2 id="public-private-boundary-title">Evidence without exposing the machine</h2></div>
+        <div class="constraint-list"><p>Public records are for technical review, verification, evidence inspection, and professional due diligence. They do not expose private infrastructure, protected operational wiring, credentials, provider routes, or confidential execution context.</p><p>Any private-chain observation is bounded infrastructure evidence. It is not a public-mainnet deployment claim or proof of protected runtime safety.</p></div>
+      </section>
       <section class="section-shell split-section" aria-labelledby="request-handling-title">
         <div><p class="eyebrow">CURRENT REQUEST HANDLING</p><h2 id="request-handling-title">Public endpoint and contact facts</h2></div>
         <div class="constraint-list">${operatingRecord.requestHandling.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("\n          ")}</div>
@@ -2458,6 +2508,7 @@ writeRoute("legal", legal());
 writeRoute("support", support());
 writeRoute("security", security());
 writeRoute("accessibility", accessibility());
+writeRoute("roadmap", roadmap());
 
 const sitemapRoutes = [
   "",
@@ -2485,6 +2536,7 @@ const sitemapRoutes = [
   "support",
   "security",
   "accessibility",
+  "roadmap",
 ];
 writeGenerated(
   path.join(root, "sitemap.xml"),
