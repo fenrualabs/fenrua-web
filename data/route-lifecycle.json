@@ -1,7 +1,7 @@
 {
   "schemaVersion": "fenrua.route-lifecycle.v1",
   "canonicalOrigin": "https://fenrua.ai",
-  "reviewedAt": "2026-07-14",
+  "reviewedAt": "2026-07-22",
   "records": [
     {
       "id": "home",
@@ -19,6 +19,26 @@
       "reviewDate": "2026-07-14",
       "evidenceIds": ["site-evidence-input"],
       "notes": "Canonical public overview and routing surface.",
+      "routeClass": "html",
+      "contentType": "text/html",
+      "audit": true
+    },
+    {
+      "id": "roadmap",
+      "path": "/roadmap",
+      "state": "current",
+      "methods": ["GET", "HEAD"],
+      "expectedStatus": 200,
+      "destination": null,
+      "canonical": "https://fenrua.ai/roadmap",
+      "indexPolicy": "index-follow",
+      "cacheClass": "html-current",
+      "contentOwner": "public-platform",
+      "replacement": null,
+      "effectiveDate": "2026-07-22",
+      "reviewDate": "2026-07-22",
+      "evidenceIds": ["site-evidence-input"],
+      "notes": "Public BlackBox Protocol staged-direction and disclosure-boundary route.",
       "routeClass": "html",
       "contentType": "text/html",
       "audit": true

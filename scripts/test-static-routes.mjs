@@ -61,6 +61,7 @@ for (const boundaryStatement of [
 
 const routes = [
   "index.html",
+  "roadmap/index.html",
   "platform/index.html",
   "architecture/index.html",
   "architecture/context/index.html",
@@ -96,7 +97,7 @@ const routes = [
   "accessibility/index.html",
 ];
 
-assert.equal(routes.length, 34, "Static route coverage must match the current public estate.");
+assert.equal(routes.length, 35, "Static route coverage must match the current public estate.");
 
 for (const route of routes) {
   const html = await readFile(new URL(`../${route}`, import.meta.url), "utf8");
@@ -119,6 +120,7 @@ for (const route of routes) {
     ["Trust", "/trust"],
     ["Operations", "/operations"],
     ["Company", "/company"],
+    ["Roadmap", "/roadmap"],
   ]) {
     assert.match(html, new RegExp(`<a href="${href}">${label}<\\/a>|<a href="${href}" aria-current="page">${label}<\\/a>`), `${route} must expose the ${label} primary category.`);
   }
@@ -177,6 +179,7 @@ assert.doesNotMatch(toolchain, />Executed</);
 const overview = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const trust = await readFile(new URL("../trust/index.html", import.meta.url), "utf8");
 const legal = await readFile(new URL("../legal/index.html", import.meta.url), "utf8");
+const roadmap = await readFile(new URL("../roadmap/index.html", import.meta.url), "utf8");
 for (const [label, markup] of [["Overview", overview], ["Trust", trust], ["Legal", legal]]) assertOfficialSourceWarning(markup, label);
 assert.ok(overview.indexOf('id="official-source-warning"') > overview.indexOf('<main id="content">'), "Overview warning must remain inside the main landmark.");
 assert.ok(overview.indexOf('id="official-source-warning"') < overview.indexOf('id="page-title"'), "Overview warning must appear directly below the navigation, before the hero introduction.");
@@ -214,6 +217,34 @@ assert.match(overview, /Evidence source/);
 assert.match(overview, /Confidence/);
 assert.doesNotMatch(overview, /Independent source|Primary source/);
 assert.doesNotMatch(overview, /Blocks since check|data-chain-field="(?:978|521)-delta"/);
+
+assert.match(overview, /href="\/roadmap">View roadmap<\/a>/, "Overview must expose the public roadmap from its primary introduction.");
+assert.match(overview, /href="\/roadmap">Read the public BlackBox Roadmap<\/a>/, "Overview must link the staged direction section to the roadmap.");
+assert.match(roadmap, /<h1 id="page-title">BlackBox Roadmap<\/h1>/);
+assert.match(roadmap, /This roadmap describes staged protocol direction and public review boundaries\./);
+assert.match(roadmap, /Future-stage items are not availability claims unless explicitly marked as live on fenrua\.ai\./);
+for (const stage of [
+  "Public Evidence Surface",
+  "Official Source and Impersonation Boundary",
+  "Governable AI Execution",
+  "Trust Gate Direction",
+  "Tenant Identity and Scoped Access",
+  "Agent Capture and Evidence Events",
+  "Proof Ingress Direction",
+  "Tenant Logical Blocks",
+  "Encrypted Archive and Recovery",
+  "Selective Disclosure",
+  "Challenge and Replay Review",
+  "Production Rollout Gates",
+]) {
+  assert.match(roadmap, new RegExp(`<h3>${stage}<\\/h3>`), `Roadmap must include ${stage}.`);
+}
+assert.match(roadmap, /ALLOW is not EXECUTE/);
+assert.match(roadmap, /P\/N-521 proof-kernel direction/);
+assert.doesNotMatch(roadmap, /<(?:math|pre|code)\b/i, "Roadmap must not render formula or implementation notation.");
+assert.doesNotMatch(roadmap, /(?:witness vectors?|commitment formulas?|nullifier formulas?|Merkle\/MMR equations?|key-derivation formulas?|RPC details?|contract addresses?|tokenomics)/i, "Roadmap must remain public-safe and formula-free.");
+assert.match(legal, /Public records are for technical review, verification, evidence inspection, and professional due diligence\./);
+assert.match(legal, /Any private-chain observation is bounded infrastructure evidence\. It is not a public-mainnet deployment claim or proof of protected runtime safety\./);
 
 const platform = await readFile(new URL("../platform/index.html", import.meta.url), "utf8");
 assert.match(platform, /CURRENT CAPABILITY STATES/);
@@ -415,7 +446,7 @@ assert.doesNotMatch(reviewerDelta, /\b(?:sign[- ]?up|checkout|payment|wallet|tok
 assertNoPositiveReviewerClaims(reviewerDelta, "Reviewer delta");
 
 const sitemap = await readFile(new URL("../sitemap.xml", import.meta.url), "utf8");
-for (const route of ["legal", "support", "security", "accessibility"]) assert.match(sitemap, new RegExp(`/${route}<`));
+for (const route of ["legal", "support", "security", "accessibility", "roadmap"]) assert.match(sitemap, new RegExp(`/${route}<`));
 for (const route of ["nexus", "fenswap", "fenpresale", "wallet", "privacy", "terms"]) assert.doesNotMatch(sitemap, new RegExp(`/${route}<`));
 
 assert.match(legal, /FENRUA LABS PTY LTD/);

@@ -35,7 +35,7 @@
       "prohibitedAmbiguities": ["Do not use Fenrua BlackBox Protocol as the legal company name or as evidence that an unlisted product is available."],
       "replacementId": null,
       "effectiveDate": "2026-07-22",
-      "publicRoutes": ["/"],
+      "publicRoutes": ["/", "/roadmap"],
       "owner": "public-platform",
       "evidenceIds": ["site-evidence-input", "source-public-interface-doctrine"]
     },
@@ -396,6 +396,12 @@
         "status": "deprecated",
         "replacementId": "fenrua.commercial-service-boundary",
         "allowances": [
+          {
+            "file": "public/roadmap/index.html",
+            "context": "fenrua.ai is the sole source of truth. Fenrua has no public token, claim page, or public-mainnet contract.",
+            "claimId": "claim.commercial.no-financial-products",
+            "expectedMatches": 1
+          },
           {
             "file": "public/index.html",
             "context": "Fenrua Labs Pty Ltd does not offer investments, token crowdfunding, securities, bonds, equity, debt, managed investment interests, profit-sharing arrangements, revenue-sharing arrangements, yield products, exchange products, trading products, or any financial-return scheme.",
