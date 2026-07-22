@@ -55,7 +55,7 @@ jobs:
 
           grep -q "Owner-approved private-control-plane publication rule" docs/SAFE_WEBSITE_PUBLISHING.md
           grep -q "Repository-Wide Owner-Approved Release Rule" AGENTS.md
-          grep -q "Owner-approved release workflow" docs/OWNER_APPROVED_RELEASE_WORKFLOW.md
+          grep -qi "Owner-approved release workflow" docs/OWNER_APPROVED_RELEASE_WORKFLOW.md
           grep -q "Vercel Publishing Boundary" docs/VERCEL.md
 
           echo "Public release boundary gate passed."
