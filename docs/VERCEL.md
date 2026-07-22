@@ -12,7 +12,7 @@ Production deployment authority belongs exclusively to the private operations re
 
 The allowed public repository path is:
 
-1. bounded SAE-owned branch;
+1. bounded agent-submitted or Owner-authored branch;
 2. bounded pull request;
 3. `Validate public surface` passing;
 4. approved merge to protected `main`;
@@ -36,7 +36,7 @@ raw path, commit it, upload it, or copy it into provider logs.
 
 ## Preview and production gates
 
-The deployment command never runs the Vercel CLI, changes domains or environment variables, purges caches, or promotes previews. It executes only inside the SAE-owned private operations control plane, uses the protected provider environment, and binds deployment to a reviewed public commit. A local release check is necessary source evidence, not preview or production verification.
+The deployment command never runs the Vercel CLI, changes domains or environment variables, purges caches, or promotes previews. It executes only inside the SAM/Owner private operations control plane, uses the protected provider environment, and binds deployment to an Owner-approved public commit. A local release check is necessary source evidence, not preview or production verification.
 
 Before production authorisation, retain outside the public repository:
 

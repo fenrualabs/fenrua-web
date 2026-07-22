@@ -269,9 +269,10 @@ Production publishes through the existing Vercel project `fenrua-web`, which own
 
 Website publishing is controlled by the [Safe Website Publishing Control](docs/SAFE_WEBSITE_PUBLISHING.md).
 
-CSA may synthesize public posture, review final wording, and raise release concerns, but CSA does not publish website updates.
-
-SAE is the approved website publishing executor for this repository. Founder or Project Lead authority may authorise, halt, or supersede a release. After authorisation, SAE owns the branch, PR, merge readiness, production watch, live-domain verification, and clean handoff.
+CSA may synthesize public posture and raise release concerns. Under the active
+SAM/Owner policy, authorized Codex agents may submit bounded website-update
+pull requests; the Owner approves the exact release and private operations
+publishes it without exposing production credentials.
 
 ---
 
@@ -382,7 +383,7 @@ npm run audit:live-release -- --url https://fenrua.ai --expected-commit <40-char
 
 The expected record digest is the independent trust anchor. A live manifest’s self-hash alone cannot detect origin compromise. The receipt proves only the observed public static artifact set at that time; it is not evidence for live cards, APIs, private systems, or perpetual production assertion.
 
-For the standalone SAE-owned production gate on the approved `main` commit, use a clean main checkout:
+For source evidence on the approved `main` commit, use a clean checkout:
 
 ```bash
 npm run release:production-check
@@ -504,4 +505,3 @@ Approved visual baselines and related local evidence paths are private custody m
 Validation, CI, and deployment tooling must not print the raw path, publish the path, commit the path, or expose private custody information.
 
 Production deployment authority remains in the private operations repository.
-

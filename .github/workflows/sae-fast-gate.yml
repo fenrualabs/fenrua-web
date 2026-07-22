@@ -1,4 +1,4 @@
-name: SAE fast gate
+name: SAM Owner public boundary
 
 on:
   pull_request:
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: sae-fast-gate-${{ github.ref }}
+  group: sam-owner-public-boundary-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  sae-fast-gate:
-    name: SAE fast gate
+  owner-release-boundary:
+    name: SAM Owner public boundary
     runs-on: ubuntu-latest
     timeout-minutes: 3
 
@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "SAE fast gate: enforcing public repo deployment boundary."
+          echo "SAM Owner boundary: enforcing credential-free public source."
 
           if grep -RInE --exclude='sae-fast-gate.yml' 'VERCEL_(TOKEN|ORG_ID|PROJECT_ID)|vercel[[:space:]]+(pull|build|deploy)|vercel@[0-9]' .github 2>/dev/null; then
             echo "::error::Public workflows contain forbidden production deployment wiring."
@@ -53,7 +53,8 @@ jobs:
             grep -q "private operations" "$f" || { echo "::error::$f must redirect to private operations"; exit 1; }
           done
 
-          grep -q "Locked SAE-only publication rule" docs/SAFE_WEBSITE_PUBLISHING.md
+          grep -q "SAM/Owner Website Release Policy" docs/SAFE_WEBSITE_PUBLISHING.md
+          grep -q "Owner approves" docs/SAFE_WEBSITE_PUBLISHING.md
           grep -q "Vercel Publishing Boundary" docs/VERCEL.md
 
-          echo "SAE fast gate passed."
+          echo "SAM Owner public boundary passed."

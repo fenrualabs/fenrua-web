@@ -1,4 +1,4 @@
-name: Retired SAE release gate
+name: Legacy public release sentinel
 
 on:
   workflow_dispatch:
@@ -8,11 +8,11 @@ permissions:
 
 jobs:
   retired:
-    name: SAE release gate moved to private ops
+    name: Legacy public release gate moved to private ops
     runs-on: ubuntu-latest
     steps:
       - name: Refuse public-repo release gate
         run: |
-          echo "::error::The public repository SAE release gate is retired."
-          echo "::error::All production publishing now runs through SAE-owned private operations control."
+          echo "::error::This public release gate is legacy and retired."
+          echo "::error::All production publishing now runs through SAM/Owner private operations control."
           exit 1
