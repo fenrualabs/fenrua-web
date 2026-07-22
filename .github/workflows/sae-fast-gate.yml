@@ -35,10 +35,17 @@ jobs:
 
           echo "SAE fast gate: enforcing public repo deployment boundary."
 
-          if grep -RInE 'VERCEL_(TOKEN|ORG_ID|PROJECT_ID)|vercel[[:space:]]+(pull|build|deploy)|vercel@[0-9]|\.vercel' .github scripts 2>/dev/null; then
-            echo "::error::Public repository contains forbidden production deployment wiring."
+          if grep -RInE --exclude='sae-fast-gate.yml' 'VERCEL_(TOKEN|ORG_ID|PROJECT_ID)|vercel[[:space:]]+(pull|build|deploy)|vercel@[0-9]' .github 2>/dev/null; then
+            echo "::error::Public workflows contain forbidden production deployment wiring."
             exit 1
           fi
+
+          if grep -RInE --exclude='test-*.mjs' 'vercel[[:space:]]+(pull|build|deploy)|vercel@[0-9]' scripts 2>/dev/null; then
+            echo "::error::Public runtime scripts contain forbidden Vercel CLI deployment wiring."
+            exit 1
+          fi
+
+          test ! -e .vercel/project.json || { echo "::error::.vercel project state is forbidden in the public repository"; exit 1; }
 
           for f in .github/workflows/deploy-production.yml .github/workflows/sae-release-gate.yml; do
             test -f "$f" || { echo "::error::$f missing"; exit 1; }
@@ -50,4 +57,3 @@ jobs:
           grep -q "Vercel Publishing Boundary" docs/VERCEL.md
 
           echo "SAE fast gate passed."
-
