@@ -495,3 +495,13 @@ Verification without revealing the machine.
 Fenrua does not expose the whole machine.
 
 It exposes the evidence required to question it.
+---
+
+## Release Evidence Custody
+
+Approved visual baselines and related local evidence paths are private custody metadata.
+
+Validation, CI, and deployment tooling must not print the raw path, publish the path, commit the path, or expose private custody information.
+
+Production deployment authority remains in the private operations repository.
+
